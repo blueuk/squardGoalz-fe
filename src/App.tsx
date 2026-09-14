@@ -38,7 +38,6 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [rates, setRates] = useState<Rate[]>([]);
   const [myAttendCount, setMyAttendCount] = useState<number>(0);
-  const [currentPage, setCurrentPage] = useState(1);
   const [activeTab, setActiveTab] = useState<'HOME' | 'VIDEO' | 'SCHEDULE' | 'RECORD' | 'MY'>('HOME');
   const ITEMS_PER_PAGE = 5;
 
