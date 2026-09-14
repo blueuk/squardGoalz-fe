@@ -354,6 +354,7 @@ main {
     text-overflow:ellipsis;
     /* ?대쫫???덈Т 湲몃㈃ ... 泥섎━ */
 }
+
 .pos-badge {
     font-size: calc(9px * var(--scale-factor, 1));
     padding:1px 5px;
@@ -363,22 +364,23 @@ main {
     min-width:0;
     font-weight:800;
 }
-.pos-badge.怨⑤젅??{
+.pos-badge.골레이로 {
     background:var(--toss-orange);
 }
-.pos-badge.?꾨씪 {
+.pos-badge.아라 {
     background:var(--toss-green);
 }
-.pos-badge.?쇰낫 {
+.pos-badge.피보 {
     background:var(--toss-red);
 }
-.pos-badge.?쎌냼 {
+.pos-badge.픽소 {
     background:var(--toss-blue);
 }
-.pos-badge.誘몄젙 {
+.pos-badge.미지정 {
     background:var(--toss-gray);
 }
 .copy-btn {
+
     background:var(--toss-blue);
     color:#fff;
     border:none;
