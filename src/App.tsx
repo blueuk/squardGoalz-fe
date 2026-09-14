@@ -362,7 +362,7 @@ function App() {
             <label style={{ display: 'block', textAlign: 'left', marginBottom: '5px' }}>전화번호</label>
             <input type="text" name="phone" placeholder="010-1234-5678" required style={{ width: '100%', padding: '10px' }} />
           </div>
-          <button type="submit" style={{ padding: '12px', backgroundColor: '#FEE500', border: 'none', fontWeight: 'bold', cursor: 'pointer' }}>
+          <button type="submit" style={{ padding: '12px', backgroundColor: '#FEE500', color: '#000', border: 'none', fontWeight: 'bold', cursor: 'pointer' }}>
             가입 완료하기
           </button>
         </form>
@@ -605,7 +605,7 @@ function App() {
                         </button>
                         <button 
                           onClick={() => setEditingStatus(false)} 
-                          style={{ padding: '2px 8px', borderRadius: '4px', backgroundColor: '#f4f4f4', border: '1px solid #ddd', cursor: 'pointer' }}
+                          style={{ padding: '2px 8px', borderRadius: '4px', backgroundColor: '#f4f4f4', color: '#000', border: '1px solid #ddd', cursor: 'pointer' }}
                           disabled={statusUpdating}
                         >
                           취소
@@ -621,7 +621,7 @@ function App() {
                             setSelectedStatusCd(myInfo?.status_cd || '01');
                             setEditingStatus(true);
                           }}
-                          style={{ padding: '2px 8px', fontSize: 'calc(12px * var(--scale-factor, 1))', borderRadius: '4px', backgroundColor: '#f4f4f4', border: '1px solid #ddd', cursor: 'pointer' }}
+                          style={{ padding: '2px 8px', fontSize: 'calc(12px * var(--scale-factor, 1))', borderRadius: '4px', backgroundColor: '#f4f4f4', color: '#000', border: '1px solid #ddd', cursor: 'pointer' }}
                         >
                           수정
                         </button>
