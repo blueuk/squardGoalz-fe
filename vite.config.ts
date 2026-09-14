@@ -6,14 +6,14 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      '/kakao': { target: 'http://localhost:8000', changeOrigin: true },
-      '/login': { target: 'http://localhost:8000', changeOrigin: true },
-      '/rate': { target: 'http://localhost:8000', changeOrigin: true },
-      '/user': { target: 'http://localhost:8000', changeOrigin: true },
-      '/schedule': { target: 'http://localhost:8000', changeOrigin: true },
-      '/vote': { target: 'http://localhost:8000', changeOrigin: true },
-      '/team_member': { target: 'http://localhost:8000', changeOrigin: true },
-      '/common_cd': { target: 'http://localhost:8000', changeOrigin: true }
+      '/kakao': { target: 'http://8.235.113.192:8000', changeOrigin: true },
+      '/login': { target: 'http://8.235.113.192:8000', changeOrigin: true },
+      '/rate': { target: 'http://8.235.113.192:8000', changeOrigin: true },
+      '/user': { target: 'http://8.235.113.192:8000', changeOrigin: true },
+      '/schedule': { target: 'http://8.235.113.192:8000', changeOrigin: true },
+      '/vote': { target: 'http://8.235.113.192:8000', changeOrigin: true },
+      '/team_member': { target: 'http://8.235.113.192:8000', changeOrigin: true },
+      '/common_cd': { target: 'http://8.235.113.192:8000', changeOrigin: true }
     }
   }
 })
