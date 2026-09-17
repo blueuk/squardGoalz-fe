@@ -27,6 +27,7 @@ interface TeamMember {
   member_uid: string;
   member_name: string;
   user_id?: string;
+  status_cd?: string;
 }
 
 interface MemberScore {
@@ -48,7 +49,7 @@ interface CommonCd {
   reference_1?: string;
 }
 
-export default function TeamTab() {
+export default function TeamTab({ isAdmin }: { isAdmin?: boolean }) {
   const [subTab, setSubTab] = useState<'INFO' | 'SQUAD'>('INFO');
   const [teamInfo, setTeamInfo] = useState<TeamInfo | null>(null);
   
@@ -66,7 +67,8 @@ export default function TeamTab() {
     level_cd: [],
     day_cd: [],
     gender_cd: [],
-    score_cd: []
+    score_cd: [],
+    status_cd: []
   });
 
   const [isEditing, setIsEditing] = useState(false);
@@ -80,7 +82,7 @@ export default function TeamTab() {
   useEffect(() => {
     if (subTab === 'INFO' && !teamInfo) {
       // 1. 공통 코드 모두 가져오기
-      const groupCds = ['bank_cd', 'payment_cd', 'region_cd', 'level_cd', 'day_cd', 'gender_cd', 'score_cd'];
+      const groupCds = ['bank_cd', 'payment_cd', 'region_cd', 'level_cd', 'day_cd', 'gender_cd', 'score_cd', 'status_cd'];
       
       Promise.all(groupCds.map(g => api.get(`/common_cd/search?group_cd=${g}`)))
         .then(results => {
@@ -216,7 +218,25 @@ export default function TeamTab() {
     if (!codeVal) return '';
     const item = codeLists[group]?.find(c => c.code === codeVal);
     if (!item) return codeVal;
-    return (useRef1 && item.reference_1) ? item.reference_1 : item.code_name;
+  
+
+  return (useRef1 && item.reference_1) ? item.reference_1 : item.code_name;
+  };
+
+
+
+  const updateMemberStatus = async (memberUid: string, newStatusCd: string) => {
+    try {
+      await api.post('/team_member/update', {
+        team_uid: 'df743e05-9440-4c1e-bfdb-fa07159ef0c9',
+        member_uid: memberUid,
+        status_cd: newStatusCd
+      });
+      setTeamMembers(prev => prev.map(m => m.member_uid === memberUid ? { ...m, status_cd: newStatusCd } : m));
+    } catch (err) {
+      console.error(err);
+      alert('상태 변경에 실패했습니다.');
+    }
   };
 
   return (
@@ -402,7 +422,9 @@ export default function TeamTab() {
                     const isMonthly = payment.payment_cd === '01';
                     const primaryColor = isMonthly ? '#3182f6' : '#f04452';
 
-                    return (
+                  
+
+  return (
                       <div key={payment.payment_cd} style={{ marginBottom: '20px' }}>
                         <div style={{ fontWeight: 'bold', color: primaryColor, marginBottom: '5px' }}>{paymentName} 안내</div>
                         <div style={{ fontSize: '14px', color: '#555', marginBottom: '8px' }}>
@@ -439,7 +461,9 @@ export default function TeamTab() {
                   {editPayments.map((payment, idx) => {
                     const account = editAccounts.find(a => a.team_account_seq === payment.team_account_seq);
                     
-                    return (
+                  
+
+  return (
                       <div key={idx} style={{ padding: '15px', border: '1px solid #ddd', borderRadius: '8px', backgroundColor: '#fafafa' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
                           <span style={{ fontWeight: 'bold', fontSize: '14px' }}>종류</span>
@@ -484,6 +508,12 @@ export default function TeamTab() {
                   const isExpanded = expandedMemberUid === member.member_uid;
                   const memberScoreList = memberScores.filter(s => s.member_uid === member.member_uid);
                   
+                  let bgColor = '#e0e0e0';
+                  let color = '#333';
+                  if (member.status_cd === '01') { bgColor = '#e6f4ea'; color = '#137333'; }
+                  else if (member.status_cd === '02') { bgColor = '#fce8e6'; color = '#c5221f'; }
+                  else if (member.status_cd === '03') { bgColor = '#f1f3f4'; color = '#5f6368'; }
+
                   return (
                     <div key={member.member_uid} style={{ border: '1px solid #eee', borderRadius: '8px', overflow: 'hidden' }}>
                       <div 
@@ -495,8 +525,26 @@ export default function TeamTab() {
                           {member.user_id && (
                             <span style={{ backgroundColor: '#FEE500', color: '#000', padding: '2px 6px', borderRadius: '4px', fontSize: '10px', marginLeft: '6px', fontWeight: 'bold' }}>K</span>
                           )}
+                          <span style={{ 
+                            backgroundColor: bgColor, color: color, 
+                            padding: '2px 6px', borderRadius: '4px', fontSize: '10px', marginLeft: '6px', fontWeight: 'bold' 
+                          }}>
+                            {getCodeName('status_cd', member.status_cd) || '상태 없음'}
+                          </span>
                         </div>
-                        <span style={{ fontSize: '12px', color: '#888' }}>{isExpanded ? '▲' : '▼'}</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          {isAdmin && (
+                            <select 
+                              onClick={(e) => e.stopPropagation()}
+                              value={member.status_cd || '01'}
+                              onChange={(e) => updateMemberStatus(member.member_uid, e.target.value)}
+                              style={{ fontSize: '11px', padding: '2px', borderRadius: '4px', border: '1px solid #ccc' }}
+                            >
+                              {codeLists.status_cd?.map(c => <option key={c.code} value={c.code}>{c.code_name}</option>)}
+                            </select>
+                          )}
+                          <span style={{ fontSize: '12px', color: '#888' }}>{isExpanded ? '▲' : '▼'}</span>
+                        </div>
                       </div>
                       
                       {isExpanded && (

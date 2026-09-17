@@ -555,7 +555,7 @@ function App() {
               <CalendarTab teamUid="df743e05-9440-4c1e-bfdb-fa07159ef0c9" members={rates} isAdmin={user?.auth_cd === '01'} />
             )}
 
-            {activeTab === 'TEAM' && <TeamTab />}
+            {activeTab === 'TEAM' && <TeamTab isAdmin={user?.auth_cd === '01'} />}
 
             {activeTab === 'MY' && user && (
               <div className="card" style={{ textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '15px' }}>
