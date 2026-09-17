@@ -19,7 +19,7 @@ export default function TeamTab() {
   useEffect(() => {
     // Fetch team info when tab is INFO
     if (subTab === 'INFO' && !teamInfo) {
-      api.get('/teamInfo/search?use_yn=Y')
+      api.get('/team_info/search?use_yn=Y')
         .then((res) => {
           if (res.data && res.data.length > 0) {
             setTeamInfo(res.data[0]); // assuming the first active team is Putgochu FC
@@ -166,3 +166,4 @@ export default function TeamTab() {
     </div>
   );
 }
+

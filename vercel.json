@@ -9,7 +9,7 @@
     { "source": "/team_member/:path*", "destination": "http://8.235.113.192:8000/team_member/:path*" },
     { "source": "/common_cd/:path*", "destination": "http://8.235.113.192:8000/common_cd/:path*" },
     { "source": "/stardium/:path*", "destination": "http://8.235.113.192:8000/stardium/:path*" },
-    { "source": "/teamInfo/:path*", "destination": "http://8.235.113.192:8000/teamInfo/:path*" },
+    { "source": "/team_info/:path*", "destination": "http://8.235.113.192:8000/team_info/:path*" },
     { "source": "/teamArrange/:path*", "destination": "http://8.235.113.192:8000/teamArrange/:path*" },
     { "source": "/memberScore/:path*", "destination": "http://8.235.113.192:8000/memberScore/:path*" },
     { "source": "/record/:path*", "destination": "http://8.235.113.192:8000/record/:path*" },
