@@ -12,22 +12,65 @@ interface TeamInfo {
   member_count: number;
 }
 
+interface TeamAccount {
+  team_uid: string;
+  team_account_seq: number;
+  bank_cd: string;
+  account_enc: string;
+}
+
+interface Payment {
+  team_uid: string;
+  payment_cd: string;
+  team_account_seq: number;
+  amount: number;
+}
+
+interface CommonCd {
+  code_cd: string;
+  code_nm: string;
+}
+
 export default function TeamTab() {
   const [subTab, setSubTab] = useState<'INFO' | 'SQUAD'>('INFO');
   const [teamInfo, setTeamInfo] = useState<TeamInfo | null>(null);
+  const [teamAccounts, setTeamAccounts] = useState<TeamAccount[]>([]);
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [bankCodes, setBankCodes] = useState<Record<string, string>>({});
+  const [paymentCodes, setPaymentCodes] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    // Fetch team info when tab is INFO
     if (subTab === 'INFO' && !teamInfo) {
+      // 1. 팀 정보 가져오기
       api.get('/team_info/search?use_yn=Y')
         .then((res) => {
           if (res.data && res.data.length > 0) {
-            setTeamInfo(res.data[0]); // assuming the first active team is Putgochu FC
+            const team = res.data[0];
+            setTeamInfo(team);
+            
+            // 2. 해당 팀의 계좌 정보 및 결제 설정 가져오기
+            api.get(`/teamAccount/search?team_uid=${team.team_uid}`).then(r => setTeamAccounts(r.data)).catch(console.error);
+            api.get(`/payment/search?team_uid=${team.team_uid}`).then(r => setPayments(r.data)).catch(console.error);
           }
         })
         .catch((err) => {
           console.error("팀 정보를 불러오는데 실패했습니다.", err);
         });
+
+      // 3. 공통 코드(은행코드, 결제종류코드) 가져오기
+      api.get('/common_cd/search?group_cd=BANK_CD')
+        .then(res => {
+          const mapping: Record<string, string> = {};
+          res.data.forEach((item: CommonCd) => mapping[item.code_cd] = item.code_nm);
+          setBankCodes(mapping);
+        }).catch(console.error);
+        
+      api.get('/common_cd/search?group_cd=PAYMENT_CD')
+        .then(res => {
+          const mapping: Record<string, string> = {};
+          res.data.forEach((item: CommonCd) => mapping[item.code_cd] = item.code_nm);
+          setPaymentCodes(mapping);
+        }).catch(console.error);
     }
   }, [subTab, teamInfo]);
 
@@ -110,48 +153,52 @@ export default function TeamTab() {
               )}
             </div>
 
-            {/* Account Info Card */}
+            {/* Account Info Card (Dynamic) */}
             <div className="card" style={{ padding: '20px', backgroundColor: '#fff', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
               <h3 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '15px', color: '#333' }}>💸 입금 안내</h3>
               
-              <div style={{ marginBottom: '20px' }}>
-                <div style={{ fontWeight: 'bold', color: '#3182f6', marginBottom: '5px' }}>월회비 안내</div>
-                <div style={{ fontSize: '14px', color: '#555', marginBottom: '8px' }}>
-                  월 10,000원<br />(상/하반기 일시납 각 6만원)
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#f4f4f4', padding: '10px 15px', borderRadius: '8px' }}>
-                  <div style={{ fontSize: '14px', color: '#333' }}>
-                    <strong>신한은행</strong> 110300644160<br />
-                    <span style={{ fontSize: '12px', color: '#888' }}>예금주: 이진범</span>
-                  </div>
-                  <button 
-                    onClick={() => copyToClipboard('110300644160')}
-                    style={{ padding: '6px 12px', fontSize: '12px', backgroundColor: '#3182f6', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}
-                  >
-                    복사
-                  </button>
-                </div>
-              </div>
+              {payments.length > 0 ? (
+                payments.map(payment => {
+                  const account = teamAccounts.find(a => a.team_account_seq === payment.team_account_seq);
+                  const bankName = account ? (bankCodes[account.bank_cd] || account.bank_cd) : '알 수 없음';
+                  const paymentName = paymentCodes[payment.payment_cd] || (payment.payment_cd === '01' ? '월회비' : '지각비');
+                  
+                  // 스타일 구분 (월회비는 파란색, 그 외(지각비 등)는 빨간색)
+                  const isMonthly = payment.payment_cd === '01';
+                  const primaryColor = isMonthly ? '#3182f6' : '#f04452';
 
-              <div>
-                <div style={{ fontWeight: 'bold', color: '#f04452', marginBottom: '5px' }}>지각비 안내</div>
-                <div style={{ fontSize: '14px', color: '#555', marginBottom: '8px' }}>
-                  지각 시 5,000원
+                  return (
+                    <div key={payment.payment_cd} style={{ marginBottom: '20px' }}>
+                      <div style={{ fontWeight: 'bold', color: primaryColor, marginBottom: '5px' }}>{paymentName} 안내</div>
+                      <div style={{ fontSize: '14px', color: '#555', marginBottom: '8px' }}>
+                        {Number(payment.amount).toLocaleString()}원
+                        {isMonthly && <><br />(상/하반기 일시납 각 6만원)</>}
+                      </div>
+                      
+                      {account && (
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#f4f4f4', padding: '10px 15px', borderRadius: '8px' }}>
+                          <div style={{ fontSize: '14px', color: '#333' }}>
+                            <strong>{bankName}</strong> {account.account_enc}<br />
+                            <span style={{ fontSize: '12px', color: '#888' }}>
+                              예금주: {isMonthly ? '이진범' : '강승지'}
+                            </span>
+                          </div>
+                          <button 
+                            onClick={() => copyToClipboard(account.account_enc)}
+                            style={{ padding: '6px 12px', fontSize: '12px', backgroundColor: primaryColor, color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}
+                          >
+                            복사
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              ) : (
+                <div style={{ fontSize: '14px', color: '#999', textAlign: 'center', padding: '20px 0' }}>
+                  등록된 입금 안내가 없습니다.
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#f4f4f4', padding: '10px 15px', borderRadius: '8px' }}>
-                  <div style={{ fontSize: '14px', color: '#333' }}>
-                    <strong>카카오뱅크</strong> 79422560871<br />
-                    <span style={{ fontSize: '12px', color: '#888' }}>예금주: 강승지</span>
-                  </div>
-                  <button 
-                    onClick={() => copyToClipboard('79422560871')}
-                    style={{ padding: '6px 12px', fontSize: '12px', backgroundColor: '#f04452', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}
-                  >
-                    복사
-                  </button>
-                </div>
-              </div>
-
+              )}
             </div>
           </div>
         )}
@@ -166,4 +213,3 @@ export default function TeamTab() {
     </div>
   );
 }
-
