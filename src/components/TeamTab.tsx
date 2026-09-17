@@ -22,6 +22,19 @@ interface TeamAccount {
   account_enc: string;
 }
 
+interface TeamMember {
+  team_uid: string;
+  member_uid: string;
+  member_name: string;
+  user_id?: string;
+}
+
+interface MemberScore {
+  member_uid: string;
+  score_cd: string;
+  score_val: string;
+}
+
 interface Payment {
   team_uid: string;
   payment_cd: string;
@@ -41,6 +54,9 @@ export default function TeamTab() {
   
   const [teamAccounts, setTeamAccounts] = useState<TeamAccount[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [memberScores, setMemberScores] = useState<MemberScore[]>([]);
+  const [expandedMemberUid, setExpandedMemberUid] = useState<string | null>(null);
   
   // 공통 코드 원본 배열 저장 (Select 박스용)
   const [codeLists, setCodeLists] = useState<Record<string, CommonCd[]>>({
@@ -49,7 +65,8 @@ export default function TeamTab() {
     region_cd: [],
     level_cd: [],
     day_cd: [],
-    gender_cd: []
+    gender_cd: [],
+    score_cd: []
   });
 
   const [isEditing, setIsEditing] = useState(false);
@@ -63,7 +80,7 @@ export default function TeamTab() {
   useEffect(() => {
     if (subTab === 'INFO' && !teamInfo) {
       // 1. 공통 코드 모두 가져오기
-      const groupCds = ['bank_cd', 'payment_cd', 'region_cd', 'level_cd', 'day_cd', 'gender_cd'];
+      const groupCds = ['bank_cd', 'payment_cd', 'region_cd', 'level_cd', 'day_cd', 'gender_cd', 'score_cd'];
       
       Promise.all(groupCds.map(g => api.get(`/common_cd/search?group_cd=${g}`)))
         .then(results => {
@@ -87,6 +104,14 @@ export default function TeamTab() {
               .then(memberRes => {
                 team.member_count = memberRes.data.length;
                 setTeamInfo(team);
+                
+                // 가나다 순 정렬
+                const sorted = memberRes.data.sort((a: any, b: any) => {
+                  const nameA = a.member_name || '';
+                  const nameB = b.member_name || '';
+                  return nameA.localeCompare(nameB);
+                });
+                setTeamMembers(sorted);
               })
               .catch(() => {
                 team.member_count = 0;
@@ -96,6 +121,7 @@ export default function TeamTab() {
             // 4. 계좌 정보 및 결제 가져오기
             api.get(`/teamAccount/search?team_uid=${team.team_uid}`).then(r => setTeamAccounts(r.data)).catch(console.error);
             api.get(`/payment/search?team_uid=${team.team_uid}`).then(r => setPayments(r.data)).catch(console.error);
+            api.get(`/memberScore/search?team_uid=${team.team_uid}`).then(r => setMemberScores(r.data)).catch(console.error);
           }
         })
         .catch((err) => {
@@ -449,9 +475,52 @@ export default function TeamTab() {
         )}
 
         {subTab === 'SQUAD' && (
-          <div style={{ textAlign: 'center', padding: '40px 0', color: '#999' }}>
-            <h3 style={{ color: '#666', marginBottom: '10px' }}>선수단 명단</h3>
-            <p>선수단 리스트가 여기에 표시됩니다.</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+            <div className="card" style={{ padding: '20px', backgroundColor: '#fff', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#333', margin: '0 0 15px 0' }}>🏃 선수단 명단 ({teamMembers.length}명)</h3>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {teamMembers.map(member => {
+                  const isExpanded = expandedMemberUid === member.member_uid;
+                  const memberScoreList = memberScores.filter(s => s.member_uid === member.member_uid);
+                  
+                  return (
+                    <div key={member.member_uid} style={{ border: '1px solid #eee', borderRadius: '8px', overflow: 'hidden' }}>
+                      <div 
+                        onClick={() => setExpandedMemberUid(isExpanded ? null : member.member_uid)}
+                        style={{ padding: '15px', backgroundColor: isExpanded ? '#f4f4f4' : '#fff', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                          <span style={{ fontWeight: 'bold', fontSize: '15px', color: '#333' }}>{member.member_name}</span>
+                          {member.user_id && (
+                            <span style={{ backgroundColor: '#FEE500', color: '#000', padding: '2px 6px', borderRadius: '4px', fontSize: '10px', marginLeft: '6px', fontWeight: 'bold' }}>K</span>
+                          )}
+                        </div>
+                        <span style={{ fontSize: '12px', color: '#888' }}>{isExpanded ? '▲' : '▼'}</span>
+                      </div>
+                      
+                      {isExpanded && (
+                        <div style={{ padding: '15px', backgroundColor: '#fff', borderTop: '1px solid #eee' }}>
+                          <h4 style={{ fontSize: '14px', fontWeight: 'bold', color: '#555', margin: '0 0 10px 0' }}>멤버 스코어</h4>
+                          {memberScoreList.length > 0 ? (
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                              {memberScoreList.map(score => (
+                                <div key={score.score_cd} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
+                                  <span style={{ color: '#888' }}>{getCodeName('score_cd', score.score_cd)}</span>
+                                  <span style={{ fontWeight: 'bold', color: '#333' }}>{score.score_val}</span>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div style={{ fontSize: '13px', color: '#999', textAlign: 'center', padding: '10px 0' }}>등록된 스코어가 없습니다.</div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         )}
       </div>
