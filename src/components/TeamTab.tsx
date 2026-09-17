@@ -412,7 +412,6 @@ export default function TeamTab() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                   {editPayments.map((payment, idx) => {
                     const account = editAccounts.find(a => a.team_account_seq === payment.team_account_seq);
-                    const isMonthly = payment.payment_cd === '01';
                     
                     return (
                       <div key={idx} style={{ padding: '15px', border: '1px solid #ddd', borderRadius: '8px', backgroundColor: '#fafafa' }}>
