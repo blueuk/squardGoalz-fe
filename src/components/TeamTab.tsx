@@ -239,6 +239,49 @@ export default function TeamTab({ isAdmin }: { isAdmin?: boolean }) {
     }
   };
 
+
+  const handleScoreChange = async (memberUid: string, scoreCd: string, newVal: string) => {
+    let numVal = parseInt(newVal, 10);
+    if (isNaN(numVal)) return;
+    if (numVal < 0) numVal = 0;
+    if (numVal > 20) numVal = 20;
+    
+    // Optimistic UI update
+    setMemberScores(prev => {
+      const existing = prev.find(s => s.member_uid === memberUid && s.score_cd === scoreCd);
+      if (existing) {
+        return prev.map(s => (s.member_uid === memberUid && s.score_cd === scoreCd) ? { ...s, score_val: numVal.toString() } : s);
+      } else {
+        return [...prev, { member_uid: memberUid, score_cd: scoreCd, score_val: numVal.toString() }];
+      }
+    });
+
+    try {
+      await api.post('/memberScore/update', {
+        team_uid: 'df743e05-9440-4c1e-bfdb-fa07159ef0c9',
+        member_uid: memberUid,
+        year: '2026',
+        score_cd: scoreCd,
+        score_val: numVal.toString()
+      });
+    } catch (err: any) {
+      if (err.response?.status === 404) {
+        try {
+          await api.post('/memberScore/insert', {
+            team_uid: 'df743e05-9440-4c1e-bfdb-fa07159ef0c9',
+            member_uid: memberUid,
+            year: '2026',
+            score_cd: scoreCd,
+            score_val: numVal.toString()
+          });
+        } catch (e) {
+          console.error(e);
+        }
+      } else {
+        console.error(err);
+      }
+    }
+  };
   return (
     <div style={{ padding: '0px', backgroundColor: '#f9f9f9', minHeight: '100vh', paddingBottom: '70px' }}>
       
@@ -555,7 +598,18 @@ export default function TeamTab({ isAdmin }: { isAdmin?: boolean }) {
                               {memberScoreList.map(score => (
                                 <div key={score.score_cd} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
                                   <span style={{ color: '#888' }}>{getCodeName('score_cd', score.score_cd)}</span>
-                                  <span style={{ fontWeight: 'bold', color: '#333' }}>{score.score_val}</span>
+                                  {isAdmin ? (
+                                    <input 
+                                      type="number" 
+                                      min="0" 
+                                      max="20" 
+                                      value={score.score_val || ''}
+                                      onChange={(e) => handleScoreChange(member.member_uid, score.score_cd, e.target.value)}
+                                      style={{ width: '45px', textAlign: 'right', padding: '2px 4px', borderRadius: '4px', border: '1px solid #ccc', fontSize: '12px' }}
+                                    />
+                                  ) : (
+                                    <span style={{ fontWeight: 'bold', color: '#333' }}>{score.score_val}</span>
+                                  )}
                                 </div>
                               ))}
                             </div>
