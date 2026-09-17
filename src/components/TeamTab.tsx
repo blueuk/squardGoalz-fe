@@ -38,6 +38,7 @@ interface CommonCd {
 export default function TeamTab() {
   const [subTab, setSubTab] = useState<'INFO' | 'SQUAD'>('INFO');
   const [teamInfo, setTeamInfo] = useState<TeamInfo | null>(null);
+  
   const [teamAccounts, setTeamAccounts] = useState<TeamAccount[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
   
@@ -53,6 +54,11 @@ export default function TeamTab() {
 
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState<Partial<TeamInfo>>({});
+
+  // 입금안내 수정 모드 상태
+  const [isPaymentEditing, setIsPaymentEditing] = useState(false);
+  const [editPayments, setEditPayments] = useState<Payment[]>([]);
+  const [editAccounts, setEditAccounts] = useState<TeamAccount[]>([]);
 
   useEffect(() => {
     if (subTab === 'INFO' && !teamInfo) {
@@ -129,6 +135,49 @@ export default function TeamTab() {
   
   const handleCancelClick = () => {
     setIsEditing(false);
+  };
+
+  const handlePaymentEditClick = () => {
+    setEditPayments(JSON.parse(JSON.stringify(payments)));
+    setEditAccounts(JSON.parse(JSON.stringify(teamAccounts)));
+    setIsPaymentEditing(true);
+  };
+
+  const handlePaymentCancelClick = () => {
+    setIsPaymentEditing(false);
+  };
+
+  const handlePaymentSaveClick = async () => {
+    try {
+      for (const p of editPayments) {
+        await api.post('/payment/update', p);
+      }
+      for (const a of editAccounts) {
+        await api.post('/teamAccount/update', a);
+      }
+      setPayments(editPayments);
+      setTeamAccounts(editAccounts);
+      setIsPaymentEditing(false);
+      alert("입금 안내가 수정되었습니다.");
+    } catch (err) {
+      console.error(err);
+      alert("수정에 실패했습니다.");
+    }
+  };
+
+  const updateEditPayment = (idx: number, field: string, value: any) => {
+    const newArr = [...editPayments];
+    newArr[idx] = { ...newArr[idx], [field]: value };
+    setEditPayments(newArr);
+  };
+
+  const updateEditAccount = (seq: number, field: string, value: any) => {
+    const newArr = [...editAccounts];
+    const idx = newArr.findIndex(a => a.team_account_seq === seq);
+    if (idx !== -1) {
+      newArr[idx] = { ...newArr[idx], [field]: value };
+      setEditAccounts(newArr);
+    }
   };
 
   const formatTime = (timeStr?: string) => {
@@ -298,48 +347,102 @@ export default function TeamTab() {
 
             {/* Account Info Card (Dynamic) */}
             <div className="card" style={{ padding: '20px', backgroundColor: '#fff', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
-              <h3 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '15px', color: '#333' }}>💸 입금 안내</h3>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#333', margin: 0 }}>💸 입금 안내</h3>
+                {!isPaymentEditing ? (
+                  <button onClick={handlePaymentEditClick} style={{ padding: '6px 12px', fontSize: '13px', backgroundColor: '#f0f0f0', color: '#333', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
+                    수정
+                  </button>
+                ) : (
+                  <div>
+                    <button onClick={handlePaymentCancelClick} style={{ padding: '6px 12px', fontSize: '13px', backgroundColor: '#fff', color: '#888', border: '1px solid #ddd', borderRadius: '6px', cursor: 'pointer', marginRight: '5px' }}>
+                      취소
+                    </button>
+                    <button onClick={handlePaymentSaveClick} style={{ padding: '6px 12px', fontSize: '13px', backgroundColor: '#3182f6', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
+                      저장
+                    </button>
+                  </div>
+                )}
+              </div>
               
-              {payments.length > 0 ? (
-                payments.map(payment => {
-                  const account = teamAccounts.find(a => a.team_account_seq === payment.team_account_seq);
-                  const bankName = getCodeName('bank_cd', account?.bank_cd) || account?.bank_cd || '알 수 없음';
-                  const paymentName = getCodeName('payment_cd', payment.payment_cd) || (payment.payment_cd === '01' ? '월회비' : '지각비');
-                  
-                  // 스타일 구분 (월회비는 파란색, 그 외(지각비 등)는 빨간색)
-                  const isMonthly = payment.payment_cd === '01';
-                  const primaryColor = isMonthly ? '#3182f6' : '#f04452';
+              {!isPaymentEditing ? (
+                payments.length > 0 ? (
+                  payments.map(payment => {
+                    const account = teamAccounts.find(a => a.team_account_seq === payment.team_account_seq);
+                    const bankName = getCodeName('bank_cd', account?.bank_cd) || account?.bank_cd || '알 수 없음';
+                    const paymentName = getCodeName('payment_cd', payment.payment_cd) || (payment.payment_cd === '01' ? '월회비' : '지각비');
+                    
+                    // 스타일 구분 (월회비는 파란색, 그 외(지각비 등)는 빨간색)
+                    const isMonthly = payment.payment_cd === '01';
+                    const primaryColor = isMonthly ? '#3182f6' : '#f04452';
 
-                  return (
-                    <div key={payment.payment_cd} style={{ marginBottom: '20px' }}>
-                      <div style={{ fontWeight: 'bold', color: primaryColor, marginBottom: '5px' }}>{paymentName} 안내</div>
-                      <div style={{ fontSize: '14px', color: '#555', marginBottom: '8px' }}>
-                        {Number(payment.amount).toLocaleString()}원
-                        {isMonthly && <><br />(상/하반기 일시납 각 6만원)</>}
-                      </div>
-                      
-                      {account && (
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#f4f4f4', padding: '10px 15px', borderRadius: '8px' }}>
-                          <div style={{ fontSize: '14px', color: '#333' }}>
-                            <strong>{bankName}</strong> {account.account_enc}<br />
-                            <span style={{ fontSize: '12px', color: '#888' }}>
-                              예금주: {isMonthly ? '이진범' : '강승지'}
-                            </span>
-                          </div>
-                          <button 
-                            onClick={() => copyToClipboard(account.account_enc)}
-                            style={{ padding: '6px 12px', fontSize: '12px', backgroundColor: primaryColor, color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}
-                          >
-                            복사
-                          </button>
+                    return (
+                      <div key={payment.payment_cd} style={{ marginBottom: '20px' }}>
+                        <div style={{ fontWeight: 'bold', color: primaryColor, marginBottom: '5px' }}>{paymentName} 안내</div>
+                        <div style={{ fontSize: '14px', color: '#555', marginBottom: '8px' }}>
+                          {Number(payment.amount).toLocaleString()}원
+                          {isMonthly && <><br />(상/하반기 일시납 각 6만원)</>}
                         </div>
-                      )}
-                    </div>
-                  );
-                })
+                        
+                        {account && (
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#f4f4f4', padding: '10px 15px', borderRadius: '8px' }}>
+                            <div style={{ fontSize: '14px', color: '#333' }}>
+                              <strong>{bankName}</strong> {account.account_enc}<br />
+                              <span style={{ fontSize: '12px', color: '#888' }}>
+                                예금주: {isMonthly ? '이진범' : '강승지'}
+                              </span>
+                            </div>
+                            <button 
+                              onClick={() => copyToClipboard(account.account_enc)}
+                              style={{ padding: '6px 12px', fontSize: '12px', backgroundColor: primaryColor, color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}
+                            >
+                              복사
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div style={{ fontSize: '14px', color: '#999', textAlign: 'center', padding: '20px 0' }}>
+                    등록된 입금 안내가 없습니다.
+                  </div>
+                )
               ) : (
-                <div style={{ fontSize: '14px', color: '#999', textAlign: 'center', padding: '20px 0' }}>
-                  등록된 입금 안내가 없습니다.
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  {editPayments.map((payment, idx) => {
+                    const account = editAccounts.find(a => a.team_account_seq === payment.team_account_seq);
+                    const isMonthly = payment.payment_cd === '01';
+                    
+                    return (
+                      <div key={idx} style={{ padding: '15px', border: '1px solid #ddd', borderRadius: '8px', backgroundColor: '#fafafa' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+                          <span style={{ fontWeight: 'bold', fontSize: '14px' }}>종류</span>
+                          <select value={payment.payment_cd} onChange={e => updateEditPayment(idx, 'payment_cd', e.target.value)} style={{ flex: 1, marginLeft: '10px', padding: '5px', borderRadius: '4px', border: '1px solid #ccc' }}>
+                            {codeLists.payment_cd?.map(c => <option key={c.code} value={c.code}>{c.code_name}</option>)}
+                          </select>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+                          <span style={{ fontWeight: 'bold', fontSize: '14px' }}>금액</span>
+                          <input type="number" value={payment.amount} onChange={e => updateEditPayment(idx, 'amount', Number(e.target.value))} style={{ flex: 1, marginLeft: '10px', padding: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
+                        </div>
+                        {account && (
+                          <>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+                              <span style={{ fontWeight: 'bold', fontSize: '14px' }}>은행</span>
+                              <select value={account.bank_cd} onChange={e => updateEditAccount(account.team_account_seq, 'bank_cd', e.target.value)} style={{ flex: 1, marginLeft: '10px', padding: '5px', borderRadius: '4px', border: '1px solid #ccc' }}>
+                                {codeLists.bank_cd?.map(c => <option key={c.code} value={c.code}>{c.code_name}</option>)}
+                              </select>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                              <span style={{ fontWeight: 'bold', fontSize: '14px' }}>계좌</span>
+                              <input type="text" value={account.account_enc} onChange={e => updateEditAccount(account.team_account_seq, 'account_enc', e.target.value)} style={{ flex: 1, marginLeft: '10px', padding: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
