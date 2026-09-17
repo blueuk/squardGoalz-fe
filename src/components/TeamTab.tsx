@@ -32,6 +32,7 @@ interface Payment {
 interface CommonCd {
   code: string;
   code_name: string;
+  reference_1?: string;
 }
 
 export default function TeamTab() {
@@ -40,14 +41,14 @@ export default function TeamTab() {
   const [teamAccounts, setTeamAccounts] = useState<TeamAccount[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
   
-  // 공통 코드 매핑
-  const [codes, setCodes] = useState<Record<string, Record<string, string>>>({
-    bank_cd: {},
-    payment_cd: {},
-    region_cd: {},
-    level_cd: {},
-    day_cd: {},
-    gender_cd: {}
+  // 공통 코드 원본 배열 저장 (Select 박스용)
+  const [codeLists, setCodeLists] = useState<Record<string, CommonCd[]>>({
+    bank_cd: [],
+    payment_cd: [],
+    region_cd: [],
+    level_cd: [],
+    day_cd: [],
+    gender_cd: []
   });
 
   const [isEditing, setIsEditing] = useState(false);
@@ -60,15 +61,12 @@ export default function TeamTab() {
       
       Promise.all(groupCds.map(g => api.get(`/common_cd/search?group_cd=${g}`)))
         .then(results => {
-          const newCodes: Record<string, Record<string, string>> = {};
+          const newCodeLists: Record<string, CommonCd[]> = {};
           results.forEach((res, i) => {
             const group = groupCds[i];
-            newCodes[group] = {};
-            res.data.forEach((item: CommonCd) => {
-              newCodes[group][item.code] = item.code_name;
-            });
+            newCodeLists[group] = res.data;
           });
-          setCodes(prev => ({ ...prev, ...newCodes }));
+          setCodeLists(prev => ({ ...prev, ...newCodeLists }));
         })
         .catch(console.error);
 
@@ -137,6 +135,14 @@ export default function TeamTab() {
     if (!timeStr || timeStr.length !== 4) return timeStr || '';
     return `${timeStr.substring(0,2)}:${timeStr.substring(2,4)}`;
   };
+  
+  // 헬퍼: 코드로 이름 찾기 (level_cd면 reference_1 우선 사용)
+  const getCodeName = (group: string, codeVal?: string, useRef1?: boolean) => {
+    if (!codeVal) return '';
+    const item = codeLists[group]?.find(c => c.code === codeVal);
+    if (!item) return codeVal;
+    return (useRef1 && item.reference_1) ? item.reference_1 : item.code_name;
+  };
 
   return (
     <div style={{ padding: '0px', backgroundColor: '#f9f9f9', minHeight: '100vh', paddingBottom: '70px' }}>
@@ -197,26 +203,52 @@ export default function TeamTab() {
                       <span style={{ color: '#888', width: '70px' }}>팀명</span>
                       <input type="text" value={editForm.teamname || ''} onChange={e => setEditForm({...editForm, teamname: e.target.value})} style={{ flex: 1, padding: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
                     </div>
+                    
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ color: '#888', width: '70px' }}>지역코드</span>
-                      <input type="text" value={editForm.region_cd || ''} onChange={e => setEditForm({...editForm, region_cd: e.target.value})} style={{ flex: 1, padding: '5px', borderRadius: '4px', border: '1px solid #ccc' }} placeholder="공통코드 입력 (예: 01)" />
+                      <span style={{ color: '#888', width: '70px' }}>지역</span>
+                      <select value={editForm.region_cd || ''} onChange={e => setEditForm({...editForm, region_cd: e.target.value})} style={{ flex: 1, padding: '5px', borderRadius: '4px', border: '1px solid #ccc', backgroundColor: '#fff' }}>
+                        <option value="">선택</option>
+                        {codeLists.region_cd?.map(c => (
+                          <option key={c.code} value={c.code}>{c.code_name}</option>
+                        ))}
+                      </select>
                     </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ color: '#888', width: '70px' }}>활동요일</span>
+                      <select value={editForm.day_cd || ''} onChange={e => setEditForm({...editForm, day_cd: e.target.value})} style={{ flex: 1, padding: '5px', borderRadius: '4px', border: '1px solid #ccc', backgroundColor: '#fff' }}>
+                        <option value="">선택</option>
+                        {codeLists.day_cd?.map(c => (
+                          <option key={c.code} value={c.code}>{c.code_name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span style={{ color: '#888', width: '70px' }}>주구장</span>
                       <input type="text" value={editForm.location || ''} onChange={e => setEditForm({...editForm, location: e.target.value})} style={{ flex: 1, padding: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
                     </div>
+                    
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span style={{ color: '#888', width: '70px' }}>시작시간</span>
                       <input type="text" value={editForm.start_time || ''} onChange={e => setEditForm({...editForm, start_time: e.target.value})} style={{ flex: 1, padding: '5px', borderRadius: '4px', border: '1px solid #ccc' }} placeholder="HHMM" />
                     </div>
+                    
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span style={{ color: '#888', width: '70px' }}>종료시간</span>
                       <input type="text" value={editForm.end_time || ''} onChange={e => setEditForm({...editForm, end_time: e.target.value})} style={{ flex: 1, padding: '5px', borderRadius: '4px', border: '1px solid #ccc' }} placeholder="HHMM" />
                     </div>
+                    
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ color: '#888', width: '70px' }}>실력코드</span>
-                      <input type="text" value={editForm.level_cd || ''} onChange={e => setEditForm({...editForm, level_cd: e.target.value})} style={{ flex: 1, padding: '5px', borderRadius: '4px', border: '1px solid #ccc' }} placeholder="공통코드 입력" />
+                      <span style={{ color: '#888', width: '70px' }}>실력</span>
+                      <select value={editForm.level_cd || ''} onChange={e => setEditForm({...editForm, level_cd: e.target.value})} style={{ flex: 1, padding: '5px', borderRadius: '4px', border: '1px solid #ccc', backgroundColor: '#fff' }}>
+                        <option value="">선택</option>
+                        {codeLists.level_cd?.map(c => (
+                          <option key={c.code} value={c.code}>{c.code_name} {c.reference_1 ? `(${c.reference_1})` : ''}</option>
+                        ))}
+                      </select>
                     </div>
+                    
                     <div style={{ display: 'flex', flexDirection: 'column' }}>
                       <span style={{ color: '#888', marginBottom: '5px' }}>코멘트</span>
                       <textarea value={editForm.comment || ''} onChange={e => setEditForm({...editForm, comment: e.target.value})} style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ccc', minHeight: '60px' }} />
@@ -230,7 +262,11 @@ export default function TeamTab() {
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                       <span style={{ color: '#888' }}>지역</span>
-                      <span style={{ fontWeight: 'bold', color: '#333' }}>{codes.region_cd[teamInfo.region_cd] || teamInfo.region_cd}</span>
+                      <span style={{ fontWeight: 'bold', color: '#333' }}>{getCodeName('region_cd', teamInfo.region_cd)}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: '#888' }}>활동요일</span>
+                      <span style={{ fontWeight: 'bold', color: '#333' }}>{getCodeName('day_cd', teamInfo.day_cd)}</span>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                       <span style={{ color: '#888' }}>주구장</span>
@@ -244,7 +280,7 @@ export default function TeamTab() {
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                       <span style={{ color: '#888' }}>실력</span>
-                      <span style={{ fontWeight: 'bold', color: '#333' }}>{codes.level_cd[teamInfo.level_cd] || teamInfo.level_cd}</span>
+                      <span style={{ fontWeight: 'bold', color: '#333' }}>{getCodeName('level_cd', teamInfo.level_cd, true)}</span>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                       <span style={{ color: '#888' }}>회원 수</span>
@@ -267,8 +303,8 @@ export default function TeamTab() {
               {payments.length > 0 ? (
                 payments.map(payment => {
                   const account = teamAccounts.find(a => a.team_account_seq === payment.team_account_seq);
-                  const bankName = account ? (codes.bank_cd[account.bank_cd] || account.bank_cd) : '알 수 없음';
-                  const paymentName = codes.payment_cd[payment.payment_cd] || (payment.payment_cd === '01' ? '월회비' : '지각비');
+                  const bankName = getCodeName('bank_cd', account?.bank_cd) || account?.bank_cd || '알 수 없음';
+                  const paymentName = getCodeName('payment_cd', payment.payment_cd) || (payment.payment_cd === '01' ? '월회비' : '지각비');
                   
                   // 스타일 구분 (월회비는 파란색, 그 외(지각비 등)는 빨간색)
                   const isMonthly = payment.payment_cd === '01';
