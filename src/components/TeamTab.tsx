@@ -423,7 +423,7 @@ export default function TeamTab() {
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
                           <span style={{ fontWeight: 'bold', fontSize: '14px' }}>금액</span>
-                          <input type="number" value={payment.amount} onChange={e => updateEditPayment(idx, 'amount', Number(e.target.value))} style={{ flex: 1, marginLeft: '10px', padding: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
+                          <input type="number" value={Number(payment.amount).toString()} onChange={e => updateEditPayment(idx, 'amount', Number(e.target.value))} style={{ flex: 1, marginLeft: '10px', padding: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
                         </div>
                         {account && (
                           <>
