@@ -346,7 +346,7 @@ function App() {
   if (isRegister) {
     return (
       <div style={{ maxWidth: '400px', margin: '100px auto', textAlign: 'center' }}>
-        <h2>⚽ 스쿼드 골츠 회원가입</h2>
+        <h2>⚽ 풋고추FC 회원가입</h2>
         <p>서비스 이용을 위해 추가 정보를 입력해주세요.</p>
         <form onSubmit={handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginTop: '20px' }}>
           <input type="hidden" name="userid" value={registerUserId || ''} />
