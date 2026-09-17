@@ -9,6 +9,7 @@ import footerTeam from './img/footerTeam.png';
 import footerMy from './img/footerMy.png';
 import './App.css';
 import CalendarTab from './components/CalendarTab';
+import TeamTab from './components/TeamTab';
 
 interface User {
   userid: string;
@@ -554,11 +555,7 @@ function App() {
               <CalendarTab teamUid="df743e05-9440-4c1e-bfdb-fa07159ef0c9" members={rates} isAdmin={user?.auth_cd === '01'} />
             )}
 
-            {activeTab === 'TEAM' && (
-              <div style={{ textAlign: 'center', padding: '50px 0' }}>
-                <h3 style={{ color: '#666' }}>🏆 기록 메뉴 준비 중입니다.</h3>
-              </div>
-            )}
+            {activeTab === 'TEAM' && <TeamTab />}
 
             {activeTab === 'MY' && user && (
               <div className="card" style={{ textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '15px' }}>
