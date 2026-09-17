@@ -27,8 +27,8 @@ interface Payment {
 }
 
 interface CommonCd {
-  code_cd: string;
-  code_nm: string;
+  code: string;
+  code_name: string;
 }
 
 export default function TeamTab() {
@@ -58,17 +58,17 @@ export default function TeamTab() {
         });
 
       // 3. 공통 코드(은행코드, 결제종류코드) 가져오기
-      api.get('/common_cd/search?group_cd=BANK_CD')
+      api.get('/common_cd/search?group_cd=bank_cd')
         .then(res => {
           const mapping: Record<string, string> = {};
-          res.data.forEach((item: CommonCd) => mapping[item.code_cd] = item.code_nm);
+          res.data.forEach((item: CommonCd) => mapping[item.code] = item.code_name);
           setBankCodes(mapping);
         }).catch(console.error);
         
-      api.get('/common_cd/search?group_cd=PAYMENT_CD')
+      api.get('/common_cd/search?group_cd=payment_cd')
         .then(res => {
           const mapping: Record<string, string> = {};
-          res.data.forEach((item: CommonCd) => mapping[item.code_cd] = item.code_nm);
+          res.data.forEach((item: CommonCd) => mapping[item.code] = item.code_name);
           setPaymentCodes(mapping);
         }).catch(console.error);
     }
