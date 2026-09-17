@@ -3,13 +3,16 @@ import api from '../api';
 
 interface TeamInfo {
   team_uid: string;
-  team_nm: string;
+  teamname: string;
+  region_cd: string;
   location: string;
-  play_location: string;
-  play_time: string;
-  skill_level: string;
+  start_time: string;
+  end_time: string;
+  day_cd: string;
+  level_cd: string;
+  gender_cd: string;
   comment: string;
-  member_count: number;
+  member_count?: number;
 }
 
 interface TeamAccount {
@@ -36,19 +39,57 @@ export default function TeamTab() {
   const [teamInfo, setTeamInfo] = useState<TeamInfo | null>(null);
   const [teamAccounts, setTeamAccounts] = useState<TeamAccount[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
-  const [bankCodes, setBankCodes] = useState<Record<string, string>>({});
-  const [paymentCodes, setPaymentCodes] = useState<Record<string, string>>({});
+  
+  // 공통 코드 매핑
+  const [codes, setCodes] = useState<Record<string, Record<string, string>>>({
+    bank_cd: {},
+    payment_cd: {},
+    region_cd: {},
+    level_cd: {},
+    day_cd: {},
+    gender_cd: {}
+  });
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState<Partial<TeamInfo>>({});
 
   useEffect(() => {
     if (subTab === 'INFO' && !teamInfo) {
-      // 1. 팀 정보 가져오기
+      // 1. 공통 코드 모두 가져오기
+      const groupCds = ['bank_cd', 'payment_cd', 'region_cd', 'level_cd', 'day_cd', 'gender_cd'];
+      
+      Promise.all(groupCds.map(g => api.get(`/common_cd/search?group_cd=${g}`)))
+        .then(results => {
+          const newCodes: Record<string, Record<string, string>> = {};
+          results.forEach((res, i) => {
+            const group = groupCds[i];
+            newCodes[group] = {};
+            res.data.forEach((item: CommonCd) => {
+              newCodes[group][item.code] = item.code_name;
+            });
+          });
+          setCodes(prev => ({ ...prev, ...newCodes }));
+        })
+        .catch(console.error);
+
+      // 2. 팀 정보 가져오기
       api.get('/team_info/search?use_yn=Y')
         .then((res) => {
           if (res.data && res.data.length > 0) {
             const team = res.data[0];
-            setTeamInfo(team);
             
-            // 2. 해당 팀의 계좌 정보 및 결제 설정 가져오기
+            // 3. 멤버 수 가져오기
+            api.get(`/team_member/search?team_uid=${team.team_uid}`)
+              .then(memberRes => {
+                team.member_count = memberRes.data.length;
+                setTeamInfo(team);
+              })
+              .catch(() => {
+                team.member_count = 0;
+                setTeamInfo(team);
+              });
+            
+            // 4. 계좌 정보 및 결제 가져오기
             api.get(`/teamAccount/search?team_uid=${team.team_uid}`).then(r => setTeamAccounts(r.data)).catch(console.error);
             api.get(`/payment/search?team_uid=${team.team_uid}`).then(r => setPayments(r.data)).catch(console.error);
           }
@@ -56,21 +97,6 @@ export default function TeamTab() {
         .catch((err) => {
           console.error("팀 정보를 불러오는데 실패했습니다.", err);
         });
-
-      // 3. 공통 코드(은행코드, 결제종류코드) 가져오기
-      api.get('/common_cd/search?group_cd=bank_cd')
-        .then(res => {
-          const mapping: Record<string, string> = {};
-          res.data.forEach((item: CommonCd) => mapping[item.code] = item.code_name);
-          setBankCodes(mapping);
-        }).catch(console.error);
-        
-      api.get('/common_cd/search?group_cd=payment_cd')
-        .then(res => {
-          const mapping: Record<string, string> = {};
-          res.data.forEach((item: CommonCd) => mapping[item.code] = item.code_name);
-          setPaymentCodes(mapping);
-        }).catch(console.error);
     }
   }, [subTab, teamInfo]);
 
@@ -81,6 +107,35 @@ export default function TeamTab() {
       console.error("복사 실패:", err);
       alert("복사에 실패했습니다.");
     });
+  };
+
+  const handleEditClick = () => {
+    if (teamInfo) {
+      setEditForm(teamInfo);
+      setIsEditing(true);
+    }
+  };
+
+  const handleSaveClick = async () => {
+    if (!teamInfo || !editForm.team_uid) return;
+    try {
+      await api.post('/team_info/update', editForm);
+      setTeamInfo({ ...teamInfo, ...editForm });
+      setIsEditing(false);
+      alert("수정되었습니다.");
+    } catch (err) {
+      console.error(err);
+      alert("수정에 실패했습니다.");
+    }
+  };
+  
+  const handleCancelClick = () => {
+    setIsEditing(false);
+  };
+
+  const formatTime = (timeStr?: string) => {
+    if (!timeStr || timeStr.length !== 4) return timeStr || '';
+    return `${timeStr.substring(0,2)}:${timeStr.substring(2,4)}`;
   };
 
   return (
@@ -117,37 +172,89 @@ export default function TeamTab() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
             {/* Team Info Card */}
             <div className="card" style={{ padding: '20px', backgroundColor: '#fff', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
-              <h3 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '15px', color: '#333' }}>⚽ 팀 정보</h3>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#333', margin: 0 }}>⚽ 팀 정보</h3>
+                {!isEditing ? (
+                  <button onClick={handleEditClick} style={{ padding: '6px 12px', fontSize: '13px', backgroundColor: '#f0f0f0', color: '#333', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
+                    수정
+                  </button>
+                ) : (
+                  <div>
+                    <button onClick={handleCancelClick} style={{ padding: '6px 12px', fontSize: '13px', backgroundColor: '#fff', color: '#888', border: '1px solid #ddd', borderRadius: '6px', cursor: 'pointer', marginRight: '5px' }}>
+                      취소
+                    </button>
+                    <button onClick={handleSaveClick} style={{ padding: '6px 12px', fontSize: '13px', backgroundColor: '#3182f6', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
+                      저장
+                    </button>
+                  </div>
+                )}
+              </div>
+              
               {teamInfo ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '14px', color: '#555' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: '#888' }}>팀명</span>
-                    <span style={{ fontWeight: 'bold', color: '#333' }}>{teamInfo.team_nm}</span>
+                isEditing ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '14px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ color: '#888', width: '70px' }}>팀명</span>
+                      <input type="text" value={editForm.teamname || ''} onChange={e => setEditForm({...editForm, teamname: e.target.value})} style={{ flex: 1, padding: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ color: '#888', width: '70px' }}>지역코드</span>
+                      <input type="text" value={editForm.region_cd || ''} onChange={e => setEditForm({...editForm, region_cd: e.target.value})} style={{ flex: 1, padding: '5px', borderRadius: '4px', border: '1px solid #ccc' }} placeholder="공통코드 입력 (예: 01)" />
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ color: '#888', width: '70px' }}>주구장</span>
+                      <input type="text" value={editForm.location || ''} onChange={e => setEditForm({...editForm, location: e.target.value})} style={{ flex: 1, padding: '5px', borderRadius: '4px', border: '1px solid #ccc' }} />
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ color: '#888', width: '70px' }}>시작시간</span>
+                      <input type="text" value={editForm.start_time || ''} onChange={e => setEditForm({...editForm, start_time: e.target.value})} style={{ flex: 1, padding: '5px', borderRadius: '4px', border: '1px solid #ccc' }} placeholder="HHMM" />
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ color: '#888', width: '70px' }}>종료시간</span>
+                      <input type="text" value={editForm.end_time || ''} onChange={e => setEditForm({...editForm, end_time: e.target.value})} style={{ flex: 1, padding: '5px', borderRadius: '4px', border: '1px solid #ccc' }} placeholder="HHMM" />
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ color: '#888', width: '70px' }}>실력코드</span>
+                      <input type="text" value={editForm.level_cd || ''} onChange={e => setEditForm({...editForm, level_cd: e.target.value})} style={{ flex: 1, padding: '5px', borderRadius: '4px', border: '1px solid #ccc' }} placeholder="공통코드 입력" />
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <span style={{ color: '#888', marginBottom: '5px' }}>코멘트</span>
+                      <textarea value={editForm.comment || ''} onChange={e => setEditForm({...editForm, comment: e.target.value})} style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ccc', minHeight: '60px' }} />
+                    </div>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: '#888' }}>지역</span>
-                    <span style={{ fontWeight: 'bold', color: '#333' }}>{teamInfo.location}</span>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '14px', color: '#555' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: '#888' }}>팀명</span>
+                      <span style={{ fontWeight: 'bold', color: '#333' }}>{teamInfo.teamname}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: '#888' }}>지역</span>
+                      <span style={{ fontWeight: 'bold', color: '#333' }}>{codes.region_cd[teamInfo.region_cd] || teamInfo.region_cd}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: '#888' }}>주구장</span>
+                      <span style={{ fontWeight: 'bold', color: '#333' }}>{teamInfo.location}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: '#888' }}>운동 시간</span>
+                      <span style={{ fontWeight: 'bold', color: '#333' }}>
+                        {formatTime(teamInfo.start_time)} ~ {formatTime(teamInfo.end_time)}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: '#888' }}>실력</span>
+                      <span style={{ fontWeight: 'bold', color: '#333' }}>{codes.level_cd[teamInfo.level_cd] || teamInfo.level_cd}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: '#888' }}>회원 수</span>
+                      <span style={{ fontWeight: 'bold', color: '#333' }}>{teamInfo.member_count}명</span>
+                    </div>
+                    <div style={{ marginTop: '10px', padding: '10px', backgroundColor: '#f4f4f4', borderRadius: '8px', fontSize: '13px', color: '#666' }}>
+                      "{teamInfo.comment}"
+                    </div>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: '#888' }}>주구장</span>
-                    <span style={{ fontWeight: 'bold', color: '#333' }}>{teamInfo.play_location}</span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: '#888' }}>운동 시간</span>
-                    <span style={{ fontWeight: 'bold', color: '#333' }}>{teamInfo.play_time}</span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: '#888' }}>실력</span>
-                    <span style={{ fontWeight: 'bold', color: '#333' }}>{teamInfo.skill_level}</span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: '#888' }}>회원 수</span>
-                    <span style={{ fontWeight: 'bold', color: '#333' }}>{teamInfo.member_count}명</span>
-                  </div>
-                  <div style={{ marginTop: '10px', padding: '10px', backgroundColor: '#f4f4f4', borderRadius: '8px', fontSize: '13px', color: '#666' }}>
-                    "{teamInfo.comment}"
-                  </div>
-                </div>
+                )
               ) : (
                 <div style={{ textAlign: 'center', color: '#999', padding: '20px 0' }}>팀 정보를 불러오는 중입니다...</div>
               )}
@@ -160,8 +267,8 @@ export default function TeamTab() {
               {payments.length > 0 ? (
                 payments.map(payment => {
                   const account = teamAccounts.find(a => a.team_account_seq === payment.team_account_seq);
-                  const bankName = account ? (bankCodes[account.bank_cd] || account.bank_cd) : '알 수 없음';
-                  const paymentName = paymentCodes[payment.payment_cd] || (payment.payment_cd === '01' ? '월회비' : '지각비');
+                  const bankName = account ? (codes.bank_cd[account.bank_cd] || account.bank_cd) : '알 수 없음';
+                  const paymentName = codes.payment_cd[payment.payment_cd] || (payment.payment_cd === '01' ? '월회비' : '지각비');
                   
                   // 스타일 구분 (월회비는 파란색, 그 외(지각비 등)는 빨간색)
                   const isMonthly = payment.payment_cd === '01';
