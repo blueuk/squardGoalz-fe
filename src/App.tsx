@@ -5,7 +5,7 @@ import letterLogo from './img/letterLogo.png';
 import footerHome from './img/footerHome.png';
 import footerVideo from './img/footerVideo.png';
 import footerSchedule from './img/footerSchedule.png';
-import footerRecord from './img/footerRecord.png';
+import footerTeam from './img/footerTeam.png';
 import footerMy from './img/footerMy.png';
 import './App.css';
 import CalendarTab from './components/CalendarTab';
@@ -38,7 +38,7 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [rates, setRates] = useState<Rate[]>([]);
   const [myAttendCount, setMyAttendCount] = useState<number>(0);
-  const [activeTab, setActiveTab] = useState<'HOME' | 'VIDEO' | 'SCHEDULE' | 'RECORD' | 'MY'>('HOME');
+  const [activeTab, setActiveTab] = useState<'HOME' | 'VIDEO' | 'SCHEDULE' | 'TEAM' | 'MY'>('HOME');
   const ITEMS_PER_PAGE = 5;
 
   // 롤링(슬라이드) 상태 관리
@@ -554,7 +554,7 @@ function App() {
               <CalendarTab teamUid="df743e05-9440-4c1e-bfdb-fa07159ef0c9" members={rates} isAdmin={user?.auth_cd === '01'} />
             )}
 
-            {activeTab === 'RECORD' && (
+            {activeTab === 'TEAM' && (
               <div style={{ textAlign: 'center', padding: '50px 0' }}>
                 <h3 style={{ color: '#666' }}>🏆 기록 메뉴 준비 중입니다.</h3>
               </div>
@@ -720,14 +720,14 @@ function App() {
             </button>
 
             <button 
-              onClick={() => setActiveTab('RECORD')}
+              onClick={() => setActiveTab('TEAM')}
               style={{ 
               flex: 1, height: '100%', border: 'none', backgroundColor: 'transparent', 
-              cursor: 'pointer', opacity: activeTab === 'RECORD' ? 1 : 0.4,
+              cursor: 'pointer', opacity: activeTab === 'TEAM' ? 1 : 0.4,
               display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '2px'
             }}>
-              <img src={footerRecord} alt="Record" style={{ width: '20px', height: '20px', objectFit: 'contain' }} />
-              <span style={{ fontSize: 'calc(9px * var(--scale-factor, 1))', fontWeight: activeTab === 'RECORD' ? 'bold' : 'normal', color: '#333' }}>기록</span>
+              <img src={footerTeam} alt="Team" style={{ width: '20px', height: '20px', objectFit: 'contain' }} />
+              <span style={{ fontSize: 'calc(9px * var(--scale-factor, 1))', fontWeight: activeTab === 'TEAM' ? 'bold' : 'normal', color: '#333' }}>팀관리</span>
             </button>
 
             <button 
