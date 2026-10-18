@@ -544,7 +544,7 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members, isAdmin = f
                 className="vote-confirm-btn"
                 style={{ flex: 1, padding: '12px', backgroundColor: '#191f28', color: '#fff' }}
               >
-                {isCanceling ? '처리 중...' : 'CONFIRM'}
+                {isCanceling ? '처리 중...' : '경기취소'}
               </button>
             </div>
           </div>
