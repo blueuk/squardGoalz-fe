@@ -46,6 +46,18 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members, isAdmin = f
   const [isResettingVotes, setIsResettingVotes] = useState(false);
   const [showDeleteScheduleModal, setShowDeleteScheduleModal] = useState(false);
   const [isDeletingSchedule, setIsDeletingSchedule] = useState(false);
+  const [statusOptions, setStatusOptions] = useState<any[]>([]);
+
+  const fetchStatusOptions = async () => {
+    try {
+      const res = await api.get('/common_cd/search', { params: { group_cd: 'status_cd' } });
+      if (Array.isArray(res.data)) {
+        setStatusOptions(res.data);
+      }
+    } catch (e) {
+      console.error('Failed to fetch status options', e);
+    }
+  };
 
   const fetchLocations = async () => {
     try {
@@ -106,6 +118,7 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members, isAdmin = f
   useEffect(() => {
     fetchSchedules(true);
     fetchLocations();
+    fetchStatusOptions();
   }, [teamUid]);
   
   useEffect(() => {
@@ -392,6 +405,25 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members, isAdmin = f
     }
   };
 
+  const getStatusLabel = (member: any) => {
+    if (member?.code_name) return member.code_name;
+    const found = statusOptions.find(opt => opt.code === member?.status_cd);
+    if (found) return found.code_name;
+    if (member?.status_cd === '01') return '활동';
+    if (member?.status_cd === '02') return '부상';
+    if (member?.status_cd === '03') return '휴식';
+    return '활동';
+  };
+
+  const getStatusBadgeStyle = (statusCd?: string) => {
+    if (statusCd === '02') {
+      return { bgColor: '#fce8e6', color: '#c5221f' };
+    } else if (statusCd === '03') {
+      return { bgColor: '#f1f3f4', color: '#5f6368' };
+    }
+    return { bgColor: '#e6f4ea', color: '#137333' };
+  };
+
   const renderMemberChips = (voteList: any[]) => {
     return (
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '8px' }}>
@@ -400,9 +432,8 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members, isAdmin = f
           if (!m) return null;
           const name = m.member_name;
           
-          let dotColor = '#2ecc71'; // 기본: 활동 (초록)
-          if (m.status_cd === '02') dotColor = '#f1c40f'; // 부상 (노랑)
-          else if (m.status_cd === '03') dotColor = '#e74c3c'; // 휴식 (빨강)
+          const statusText = getStatusLabel(m);
+          const { bgColor, color } = getStatusBadgeStyle(m.status_cd);
           
           const isSelected = selectedMembers.includes(v.member_uid);
           
@@ -419,7 +450,7 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members, isAdmin = f
               }}
               style={{
                 display: 'flex', alignItems: 'center', gap: '6px',
-                padding: '6px 12px',
+                padding: '6px 10px',
                 backgroundColor: isSelected ? 'var(--toss-light-blue)' : '#f2f4f6',
                 borderRadius: '20px',
                 fontSize: 'calc(13px * var(--scale-factor, 1))',
@@ -429,8 +460,18 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members, isAdmin = f
                 transition: 'all 0.2s'
               }}
             >
-              <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: dotColor }}></span>
-              {name}
+              <span>{name}</span>
+              <span style={{
+                backgroundColor: bgColor,
+                color: color,
+                padding: '2px 6px',
+                borderRadius: '4px',
+                fontSize: 'calc(10px * var(--scale-factor, 1))',
+                fontWeight: 'bold',
+                lineHeight: 1
+              }}>
+                {statusText}
+              </span>
             </div>
           );
         })}
