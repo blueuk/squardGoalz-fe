@@ -32,6 +32,8 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members, isAdmin = f
   const [isEditMode, setIsEditMode] = useState(false);
   const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
   const [votes, setVotes] = useState<any[]>([]);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [isCanceling, setIsCanceling] = useState(false);
 
   const fetchLocations = async () => {
     try {
@@ -198,8 +200,13 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members, isAdmin = f
     }
   };
 
-  const handleCancelMatch = async () => {
-    if (!window.confirm("정말 경기를 취소하시겠습니까?\\n모든 참여자의 투표가 '미진행'으로 변경됩니다.")) return;
+  const handleCancelMatch = () => {
+    setShowCancelModal(true);
+  };
+
+  const handleConfirmCancelMatch = async () => {
+    if (isCanceling) return;
+    setIsCanceling(true);
     try {
       await Promise.all(votes.map(v => 
         api.post('/vote/update', {
@@ -211,9 +218,12 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members, isAdmin = f
       ));
       setSelectedMembers([]);
       fetchVotesLocal(selectedSchedule.vote_seq);
+      setShowCancelModal(false);
       alert('경기가 취소 처리되었습니다.');
     } catch (e) {
       alert('상태 변경에 실패했습니다.');
+    } finally {
+      setIsCanceling(false);
     }
   };
 
@@ -345,11 +355,35 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members, isAdmin = f
           {isEditMode && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderTop: '1px solid #eee', paddingTop: '20px' }}>
               <div style={{ display: 'flex', gap: '8px' }}>
-                <button onClick={() => handleBulkVoteChange('02')} style={{ flex: 1, padding: '10px', backgroundColor: 'var(--toss-blue)', color: '#fff', border: 'none', borderRadius: '8px', fontSize: 'calc(13px * var(--scale-factor, 1))', fontWeight: 'bold' }}>참석</button>
-                <button onClick={() => handleBulkVoteChange('03')} style={{ flex: 1, padding: '10px', backgroundColor: 'var(--toss-red)', color: '#fff', border: 'none', borderRadius: '8px', fontSize: 'calc(13px * var(--scale-factor, 1))', fontWeight: 'bold' }}>불참</button>
-                <button onClick={() => handleBulkVoteChange('01')} style={{ flex: 1, padding: '10px', backgroundColor: 'var(--toss-gray)', color: '#fff', border: 'none', borderRadius: '8px', fontSize: 'calc(13px * var(--scale-factor, 1))', fontWeight: 'bold' }}>미투표</button>
+                <button 
+                  onClick={() => handleBulkVoteChange('02')} 
+                  className="vote-action-btn attend"
+                  style={{ flex: 1, padding: '10px' }}
+                >
+                  참석
+                </button>
+                <button 
+                  onClick={() => handleBulkVoteChange('03')} 
+                  className="vote-action-btn absent"
+                  style={{ flex: 1, padding: '10px' }}
+                >
+                  불참
+                </button>
+                <button 
+                  onClick={() => handleBulkVoteChange('01')} 
+                  className="vote-action-btn no-vote"
+                  style={{ flex: 1, padding: '10px' }}
+                >
+                  미투표
+                </button>
               </div>
-              <button onClick={handleCancelMatch} style={{ width: '100%', padding: '10px', backgroundColor: '#191f28', color: '#fff', border: 'none', borderRadius: '8px', fontSize: 'calc(13px * var(--scale-factor, 1))', fontWeight: 'bold' }}>경기취소</button>
+              <button 
+                onClick={handleCancelMatch} 
+                className="vote-action-btn cancel-match"
+                style={{ width: '100%', padding: '10px' }}
+              >
+                경기취소
+              </button>
             </div>
           )}
         </div>
@@ -459,6 +493,63 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members, isAdmin = f
       </div>
 
       {renderBottomPanel()}
+
+      {showCancelModal && (
+        <div 
+          style={{
+            position: 'fixed',
+            top: 0, left: 0, right: 0, bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 10000,
+            padding: '20px'
+          }}
+          onClick={() => !isCanceling && setShowCancelModal(false)}
+        >
+          <div 
+            style={{
+              backgroundColor: '#fff',
+              borderRadius: '20px',
+              padding: '24px',
+              maxWidth: '360px',
+              width: '100%',
+              boxShadow: '0 10px 30px rgba(0,0,0,0.2)',
+              textAlign: 'center',
+              animation: 'fadeIn 0.2s ease'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ fontSize: '36px', marginBottom: '12px' }}>⚠️</div>
+            <h3 style={{ margin: '0 0 10px 0', fontSize: 'calc(17px * var(--scale-factor, 1))', fontWeight: 'bold', color: '#191f28' }}>
+              경기를 취소하시겠습니까?
+            </h3>
+            <p style={{ margin: '0 0 20px 0', fontSize: 'calc(13px * var(--scale-factor, 1))', color: '#666', lineHeight: '1.5' }}>
+              취소 시 모든 참여자의 투표 상태가<br />
+              <strong style={{ color: 'var(--toss-red)' }}>'경기취소(미진행)'</strong>으로 변경됩니다.
+            </p>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button 
+                onClick={() => setShowCancelModal(false)}
+                disabled={isCanceling}
+                className="vote-confirm-btn"
+                style={{ flex: 1, padding: '12px', backgroundColor: '#f2f4f6', color: '#4e5968' }}
+              >
+                취소
+              </button>
+              <button 
+                onClick={handleConfirmCancelMatch}
+                disabled={isCanceling}
+                className="vote-confirm-btn"
+                style={{ flex: 1, padding: '12px', backgroundColor: '#191f28', color: '#fff' }}
+              >
+                {isCanceling ? '처리 중...' : 'CONFIRM'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

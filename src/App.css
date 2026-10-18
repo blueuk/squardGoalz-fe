@@ -950,3 +950,73 @@ h2 {
     letter-spacing: -0.5px;
   }
 }
+
+/* Vote Edit Action Buttons */
+.vote-action-btn {
+  border: none;
+  border-radius: 8px;
+  font-size: calc(13px * var(--scale-factor, 1));
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+.vote-action-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+.vote-action-btn:active {
+  transform: translateY(0) scale(0.97);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+.vote-action-btn.attend {
+  background-color: var(--toss-blue);
+  color: #fff;
+}
+.vote-action-btn.attend:hover {
+  background-color: #1b64da;
+  filter: brightness(1.05);
+}
+.vote-action-btn.absent {
+  background-color: var(--toss-red);
+  color: #fff;
+}
+.vote-action-btn.absent:hover {
+  background-color: #d92d3b;
+  filter: brightness(1.05);
+}
+.vote-action-btn.no-vote {
+  background-color: var(--toss-gray);
+  color: #fff;
+}
+.vote-action-btn.no-vote:hover {
+  background-color: #6b7684;
+  filter: brightness(1.05);
+}
+.vote-action-btn.cancel-match {
+  background-color: #191f28;
+  color: #fff;
+}
+.vote-action-btn.cancel-match:hover {
+  background-color: #333d4b;
+  filter: brightness(1.1);
+}
+
+/* Modal confirm button hover */
+.vote-confirm-btn {
+  border: none;
+  border-radius: 12px;
+  font-size: calc(14px * var(--scale-factor, 1));
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.vote-confirm-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  filter: brightness(1.05);
+}
+.vote-confirm-btn:active {
+  transform: scale(0.98);
+}
+
