@@ -49,6 +49,41 @@ interface CommonCd {
   reference_1?: string;
 }
 
+const SCORE_CATEGORIES = [
+  {
+    id: 'physical',
+    title: '피지컬',
+    icon: '💪',
+    color: '#3182f6',
+    bgColor: '#e8f3ff',
+    codes: ['001', '002', '003', '004', '015']
+  },
+  {
+    id: 'technique',
+    title: '기술 & 공격',
+    icon: '⚽',
+    color: '#f04452',
+    bgColor: '#fce8e6',
+    codes: ['018', '021', '022', '023', '024', '025', '026']
+  },
+  {
+    id: 'defense',
+    title: '수비',
+    icon: '🛡️',
+    color: '#2ecc71',
+    bgColor: '#e6f4ea',
+    codes: ['010', '011', '012', '013', '014', '016', '017']
+  },
+  {
+    id: 'mental',
+    title: '멘탈 & 센스',
+    icon: '🧠',
+    color: '#ff9500',
+    bgColor: '#fff8e6',
+    codes: ['005', '006', '007', '008', '009', '019', '020', '027', '028']
+  }
+];
+
 export default function TeamTab({ isAdmin }: { isAdmin?: boolean }) {
   const [subTab, setSubTab] = useState<'INFO' | 'SQUAD'>('INFO');
   const [teamInfo, setTeamInfo] = useState<TeamInfo | null>(null);
@@ -58,6 +93,11 @@ export default function TeamTab({ isAdmin }: { isAdmin?: boolean }) {
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [memberScores, setMemberScores] = useState<MemberScore[]>([]);
   const [expandedMemberUid, setExpandedMemberUid] = useState<string | null>(null);
+
+  // 스탯 편집 모드 상태
+  const [editingMemberUid, setEditingMemberUid] = useState<string | null>(null);
+  const [editingScores, setEditingScores] = useState<Record<string, number>>({});
+  const [isSavingScores, setIsSavingScores] = useState(false);
   
   // 공통 코드 원본 배열 저장 (Select 박스용)
   const [codeLists, setCodeLists] = useState<Record<string, CommonCd[]>>({
@@ -240,75 +280,145 @@ export default function TeamTab({ isAdmin }: { isAdmin?: boolean }) {
   };
 
 
-  const handleScoreChange = async (memberUid: string, scoreCd: string, newVal: string) => {
-    let numVal = parseInt(newVal, 10);
-    if (isNaN(numVal)) return;
-    if (numVal < 0) numVal = 0;
-    if (numVal > 20) numVal = 20;
+  const handleStartEditScores = (memberUid: string) => {
+    const scoresForMember = memberScores.filter(s => s.member_uid === memberUid);
+    const scoreMap: Record<string, number> = {};
     
-    // Optimistic UI update
-    setMemberScores(prev => {
-      const existing = prev.find(s => s.member_uid === memberUid && s.score_cd === scoreCd);
-      if (existing) {
-        return prev.map(s => (s.member_uid === memberUid && s.score_cd === scoreCd) ? { ...s, score_val: numVal.toString() } : s);
-      } else {
-        return [...prev, { member_uid: memberUid, score_cd: scoreCd, score_val: numVal.toString() }];
-      }
+    SCORE_CATEGORIES.forEach(cat => {
+      cat.codes.forEach(code => {
+        const found = scoresForMember.find(s => s.score_cd === code);
+        scoreMap[code] = found ? parseInt(found.score_val, 10) || 13 : 13;
+      });
     });
 
+    setEditingScores(scoreMap);
+    setEditingMemberUid(memberUid);
+  };
+
+  const handleCancelEditScores = () => {
+    setEditingMemberUid(null);
+    setEditingScores({});
+  };
+
+  const handleScoreFieldChange = (scoreCd: string, val: string) => {
+    let num = parseInt(val, 10);
+    if (isNaN(num)) num = 0;
+    if (num < 0) num = 0;
+    if (num > 20) num = 20;
+    setEditingScores(prev => ({
+      ...prev,
+      [scoreCd]: num
+    }));
+  };
+
+  const handleSaveScores = async () => {
+    if (!editingMemberUid || isSavingScores) return;
+    setIsSavingScores(true);
+
     try {
-      await api.post('/memberScore/update', {
-        team_uid: 'df743e05-9440-4c1e-bfdb-fa07159ef0c9',
-        member_uid: memberUid,
-        year: '2026',
-        score_cd: scoreCd,
-        score_val: numVal.toString()
-      });
-    } catch (err: any) {
-      if (err.response?.status === 404) {
+      const promises = Object.entries(editingScores).map(async ([scoreCd, val]) => {
         try {
-          await api.post('/memberScore/insert', {
+          await api.post('/memberScore/update', {
             team_uid: 'df743e05-9440-4c1e-bfdb-fa07159ef0c9',
-            member_uid: memberUid,
+            member_uid: editingMemberUid,
             year: '2026',
             score_cd: scoreCd,
-            score_val: numVal.toString()
+            score_val: val.toString()
           });
-        } catch (e) {
-          console.error(e);
+        } catch (err: any) {
+          if (err.response?.status === 404) {
+            await api.post('/memberScore/insert', {
+              team_uid: 'df743e05-9440-4c1e-bfdb-fa07159ef0c9',
+              member_uid: editingMemberUid,
+              year: '2026',
+              score_cd: scoreCd,
+              score_val: val.toString()
+            });
+          }
         }
-      } else {
-        console.error(err);
-      }
+      });
+
+      await Promise.all(promises);
+
+      // 로컬 memberScores 업데이트
+      setMemberScores(prev => {
+        const withoutMember = prev.filter(s => s.member_uid !== editingMemberUid);
+        const updatedList = Object.entries(editingScores).map(([score_cd, val]) => ({
+          member_uid: editingMemberUid!,
+          score_cd,
+          score_val: val.toString()
+        }));
+        return [...withoutMember, ...updatedList];
+      });
+
+      alert('선수 능력치가 성공적으로 저장되었습니다.');
+      setEditingMemberUid(null);
+      setEditingScores({});
+    } catch (e) {
+      console.error(e);
+      alert('능력치 저장에 실패했습니다.');
+    } finally {
+      setIsSavingScores(false);
     }
   };
+
   return (
-    <div style={{ padding: '0px', backgroundColor: '#f9f9f9', minHeight: '100vh', paddingBottom: '70px' }}>
+    <div style={{ padding: '0px', backgroundColor: '#f9f9f9', minHeight: '100vh', paddingBottom: editingMemberUid ? '140px' : '70px' }}>
       
-      {/* Sub Tab Navigation */}
-      <div style={{ display: 'flex', backgroundColor: '#fff', borderBottom: '1px solid #ddd', position: 'sticky', top: '50px', zIndex: 10 }}>
-        <button
-          onClick={() => setSubTab('INFO')}
-          style={{
-            flex: 1, padding: '15px 0', border: 'none', backgroundColor: 'transparent', cursor: 'pointer',
-            fontWeight: subTab === 'INFO' ? 'bold' : 'normal',
-            borderBottom: subTab === 'INFO' ? '3px solid #3182f6' : '3px solid transparent',
-            color: subTab === 'INFO' ? '#3182f6' : '#888'
-          }}
-        >
-          팀관리
-        </button>
-        <button
-          onClick={() => setSubTab('SQUAD')}
-          style={{
-            flex: 1, padding: '15px 0', border: 'none', backgroundColor: 'transparent', cursor: 'pointer',
-            fontWeight: subTab === 'SQUAD' ? 'bold' : 'normal',
-            borderBottom: subTab === 'SQUAD' ? '3px solid #3182f6' : '3px solid transparent',
-            color: subTab === 'SQUAD' ? '#3182f6' : '#888'
-          }}
-        >
-          선수단
-        </button>
+      {/* Sub Tab Navigation (Toss Pill-shaped Segmented Control) */}
+      <div style={{
+        position: 'sticky',
+        top: 0,
+        zIndex: 50,
+        backgroundColor: '#fff',
+        padding: '12px 20px',
+        borderBottom: '1px solid #f2f4f6',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.02)'
+      }}>
+        <div style={{
+          display: 'flex',
+          backgroundColor: '#f2f4f6',
+          borderRadius: '24px',
+          padding: '4px',
+          gap: '4px'
+        }}>
+          <button
+            onClick={() => setSubTab('INFO')}
+            style={{
+              flex: 1,
+              padding: '10px 0',
+              borderRadius: '20px',
+              border: 'none',
+              backgroundColor: subTab === 'INFO' ? '#fff' : 'transparent',
+              color: subTab === 'INFO' ? '#191f28' : '#8b95a1',
+              fontWeight: subTab === 'INFO' ? '700' : '500',
+              fontSize: 'calc(14px * var(--scale-factor, 1))',
+              boxShadow: subTab === 'INFO' ? '0 2px 8px rgba(0,0,0,0.08)' : 'none',
+              cursor: 'pointer',
+              transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
+            }}
+          >
+            팀관리
+          </button>
+          <button
+            onClick={() => setSubTab('SQUAD')}
+            style={{
+              flex: 1,
+              padding: '10px 0',
+              borderRadius: '20px',
+              border: 'none',
+              backgroundColor: subTab === 'SQUAD' ? '#fff' : 'transparent',
+              color: subTab === 'SQUAD' ? '#191f28' : '#8b95a1',
+              fontWeight: subTab === 'SQUAD' ? '700' : '500',
+              fontSize: 'calc(14px * var(--scale-factor, 1))',
+              boxShadow: subTab === 'SQUAD' ? '0 2px 8px rgba(0,0,0,0.08)' : 'none',
+              cursor: 'pointer',
+              transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
+            }}
+          >
+            선수단
+          </button>
+        </div>
       </div>
 
       <div style={{ padding: '20px' }}>
@@ -543,34 +653,73 @@ export default function TeamTab({ isAdmin }: { isAdmin?: boolean }) {
 
         {subTab === 'SQUAD' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-            <div className="card" style={{ padding: '20px', backgroundColor: '#fff', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
-              <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#333', margin: '0 0 15px 0' }}>🏃 선수단 명단 ({teamMembers.length}명)</h3>
+            <div className="card" style={{ padding: '20px', backgroundColor: '#fff', borderRadius: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                <div>
+                  <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#191f28', margin: '0 0 4px 0' }}>🏃 선수단 명단</h3>
+                  <p style={{ fontSize: '13px', color: '#8b95a1', margin: 0 }}>선수를 탭하면 4개 카테고리 능력치를 확인하고 수정할 수 있습니다.</p>
+                </div>
+                <span style={{ backgroundColor: '#f2f4f6', padding: '6px 12px', borderRadius: '14px', fontSize: '13px', fontWeight: 'bold', color: '#4e5968' }}>
+                  총 {teamMembers.length}명
+                </span>
+              </div>
               
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 {teamMembers.map(member => {
                   const isExpanded = expandedMemberUid === member.member_uid;
+                  const isEditingThisMember = editingMemberUid === member.member_uid;
                   const memberScoreList = memberScores.filter(s => s.member_uid === member.member_uid);
                   
-                  let bgColor = '#e0e0e0';
-                  let color = '#333';
-                  if (member.status_cd === '01') { bgColor = '#e6f4ea'; color = '#137333'; }
-                  else if (member.status_cd === '02') { bgColor = '#fce8e6'; color = '#c5221f'; }
+                  // 선수 평균 점수 계산
+                  const avgScore = (() => {
+                    if (memberScoreList.length === 0) return '13.0';
+                    const sum = memberScoreList.reduce((acc, curr) => acc + (parseFloat(curr.score_val) || 0), 0);
+                    return (sum / memberScoreList.length).toFixed(1);
+                  })();
+
+                  let bgColor = '#e6f4ea';
+                  let color = '#137333';
+                  if (member.status_cd === '02') { bgColor = '#fce8e6'; color = '#c5221f'; }
                   else if (member.status_cd === '03') { bgColor = '#f1f3f4'; color = '#5f6368'; }
 
                   return (
-                    <div key={member.member_uid} style={{ border: '1px solid #eee', borderRadius: '8px', overflow: 'hidden' }}>
+                    <div 
+                      key={member.member_uid} 
+                      style={{ 
+                        border: isExpanded ? '1.5px solid var(--toss-blue)' : '1px solid #f2f4f6', 
+                        borderRadius: '16px', 
+                        backgroundColor: '#fff',
+                        boxShadow: isExpanded ? '0 4px 16px rgba(49, 130, 246, 0.08)' : '0 2px 6px rgba(0,0,0,0.02)',
+                        overflow: 'hidden',
+                        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
+                      }}
+                    >
+                      {/* Member Card Header */}
                       <div 
-                        onClick={() => setExpandedMemberUid(isExpanded ? null : member.member_uid)}
-                        style={{ padding: '15px', backgroundColor: isExpanded ? '#f4f4f4' : '#fff', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                        onClick={() => {
+                          if (editingMemberUid && editingMemberUid !== member.member_uid) {
+                            if (!window.confirm("편집 중인 내용이 저장되지 않았습니다. 다른 선수로 이동하시겠습니까?")) return;
+                            handleCancelEditScores();
+                          }
+                          setExpandedMemberUid(isExpanded ? null : member.member_uid);
+                        }}
+                        style={{ 
+                          padding: '16px', 
+                          backgroundColor: isExpanded ? '#fbfcfe' : '#fff', 
+                          cursor: 'pointer', 
+                          display: 'flex', 
+                          justifyContent: 'space-between', 
+                          alignItems: 'center' 
+                        }}
                       >
-                        <div style={{ display: 'flex', alignItems: 'center' }}>
-                          <span style={{ fontWeight: 'bold', fontSize: '15px', color: '#333' }}>{member.member_name}</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                          <span style={{ fontWeight: 'bold', fontSize: '16px', color: '#191f28' }}>{member.member_name}</span>
                           {member.user_id && (
-                            <span style={{ backgroundColor: '#FEE500', color: '#000', padding: '2px 6px', borderRadius: '4px', fontSize: '10px', marginLeft: '6px', fontWeight: 'bold' }}>K</span>
+                            <span style={{ backgroundColor: '#FEE500', color: '#000', padding: '2px 6px', borderRadius: '4px', fontSize: '10px', fontWeight: 'bold' }}>K</span>
                           )}
                           <span style={{ 
                             backgroundColor: bgColor, color: color, 
-                            padding: '2px 6px', borderRadius: '4px', fontSize: '10px', marginLeft: '6px', fontWeight: 'bold' 
+                            padding: '3px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold' 
                           }}>
                             {getCodeName('status_cd', member.status_cd) || '상태 없음'}
                           </span>
@@ -581,41 +730,168 @@ export default function TeamTab({ isAdmin }: { isAdmin?: boolean }) {
                               onClick={(e) => e.stopPropagation()}
                               value={member.status_cd || '01'}
                               onChange={(e) => updateMemberStatus(member.member_uid, e.target.value)}
-                              style={{ fontSize: '11px', padding: '2px', borderRadius: '4px', border: '1px solid #ccc' }}
+                              style={{ fontSize: '12px', padding: '4px 8px', borderRadius: '6px', border: '1px solid #ddd', backgroundColor: '#fff' }}
                             >
                               {codeLists.status_cd?.map(c => <option key={c.code} value={c.code}>{c.code_name}</option>)}
                             </select>
                           )}
-                          <span style={{ fontSize: '12px', color: '#888' }}>{isExpanded ? '▲' : '▼'}</span>
+                          <span style={{
+                            fontSize: '12px',
+                            fontWeight: 'bold',
+                            color: isExpanded ? 'var(--toss-blue)' : '#8b95a1',
+                            backgroundColor: isExpanded ? 'var(--toss-light-blue)' : '#f2f4f6',
+                            padding: '4px 10px',
+                            borderRadius: '12px',
+                            transition: 'all 0.2s'
+                          }}>
+                            {isExpanded ? '스탯 접기 ▴' : '스탯 보기 ▾'}
+                          </span>
                         </div>
                       </div>
                       
+                      {/* Expanded Stats Section */}
                       {isExpanded && (
-                        <div style={{ padding: '15px', backgroundColor: '#fff', borderTop: '1px solid #eee' }}>
-                          <h4 style={{ fontSize: '14px', fontWeight: 'bold', color: '#555', margin: '0 0 10px 0' }}>멤버 스코어</h4>
-                          {memberScoreList.length > 0 ? (
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                              {memberScoreList.map(score => (
-                                <div key={score.score_cd} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
-                                  <span style={{ color: '#888' }}>{getCodeName('score_cd', score.score_cd)}</span>
-                                  {isAdmin ? (
-                                    <input 
-                                      type="number" 
-                                      min="0" 
-                                      max="20" 
-                                      value={score.score_val || ''}
-                                      onChange={(e) => handleScoreChange(member.member_uid, score.score_cd, e.target.value)}
-                                      style={{ width: '45px', textAlign: 'right', padding: '2px 4px', borderRadius: '4px', border: '1px solid #ccc', fontSize: '12px' }}
-                                    />
-                                  ) : (
-                                    <span style={{ fontWeight: 'bold', color: '#333' }}>{score.score_val}</span>
-                                  )}
-                                </div>
-                              ))}
+                        <div style={{ padding: '16px', backgroundColor: '#ffffff', borderTop: '1px solid #f2f4f6' }}>
+                          {/* Stats Header Bar */}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', paddingBottom: '12px', borderBottom: '1px solid #f2f4f6' }}>
+                            <div>
+                              <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#191f28' }}>능력치 리포트</span>
+                              <span style={{ marginLeft: '8px', fontSize: '12px', color: 'var(--toss-blue)', fontWeight: 'bold', backgroundColor: 'var(--toss-light-blue)', padding: '2px 8px', borderRadius: '8px' }}>
+                                ⭐ 평균 {avgScore}점
+                              </span>
                             </div>
-                          ) : (
-                            <div style={{ fontSize: '13px', color: '#999', textAlign: 'center', padding: '10px 0' }}>등록된 스코어가 없습니다.</div>
-                          )}
+                            {isAdmin && (
+                              <div>
+                                {!isEditingThisMember ? (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleStartEditScores(member.member_uid);
+                                    }}
+                                    className="vote-action-btn"
+                                    style={{
+                                      padding: '6px 14px',
+                                      backgroundColor: 'var(--toss-light-blue)',
+                                      color: 'var(--toss-blue)',
+                                      borderRadius: '8px',
+                                      fontSize: '12px'
+                                    }}
+                                  >
+                                    수정하기 ✏️
+                                  </button>
+                                ) : (
+                                  <span style={{ fontSize: '12px', color: 'var(--toss-blue)', fontWeight: 'bold', animation: 'fadeIn 0.2s' }}>
+                                    ✍️ 편집 중 (0~20점)
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Grouped Stats Categories */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            {SCORE_CATEGORIES.map(category => {
+                              // 카테고리 평균 점수 계산
+                              const catScores = category.codes.map(code => {
+                                const found = memberScoreList.find(s => s.score_cd === code);
+                                return isEditingThisMember ? (editingScores[code] ?? 13) : (found ? parseInt(found.score_val, 10) : 13);
+                              });
+                              const catAvg = (catScores.reduce((a, b) => a + b, 0) / catScores.length).toFixed(1);
+
+                              return (
+                                <div 
+                                  key={category.id} 
+                                  style={{ 
+                                    backgroundColor: '#f9fafb', 
+                                    borderRadius: '12px', 
+                                    padding: '12px 14px',
+                                    border: '1px solid #f2f4f6'
+                                  }}
+                                >
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                      <span style={{ fontSize: '14px' }}>{category.icon}</span>
+                                      <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#333d4b' }}>{category.title}</span>
+                                    </div>
+                                    <span style={{ fontSize: '11px', fontWeight: 'bold', color: category.color, backgroundColor: category.bgColor, padding: '2px 8px', borderRadius: '10px' }}>
+                                      평균 {catAvg}
+                                    </span>
+                                  </div>
+
+                                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
+                                    {category.codes.map(code => {
+                                      const codeObj = codeLists.score_cd?.find(c => c.code === code);
+                                      const codeName = codeObj?.code_name || code;
+                                      const existing = memberScoreList.find(s => s.score_cd === code);
+                                      const scoreVal = isEditingThisMember ? (editingScores[code] ?? 13) : (existing ? parseInt(existing.score_val, 10) : 13);
+
+                                      return (
+                                        <div 
+                                          key={code}
+                                          style={{
+                                            display: 'flex',
+                                            justifyContent: 'space-between',
+                                            alignItems: 'center',
+                                            backgroundColor: '#fff',
+                                            padding: '8px 10px',
+                                            borderRadius: '8px',
+                                            border: isEditingThisMember ? '1px solid #d0d7de' : '1px solid #f2f4f6',
+                                            boxShadow: '0 1px 2px rgba(0,0,0,0.02)'
+                                          }}
+                                        >
+                                          <span style={{ fontSize: '12px', color: '#4e5968', fontWeight: 500 }}>
+                                            {codeName}
+                                          </span>
+
+                                          {isEditingThisMember ? (
+                                            <input 
+                                              type="number"
+                                              min="0"
+                                              max="20"
+                                              value={editingScores[code] ?? 13}
+                                              onChange={(e) => handleScoreFieldChange(code, e.target.value)}
+                                              style={{
+                                                width: '46px',
+                                                textAlign: 'center',
+                                                padding: '4px',
+                                                borderRadius: '6px',
+                                                border: '1px solid var(--toss-blue)',
+                                                fontSize: '13px',
+                                                fontWeight: 'bold',
+                                                color: '#191f28',
+                                                backgroundColor: '#f8faff',
+                                                outline: 'none'
+                                              }}
+                                            />
+                                          ) : (
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                              <div style={{ width: '32px', height: '4px', backgroundColor: '#eef0f2', borderRadius: '2px', overflow: 'hidden' }}>
+                                                <div style={{ 
+                                                  width: `${Math.min(100, (scoreVal / 20) * 100)}%`, 
+                                                  height: '100%', 
+                                                  backgroundColor: scoreVal >= 15 ? 'var(--toss-blue)' : scoreVal >= 10 ? 'var(--toss-green)' : 'var(--toss-orange)',
+                                                  borderRadius: '2px'
+                                                }} />
+                                              </div>
+                                              <span style={{
+                                                fontSize: '13px',
+                                                fontWeight: 'bold',
+                                                color: scoreVal >= 15 ? 'var(--toss-blue)' : scoreVal >= 10 ? '#191f28' : '#8b95a1',
+                                                minWidth: '18px',
+                                                textAlign: 'right'
+                                              }}>
+                                                {scoreVal}
+                                              </span>
+                                            </div>
+                                          )}
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
                         </div>
                       )}
                     </div>
@@ -626,6 +902,58 @@ export default function TeamTab({ isAdmin }: { isAdmin?: boolean }) {
           </div>
         )}
       </div>
+
+      {/* Sticky Bottom Bar for Editing Scores */}
+      {editingMemberUid && (
+        <div style={{
+          position: 'fixed',
+          bottom: '50px', // Just above App's Footer Dock
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: '100%',
+          maxWidth: '1200px',
+          backgroundColor: 'rgba(255, 255, 255, 0.96)',
+          backdropFilter: 'blur(10px)',
+          boxShadow: '0 -4px 20px rgba(0, 0, 0, 0.08)',
+          borderTop: '1px solid #f2f4f6',
+          padding: '12px 20px',
+          display: 'flex',
+          gap: '12px',
+          zIndex: 1050,
+          boxSizing: 'border-box'
+        }}>
+          <button
+            onClick={handleCancelEditScores}
+            disabled={isSavingScores}
+            className="vote-action-btn"
+            style={{
+              flex: 1,
+              padding: '14px',
+              borderRadius: '14px',
+              backgroundColor: '#f2f4f6',
+              color: '#4e5968',
+              fontSize: '15px'
+            }}
+          >
+            취소
+          </button>
+          <button
+            onClick={handleSaveScores}
+            disabled={isSavingScores}
+            className="vote-action-btn"
+            style={{
+              flex: 2,
+              padding: '14px',
+              borderRadius: '14px',
+              backgroundColor: 'var(--toss-blue)',
+              color: '#fff',
+              fontSize: '15px'
+            }}
+          >
+            {isSavingScores ? '저장 중...' : '저장하기'}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
