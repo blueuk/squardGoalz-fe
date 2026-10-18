@@ -41,6 +41,12 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members, isAdmin = f
   const [editLocationCustom, setEditLocationCustom] = useState('');
   const [isUpdatingSchedule, setIsUpdatingSchedule] = useState(false);
 
+  // Bulk reset & schedule delete modal states
+  const [showResetVoteModal, setShowResetVoteModal] = useState(false);
+  const [isResettingVotes, setIsResettingVotes] = useState(false);
+  const [showDeleteScheduleModal, setShowDeleteScheduleModal] = useState(false);
+  const [isDeletingSchedule, setIsDeletingSchedule] = useState(false);
+
   const fetchLocations = async () => {
     try {
       const res = await api.get('/common_cd/search', { params: { group_cd: 'stadium_cd' } });
@@ -322,6 +328,52 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members, isAdmin = f
     }
   };
 
+  const handleConfirmResetVotes = async () => {
+    if (isResettingVotes || !selectedSchedule) return;
+    setIsResettingVotes(true);
+    try {
+      await Promise.all(votes.map(v => 
+        api.post('/vote/update', {
+          vote_seq: selectedSchedule.vote_seq,
+          team_uid: teamUid,
+          member_uid: v.member_uid,
+          vote_cd: '01'
+        })
+      ));
+      setSelectedMembers([]);
+      fetchVotesLocal(selectedSchedule.vote_seq);
+      setShowResetVoteModal(false);
+      alert('모든 팀원의 투표 상태가 미투표로 일괄 초기화되었습니다.');
+    } catch (e) {
+      console.error(e);
+      alert('투표 초기화에 실패했습니다.');
+    } finally {
+      setIsResettingVotes(false);
+    }
+  };
+
+  const handleConfirmDeleteSchedule = async () => {
+    if (isDeletingSchedule || !selectedSchedule) return;
+    setIsDeletingSchedule(true);
+    try {
+      await api.post('/schedule/delete', {
+        vote_seq: selectedSchedule.vote_seq,
+        team_uid: teamUid
+      });
+      setShowDeleteScheduleModal(false);
+      setSelectedSchedule(null);
+      setVotes([]);
+      setIsEditMode(false);
+      await fetchSchedules();
+      alert('일정이 삭제되었습니다.');
+    } catch (e) {
+      console.error(e);
+      alert('일정 삭제에 실패했습니다.');
+    } finally {
+      setIsDeletingSchedule(false);
+    }
+  };
+
   const handleBulkVoteChange = async (targetVoteCd: string) => {
     if (selectedMembers.length === 0) return;
     try {
@@ -502,6 +554,9 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members, isAdmin = f
 
           {isEditMode && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderTop: '1px solid #eee', paddingTop: '20px' }}>
+              <div style={{ fontSize: 'calc(12px * var(--scale-factor, 1))', fontWeight: 'bold', color: '#4e5968', marginBottom: '2px' }}>
+                선택 팀원 상태 변경
+              </div>
               <div style={{ display: 'flex', gap: '8px' }}>
                 <button 
                   onClick={() => handleBulkVoteChange('02')} 
@@ -525,13 +580,33 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members, isAdmin = f
                   미투표
                 </button>
               </div>
+
+              <div style={{ fontSize: 'calc(12px * var(--scale-factor, 1))', fontWeight: 'bold', color: '#4e5968', marginTop: '10px', marginBottom: '2px' }}>
+                전체 일정 및 투표 관리
+              </div>
               <button 
-                onClick={handleCancelMatch} 
-                className="vote-action-btn cancel-match"
-                style={{ width: '100%', padding: '10px' }}
+                onClick={() => setShowResetVoteModal(true)} 
+                className="vote-action-btn"
+                style={{ width: '100%', padding: '10px', backgroundColor: '#e5e8eb', color: '#333d4b' }}
               >
-                경기취소
+                미투표 일괄 초기화
               </button>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button 
+                  onClick={handleCancelMatch} 
+                  className="vote-action-btn cancel-match"
+                  style={{ flex: 1, padding: '10px' }}
+                >
+                  경기취소
+                </button>
+                <button 
+                  onClick={() => setShowDeleteScheduleModal(true)} 
+                  className="vote-action-btn"
+                  style={{ flex: 1, padding: '10px', backgroundColor: 'var(--toss-red)', color: '#fff' }}
+                >
+                  일정삭제
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -698,6 +773,120 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members, isAdmin = f
                 style={{ flex: 1, padding: '12px', backgroundColor: '#191f28', color: '#fff' }}
               >
                 {isCanceling ? '처리 중...' : '경기취소'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showResetVoteModal && (
+        <div 
+          style={{
+            position: 'fixed',
+            top: 0, left: 0, right: 0, bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 10000,
+            padding: '20px'
+          }}
+          onClick={() => !isResettingVotes && setShowResetVoteModal(false)}
+        >
+          <div 
+            style={{
+              backgroundColor: '#fff',
+              borderRadius: '20px',
+              padding: '24px',
+              maxWidth: '360px',
+              width: '100%',
+              boxShadow: '0 10px 30px rgba(0,0,0,0.2)',
+              textAlign: 'center',
+              animation: 'fadeIn 0.2s ease'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ fontSize: '36px', marginBottom: '12px' }}>🔄</div>
+            <h3 style={{ margin: '0 0 10px 0', fontSize: 'calc(17px * var(--scale-factor, 1))', fontWeight: 'bold', color: '#191f28' }}>
+              투표를 일괄 초기화하시겠습니까?
+            </h3>
+            <p style={{ margin: '0 0 20px 0', fontSize: 'calc(13px * var(--scale-factor, 1))', color: '#666', lineHeight: '1.5' }}>
+              해당 일자의 모든 팀원 투표 상태가<br />
+              <strong style={{ color: 'var(--toss-blue)' }}>'미투표'</strong> 상태로 변경됩니다.
+            </p>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button 
+                onClick={() => setShowResetVoteModal(false)}
+                disabled={isResettingVotes}
+                className="vote-confirm-btn"
+                style={{ flex: 1, padding: '12px', backgroundColor: '#f2f4f6', color: '#4e5968' }}
+              >
+                취소
+              </button>
+              <button 
+                onClick={handleConfirmResetVotes}
+                disabled={isResettingVotes}
+                className="vote-confirm-btn"
+                style={{ flex: 1, padding: '12px', backgroundColor: 'var(--toss-blue)', color: '#fff' }}
+              >
+                {isResettingVotes ? '처리 중...' : '초기화'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showDeleteScheduleModal && (
+        <div 
+          style={{
+            position: 'fixed',
+            top: 0, left: 0, right: 0, bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 10000,
+            padding: '20px'
+          }}
+          onClick={() => !isDeletingSchedule && setShowDeleteScheduleModal(false)}
+        >
+          <div 
+            style={{
+              backgroundColor: '#fff',
+              borderRadius: '20px',
+              padding: '24px',
+              maxWidth: '360px',
+              width: '100%',
+              boxShadow: '0 10px 30px rgba(0,0,0,0.2)',
+              textAlign: 'center',
+              animation: 'fadeIn 0.2s ease'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ fontSize: '36px', marginBottom: '12px' }}>🗑️</div>
+            <h3 style={{ margin: '0 0 10px 0', fontSize: 'calc(17px * var(--scale-factor, 1))', fontWeight: 'bold', color: 'var(--toss-red)' }}>
+              일정을 삭제하시겠습니까?
+            </h3>
+            <p style={{ margin: '0 0 20px 0', fontSize: 'calc(13px * var(--scale-factor, 1))', color: '#666', lineHeight: '1.5' }}>
+              해당 일자의 경기 일정 및 모든 참여자의 투표가<br />
+              <strong style={{ color: 'var(--toss-red)' }}>영구히 삭제</strong>됩니다.
+            </p>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button 
+                onClick={() => setShowDeleteScheduleModal(false)}
+                disabled={isDeletingSchedule}
+                className="vote-confirm-btn"
+                style={{ flex: 1, padding: '12px', backgroundColor: '#f2f4f6', color: '#4e5968' }}
+              >
+                취소
+              </button>
+              <button 
+                onClick={handleConfirmDeleteSchedule}
+                disabled={isDeletingSchedule}
+                className="vote-confirm-btn"
+                style={{ flex: 1, padding: '12px', backgroundColor: 'var(--toss-red)', color: '#fff' }}
+              >
+                {isDeletingSchedule ? '삭제 중...' : '일정삭제'}
               </button>
             </div>
           </div>
