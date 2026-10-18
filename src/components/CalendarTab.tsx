@@ -35,6 +35,12 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members, isAdmin = f
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [isCanceling, setIsCanceling] = useState(false);
 
+  // Edit schedule state (time & location)
+  const [editTime, setEditTime] = useState('07:00');
+  const [editLocationCd, setEditLocationCd] = useState('01');
+  const [editLocationCustom, setEditLocationCustom] = useState('');
+  const [isUpdatingSchedule, setIsUpdatingSchedule] = useState(false);
+
   const fetchLocations = async () => {
     try {
       const res = await api.get('/common_cd/search', { params: { group_cd: 'stadium_cd' } });
@@ -131,6 +137,89 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members, isAdmin = f
     return `${y}${String(m + 1).padStart(2, '0')}${String(d).padStart(2, '0')}`;
   };
 
+  const syncEditScheduleFields = (sched: any) => {
+    if (!sched) return;
+    setEditTime(sched.play_start_time || '07:00');
+    const matched = locationOptions.find(opt => opt.code_name === sched.play_location);
+    if (matched) {
+      setEditLocationCd(matched.code);
+      setEditLocationCustom('');
+    } else if (sched.play_location) {
+      setEditLocationCd('custom');
+      setEditLocationCustom(sched.play_location);
+    } else {
+      setEditLocationCd(locationOptions[0]?.code || '01');
+      setEditLocationCustom('');
+    }
+  };
+
+  const formatScheduleHeader = () => {
+    if (!selectedDate) return '';
+    const cleanDate = selectedDate.replace(/-/g, '');
+    let dateFormatted = selectedDate;
+    if (cleanDate.length === 8) {
+      const yyyy = cleanDate.substring(0, 4);
+      const mm = cleanDate.substring(4, 6);
+      const dd = cleanDate.substring(6, 8);
+      dateFormatted = `${yyyy}년 ${mm}월 ${dd}일`;
+    }
+    const timeStr = selectedSchedule?.play_start_time || '미정';
+    const locStr = selectedSchedule?.play_location || '미정';
+    return `${dateFormatted} ${timeStr} | 장소: ${locStr}`;
+  };
+
+  const handleToggleEditMode = async () => {
+    if (isEditMode) {
+      if (isUpdatingSchedule) return;
+      setIsUpdatingSchedule(true);
+
+      let finalLocation = '';
+      if (editLocationCd === 'custom') {
+        finalLocation = editLocationCustom.trim();
+      } else {
+        const found = locationOptions.find(opt => opt.code === editLocationCd);
+        finalLocation = found ? found.code_name : '';
+      }
+
+      if (
+        selectedSchedule &&
+        (finalLocation !== (selectedSchedule.play_location || '') ||
+          editTime !== (selectedSchedule.play_start_time || ''))
+      ) {
+        try {
+          await api.post('/schedule/update', {
+            vote_seq: selectedSchedule.vote_seq,
+            team_uid: teamUid,
+            play_start_time: editTime,
+            play_location: finalLocation
+          });
+
+          const updatedSchedule = {
+            ...selectedSchedule,
+            play_start_time: editTime,
+            play_location: finalLocation
+          };
+          setSelectedSchedule(updatedSchedule);
+          setSchedules(prev =>
+            prev.map(s => (s.vote_seq === selectedSchedule.vote_seq ? updatedSchedule : s))
+          );
+        } catch (e) {
+          console.error(e);
+          alert('일정 정보(시간/장소) 수정에 실패했습니다.');
+        }
+      }
+
+      setSelectedMembers([]);
+      setIsEditMode(false);
+      setIsUpdatingSchedule(false);
+    } else {
+      if (selectedSchedule) {
+        syncEditScheduleFields(selectedSchedule);
+      }
+      setIsEditMode(true);
+    }
+  };
+
   const handleDateClick = async (d: number) => {
     const dateStr = formatYYYYMMDD(year, month, d);
     setSelectedDate(dateStr);
@@ -141,6 +230,7 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members, isAdmin = f
     if (schedule) {
       // Show vote panel
       setSelectedSchedule(schedule);
+      syncEditScheduleFields(schedule);
       fetchVotesLocal(schedule.vote_seq);
     } else {
       // Show create panel
@@ -309,23 +399,76 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members, isAdmin = f
         <div className="card" style={{ marginTop: '15px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
             <div>
-              <h3 style={{ margin: '0 0 5px 0' }}>{selectedDate} 투표 현황</h3>
+              <h3 style={{ margin: '0 0 5px 0' }}>투표현황</h3>
               <p style={{ color: '#191f28', fontSize: 'calc(15px * var(--scale-factor, 1))', fontWeight: 'bold', margin: '0' }}>
-                시간: {selectedSchedule.play_start_time || '미정'} &nbsp;|&nbsp; 장소: {selectedSchedule.play_location || '미정'}
+                {formatScheduleHeader()}
               </p>
             </div>
             {!isPastDate && (
               <button 
-                onClick={() => {
-                  setIsEditMode(!isEditMode);
-                  if (isEditMode) setSelectedMembers([]); // Clear on exit
+                onClick={handleToggleEditMode}
+                disabled={isUpdatingSchedule}
+                style={{ 
+                  padding: '6px 12px', 
+                  backgroundColor: isEditMode ? '#333' : '#f2f4f6', 
+                  color: isEditMode ? '#fff' : '#333', 
+                  border: 'none', 
+                  borderRadius: '6px', 
+                  fontSize: 'calc(13px * var(--scale-factor, 1))', 
+                  fontWeight: 'bold', 
+                  cursor: isUpdatingSchedule ? 'not-allowed' : 'pointer',
+                  transition: 'all 0.2s ease'
                 }}
-                style={{ padding: '6px 12px', backgroundColor: isEditMode ? '#333' : '#f2f4f6', color: isEditMode ? '#fff' : '#333', border: 'none', borderRadius: '6px', fontSize: 'calc(13px * var(--scale-factor, 1))', fontWeight: 'bold', cursor: 'pointer' }}
               >
-                {isEditMode ? '완료' : '수정'}
+                {isUpdatingSchedule ? '저장 중...' : isEditMode ? '완료' : '수정'}
               </button>
             )}
           </div>
+
+          {isEditMode && (
+            <div style={{ backgroundColor: '#f8f9fa', padding: '12px 14px', borderRadius: '12px', marginBottom: '12px', border: '1px solid #eef0f2' }}>
+              <div style={{ fontSize: 'calc(12px * var(--scale-factor, 1))', fontWeight: 'bold', color: '#4e5968', marginBottom: '8px' }}>
+                일정 정보 수정 (시간 / 장소)
+              </div>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: 'block', fontSize: 'calc(11px * var(--scale-factor, 1))', color: '#666', marginBottom: '4px' }}>시간</label>
+                  <select 
+                    value={editTime} 
+                    onChange={(e) => setEditTime(e.target.value)} 
+                    style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #ddd', backgroundColor: '#fff', fontSize: 'calc(13px * var(--scale-factor, 1))' }}
+                  >
+                    {Array.from({ length: 24 }).map((_, i) => {
+                      const t = `${String(i).padStart(2, '0')}:00`;
+                      return <option key={t} value={t}>{t}</option>;
+                    })}
+                  </select>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: 'block', fontSize: 'calc(11px * var(--scale-factor, 1))', color: '#666', marginBottom: '4px' }}>장소</label>
+                  <select 
+                    value={editLocationCd} 
+                    onChange={(e) => setEditLocationCd(e.target.value)} 
+                    style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #ddd', backgroundColor: '#fff', fontSize: 'calc(13px * var(--scale-factor, 1))' }}
+                  >
+                    {locationOptions.map(opt => (
+                      <option key={opt.code} value={opt.code}>{opt.code_name}</option>
+                    ))}
+                    <option value="custom">기타 (직접 입력)</option>
+                  </select>
+                </div>
+              </div>
+              {editLocationCd === 'custom' && (
+                <input 
+                  type="text" 
+                  value={editLocationCustom} 
+                  onChange={(e) => setEditLocationCustom(e.target.value)} 
+                  placeholder="장소를 입력해주세요"
+                  style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #ddd', marginTop: '8px', fontSize: 'calc(13px * var(--scale-factor, 1))', boxSizing: 'border-box' }}
+                />
+              )}
+            </div>
+          )}
           
           {isEditMode && (
             <p style={{ fontSize: 'calc(12px * var(--scale-factor, 1))', color: 'var(--toss-blue)', margin: '5px 0 0 0' }}>변경할 팀원을 선택한 후 아래의 상태 버튼을 눌러주세요.</p>
