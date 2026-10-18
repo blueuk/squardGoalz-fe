@@ -153,16 +153,21 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members, isAdmin = f
     }
   };
 
-  const formatScheduleHeader = () => {
-    if (!selectedDate) return '';
-    const cleanDate = selectedDate.replace(/-/g, '');
-    let dateFormatted = selectedDate;
+  const formatDateOnly = (dateStr: string) => {
+    if (!dateStr) return '';
+    const cleanDate = dateStr.replace(/-/g, '');
     if (cleanDate.length === 8) {
       const yyyy = cleanDate.substring(0, 4);
       const mm = cleanDate.substring(4, 6);
       const dd = cleanDate.substring(6, 8);
-      dateFormatted = `${yyyy}년 ${mm}월 ${dd}일`;
+      return `${yyyy}년 ${mm}월 ${dd}일`;
     }
+    return dateStr;
+  };
+
+  const formatScheduleHeader = () => {
+    if (!selectedDate) return '';
+    const dateFormatted = formatDateOnly(selectedDate);
     const timeStr = selectedSchedule?.play_start_time || '미정';
     const locStr = selectedSchedule?.play_location || '미정';
     return `${dateFormatted} ${timeStr} | 장소: ${locStr}`;
@@ -535,7 +540,12 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members, isAdmin = f
       // Create Schedule Panel
       return (
         <div className="card" style={{ marginTop: '15px' }}>
-          <h3 style={{ marginTop: 0 }}>일정 등록 ({selectedDate})</h3>
+          <div style={{ marginBottom: '15px' }}>
+            <h3 style={{ margin: '0 0 5px 0' }}>일정 등록</h3>
+            <p style={{ color: '#191f28', fontSize: 'calc(15px * var(--scale-factor, 1))', fontWeight: 'bold', margin: '0' }}>
+              {formatDateOnly(selectedDate)}
+            </p>
+          </div>
           
           {isPastDate ? (
             <p style={{ color: '#e74c3c', fontSize: 'calc(14px * var(--scale-factor, 1))', marginBottom: '15px', fontWeight: 'bold' }}>
