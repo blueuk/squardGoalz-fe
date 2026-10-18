@@ -312,7 +312,7 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members, isAdmin = f
                 }}
                 style={{ padding: '6px 12px', backgroundColor: isEditMode ? '#333' : '#f2f4f6', color: isEditMode ? '#fff' : '#333', border: 'none', borderRadius: '6px', fontSize: 'calc(13px * var(--scale-factor, 1))', fontWeight: 'bold', cursor: 'pointer' }}
               >
-                {isEditMode ? '취소' : '수정'}
+                {isEditMode ? '완료' : '수정'}
               </button>
             )}
           </div>
