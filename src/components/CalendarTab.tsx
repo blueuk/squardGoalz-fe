@@ -1,5 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api';
+import SoccerBallLoader from './SoccerBallLoader';
+
+// Module-level cache for common options
+let cachedLocationOptions: any[] | null = null;
+let cachedStatusOptions: any[] | null = null;
 
 interface CalendarTabProps {
   teamUid: string;
@@ -48,54 +53,9 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members, isAdmin = f
   const [isDeletingSchedule, setIsDeletingSchedule] = useState(false);
   const [statusOptions, setStatusOptions] = useState<any[]>([]);
 
-  const fetchStatusOptions = async () => {
-    try {
-      const res = await api.get('/common_cd/search', { params: { group_cd: 'status_cd' } });
-      if (Array.isArray(res.data)) {
-        setStatusOptions(res.data);
-      }
-    } catch (e) {
-      console.error('Failed to fetch status options', e);
-    }
-  };
-
-  const fetchLocations = async () => {
-    try {
-      const res = await api.get('/common_cd/search', { params: { group_cd: 'stadium_cd' } });
-      if (Array.isArray(res.data)) {
-        setLocationOptions(res.data);
-      }
-    } catch (e) {
-      console.error('Failed to fetch locations', e);
-    }
-  };
-
-  const fetchSchedules = async (isInit = false) => {
-    try {
-      const res = await api.get('/schedule/search', { params: { team_uid: teamUid } });
-      if (Array.isArray(res.data)) {
-        setSchedules(res.data);
-        if (isInit && res.data.length > 0) {
-          const sorted = [...res.data].sort((a, b) => b.play_date.localeCompare(a.play_date));
-          const latestSched = sorted[0];
-          
-          setSelectedDate(latestSched.play_date);
-          setSelectedSchedule(latestSched);
-          
-          const y = parseInt(latestSched.play_date.substring(0, 4));
-          const m = parseInt(latestSched.play_date.substring(4, 6)) - 1;
-          const d = parseInt(latestSched.play_date.substring(6, 8));
-          setCurrentDate(new Date(y, m, d));
-          
-          fetchVotesLocal(latestSched.vote_seq);
-        }
-      } else {
-        setSchedules([]);
-      }
-    } catch (e) {
-      setSchedules([]);
-    }
-  };
+  // Global loading state for CalendarTab
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadingMessage, setLoadingMessage] = useState('일정 정보를 불러오는 중...');
 
   const fetchVotesLocal = async (voteSeq: number) => {
     try {
@@ -115,15 +75,77 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members, isAdmin = f
     }
   };
 
+  const fetchSchedules = async () => {
+    try {
+      const res = await api.get('/schedule/search', { params: { team_uid: teamUid } });
+      if (Array.isArray(res.data)) {
+        setSchedules(res.data);
+      } else {
+        setSchedules([]);
+      }
+    } catch (e) {
+      setSchedules([]);
+    }
+  };
+
+  // ── Initial Data Load with Promise.all and Loader ───────────────────────
   useEffect(() => {
-    fetchSchedules(true);
-    fetchLocations();
-    fetchStatusOptions();
+    let isMounted = true;
+    const loadInitialData = async () => {
+      setIsLoading(true);
+      setLoadingMessage('일정 정보를 불러오는 중...');
+      try {
+        const [schedRes, locRes, statusRes] = await Promise.all([
+          api.get('/schedule/search', { params: { team_uid: teamUid } }),
+          cachedLocationOptions ? Promise.resolve(null) : api.get('/common_cd/search', { params: { group_cd: 'stadium_cd' } }),
+          cachedStatusOptions ? Promise.resolve(null) : api.get('/common_cd/search', { params: { group_cd: 'status_cd' } })
+        ]);
+
+        if (!isMounted) return;
+
+        if (locRes?.data && Array.isArray(locRes.data)) {
+          cachedLocationOptions = locRes.data;
+          setLocationOptions(locRes.data);
+        } else if (cachedLocationOptions) {
+          setLocationOptions(cachedLocationOptions);
+        }
+
+        if (statusRes?.data && Array.isArray(statusRes.data)) {
+          cachedStatusOptions = statusRes.data;
+          setStatusOptions(statusRes.data);
+        } else if (cachedStatusOptions) {
+          setStatusOptions(cachedStatusOptions);
+        }
+
+        if (schedRes?.data && Array.isArray(schedRes.data)) {
+          setSchedules(schedRes.data);
+          if (schedRes.data.length > 0) {
+            const sorted = [...schedRes.data].sort((a, b) => b.play_date.localeCompare(a.play_date));
+            const latestSched = sorted[0];
+
+            setSelectedDate(latestSched.play_date);
+            setSelectedSchedule(latestSched);
+
+            const y = parseInt(latestSched.play_date.substring(0, 4));
+            const m = parseInt(latestSched.play_date.substring(4, 6)) - 1;
+            const d = parseInt(latestSched.play_date.substring(6, 8));
+            setCurrentDate(new Date(y, m, d));
+
+            await fetchVotesLocal(latestSched.vote_seq);
+          }
+        } else {
+          setSchedules([]);
+        }
+      } catch (e) {
+        console.error('Failed to load schedule data', e);
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    };
+
+    loadInitialData();
+    return () => { isMounted = false; };
   }, [teamUid]);
-  
-  useEffect(() => {
-    fetchSchedules(false);
-  }, [currentDate]);
 
   const handlePrevMonth = () => {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
@@ -255,7 +277,13 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members, isAdmin = f
       // Show vote panel
       setSelectedSchedule(schedule);
       syncEditScheduleFields(schedule);
-      fetchVotesLocal(schedule.vote_seq);
+      setIsLoading(true);
+      setLoadingMessage('투표 현황을 불러오는 중...');
+      try {
+        await fetchVotesLocal(schedule.vote_seq);
+      } finally {
+        setIsLoading(false);
+      }
     } else {
       // Show create panel
       setSelectedSchedule(null);
@@ -273,6 +301,8 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members, isAdmin = f
   const handleCreateSchedule = async () => {
     if (isSubmitting) return;
     setIsSubmitting(true);
+    setIsLoading(true);
+    setLoadingMessage('새 일정을 등록하는 중...');
     let finalLocation = '';
     if (createLocationCd === 'custom') {
       finalLocation = createLocationCustom;
@@ -311,6 +341,7 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members, isAdmin = f
       alert('일정 등록에 실패했습니다.');
     } finally {
       setIsSubmitting(false);
+      setIsLoading(false);
     }
   };
 
@@ -321,6 +352,8 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members, isAdmin = f
   const handleConfirmCancelMatch = async () => {
     if (isCanceling) return;
     setIsCanceling(true);
+    setIsLoading(true);
+    setLoadingMessage('경기를 취소 처리하는 중...');
     try {
       await Promise.all(votes.map(v => 
         api.post('/vote/update', {
@@ -338,12 +371,15 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members, isAdmin = f
       alert('상태 변경에 실패했습니다.');
     } finally {
       setIsCanceling(false);
+      setIsLoading(false);
     }
   };
 
   const handleConfirmResetVotes = async () => {
     if (isResettingVotes || !selectedSchedule) return;
     setIsResettingVotes(true);
+    setIsLoading(true);
+    setLoadingMessage('투표를 초기화하는 중...');
     try {
       await Promise.all(votes.map(v => 
         api.post('/vote/update', {
@@ -362,12 +398,15 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members, isAdmin = f
       alert('투표 초기화에 실패했습니다.');
     } finally {
       setIsResettingVotes(false);
+      setIsLoading(false);
     }
   };
 
   const handleConfirmDeleteSchedule = async () => {
     if (isDeletingSchedule || !selectedSchedule) return;
     setIsDeletingSchedule(true);
+    setIsLoading(true);
+    setLoadingMessage('일정을 삭제하는 중...');
     try {
       await api.post('/schedule/delete', {
         vote_seq: selectedSchedule.vote_seq,
@@ -384,11 +423,14 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members, isAdmin = f
       alert('일정 삭제에 실패했습니다.');
     } finally {
       setIsDeletingSchedule(false);
+      setIsLoading(false);
     }
   };
 
   const handleBulkVoteChange = async (targetVoteCd: string) => {
     if (selectedMembers.length === 0) return;
+    setIsLoading(true);
+    setLoadingMessage('투표 상태를 변경하는 중...');
     try {
       await Promise.all(selectedMembers.map(uid => 
         api.post('/vote/update', {
@@ -399,9 +441,11 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members, isAdmin = f
         })
       ));
       setSelectedMembers([]);
-      fetchVotesLocal(selectedSchedule.vote_seq);
+      await fetchVotesLocal(selectedSchedule.vote_seq);
     } catch (e) {
       alert('투표 상태 변경에 실패했습니다.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -721,6 +765,7 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members, isAdmin = f
 
   return (
     <div className="section" style={{ display: 'block' }}>
+      <SoccerBallLoader visible={isLoading} message={loadingMessage} />
       <div className="card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
           <button onClick={handlePrevMonth} style={{ background: 'none', border: 'none', fontSize: 'calc(18px * var(--scale-factor, 1))', cursor: 'pointer' }}>&lt;</button>
