@@ -149,3 +149,15 @@ export function calculateRadarScores(
 
   return radarValues;
 }
+
+// In-memory cache for position weights across tabs
+let memoryPositionWeights: Record<string, Record<string, number>> | null = null;
+
+export function getCachedPositionWeights(): Record<string, Record<string, number>> | null {
+  return memoryPositionWeights;
+}
+
+export function setCachedPositionWeights(weights: Record<string, Record<string, number>>) {
+  memoryPositionWeights = weights;
+}
+

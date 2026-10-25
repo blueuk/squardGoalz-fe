@@ -12,7 +12,7 @@ import CalendarTab from './components/CalendarTab';
 import TeamTab, { PositionLabels } from './components/TeamTab';
 import SoccerBallLoader from './components/SoccerBallLoader';
 import RadarChart from './components/RadarChart';
-import { calculateRadarScores, DEFAULT_POSITION_WEIGHTS } from './components/positionUtils';
+import { calculateRadarScores, DEFAULT_POSITION_WEIGHTS, getCachedPositionWeights, setCachedPositionWeights } from './components/positionUtils';
 
 interface User {
   userid: string;
@@ -52,7 +52,9 @@ function App() {
 
   // MY 탭 스탯 및 가중치 상태
   const [myMemberScores, setMyMemberScores] = useState<any[]>([]);
-  const [myPositionWeights, setMyPositionWeights] = useState<Record<string, Record<string, number>>>(DEFAULT_POSITION_WEIGHTS);
+  const [myPositionWeights, setMyPositionWeights] = useState<Record<string, Record<string, number>>>(
+    () => getCachedPositionWeights() || DEFAULT_POSITION_WEIGHTS
+  );
   const [myScoresLoading, setMyScoresLoading] = useState(false);
 
   useEffect(() => {
@@ -165,36 +167,43 @@ function App() {
     if (!myInfo?.member_uid) return;
 
     try {
+      setMyScoresLoading(true);
       const currentYear = new Date().getFullYear().toString();
-      const res = await api.get('/rate/search', {
-        params: {
-          team_uid: 'df743e05-9440-4c1e-bfdb-fa07159ef0c9',
-          member_uid: myInfo.member_uid,
-          year: currentYear
-        }
-      });
-      if (res.data && res.data.length > 0) {
-        setMyAttendCount(res.data[0].attend_count);
+      const cachedWeights = getCachedPositionWeights();
+
+      // 병렬 요청으로 불필요한 직렬 대기 방지
+      const [rateRes, scoreRes, weightRes] = await Promise.all([
+        api.get('/rate/search', {
+          params: {
+            team_uid: 'df743e05-9440-4c1e-bfdb-fa07159ef0c9',
+            member_uid: myInfo.member_uid,
+            year: currentYear
+          }
+        }),
+        api.get('/memberScore/search', {
+          params: {
+            team_uid: 'df743e05-9440-4c1e-bfdb-fa07159ef0c9',
+            member_uid: myInfo.member_uid
+          }
+        }),
+        cachedWeights ? Promise.resolve(null) : api.get('/position_point/search')
+      ]);
+
+      if (rateRes?.data && rateRes.data.length > 0) {
+        setMyAttendCount(rateRes.data[0].attend_count);
       }
 
-      // 내 스탯 조회
-      setMyScoresLoading(true);
-      const scoreRes = await api.get('/memberScore/search', {
-        params: {
-          team_uid: 'df743e05-9440-4c1e-bfdb-fa07159ef0c9',
-          member_uid: myInfo.member_uid
-        }
-      });
-      setMyMemberScores(scoreRes.data || []);
+      setMyMemberScores(scoreRes?.data || []);
 
-      // 포지션 가중치 조회
-      const weightRes = await api.get('/position_point/search');
-      if (weightRes.data && weightRes.data.length > 0) {
+      if (cachedWeights) {
+        setMyPositionWeights(cachedWeights);
+      } else if (weightRes?.data && weightRes.data.length > 0) {
         const loaded: Record<string, Record<string, number>> = JSON.parse(JSON.stringify(DEFAULT_POSITION_WEIGHTS));
         for (const item of weightRes.data) {
           if (!loaded[item.position_cd]) loaded[item.position_cd] = {};
           loaded[item.position_cd][item.score_cd] = parseFloat(item.position_val) || 0;
         }
+        setCachedPositionWeights(loaded);
         setMyPositionWeights(loaded);
       }
     } catch (error) {

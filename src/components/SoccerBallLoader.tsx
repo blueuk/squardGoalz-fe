@@ -24,3 +24,4 @@ export default function SoccerBallLoader({ visible = true, message = '잠시만 
     </div>
   );
 }
+

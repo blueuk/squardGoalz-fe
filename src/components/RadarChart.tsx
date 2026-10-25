@@ -137,3 +137,4 @@ export default function RadarChart({ scores, size = 260, showValues = true }: Ra
     </div>
   );
 }
+

@@ -7,6 +7,8 @@ import {
   DEFAULT_POSITION_WEIGHTS,
   calculatePositionScores,
   calculateRadarScores,
+  getCachedPositionWeights,
+  setCachedPositionWeights,
 } from './positionUtils';
 
 // ─── Interfaces ───────────────────────────────────────────────────────────────
@@ -259,6 +261,9 @@ function WeightEditor({
   );
 }
 
+// Module-level cache for common codes
+let cachedCommonCodes: Record<string, CommonCd[]> | null = null;
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function TeamTab({ isAdmin }: { isAdmin?: boolean }) {
   const [subTab, setSubTab] = useState<'INFO' | 'SQUAD'>('INFO');
@@ -290,7 +295,9 @@ export default function TeamTab({ isAdmin }: { isAdmin?: boolean }) {
   const [editAccounts, setEditAccounts] = useState<TeamAccount[]>([]);
 
   // Position weights
-  const [positionWeights, setPositionWeights] = useState<Record<string, Record<string, number>>>(DEFAULT_POSITION_WEIGHTS);
+  const [positionWeights, setPositionWeights] = useState<Record<string, Record<string, number>>>(
+    () => getCachedPositionWeights() || DEFAULT_POSITION_WEIGHTS
+  );
   const [showWeightEditor, setShowWeightEditor] = useState(false);
   const [isSavingWeights, setIsSavingWeights] = useState(false);
 
@@ -306,76 +313,113 @@ export default function TeamTab({ isAdmin }: { isAdmin?: boolean }) {
   // Admin map for members with user_id
   const [memberAdminMap, setMemberAdminMap] = useState<Record<string, boolean>>({});
 
-  // ── Initial data load ────────────────────────────────────────────────────
+  // ── Initial data load (병렬 최적화 & N+1 제거) ───────────────────────────
   useEffect(() => {
-    if (!teamInfo) {
-      setIsGlobalLoading(true);
-      setLoadingMessage('팀 정보를 불러오는 중...');
+    if (teamInfo) return;
 
-      const groupCds = ['bank_cd','payment_cd','region_cd','level_cd','day_cd','gender_cd','score_cd','status_cd'];
-      Promise.all(groupCds.map(g => api.get(`/common_cd/search?group_cd=${g}`)))
-        .then(results => {
-          const newCodeLists: Record<string, CommonCd[]> = {};
-          results.forEach((res, i) => { newCodeLists[groupCds[i]] = res.data; });
-          setCodeLists(prev => ({ ...prev, ...newCodeLists }));
-        })
-        .catch(console.error);
+    setIsGlobalLoading(true);
+    setLoadingMessage('팀 정보를 불러오는 중...');
 
-      api.get('/team_info/search?use_yn=Y')
-        .then(res => {
-          if (res.data && res.data.length > 0) {
-            const team = res.data[0];
-            api.get(`/team_member/search?team_uid=${team.team_uid}`)
-              .then(memberRes => {
-                team.member_count = memberRes.data.length;
-                setTeamInfo(team);
-                const sorted = memberRes.data.sort((a: any, b: any) =>
-                  (a.member_name || '').localeCompare(b.member_name || '')
-                );
-                setTeamMembers(sorted);
-              })
-              .catch(() => { team.member_count = 0; setTeamInfo(team); });
+    const loadInitialData = async () => {
+      try {
+        const cachedWeights = getCachedPositionWeights();
 
-            api.get(`/teamAccount/search?team_uid=${team.team_uid}`).then(r => setTeamAccounts(r.data)).catch(console.error);
-            api.get(`/payment/search?team_uid=${team.team_uid}`).then(r => setPayments(r.data)).catch(console.error);
-            api.get(`/memberScore/search?team_uid=${team.team_uid}`).then(r => setMemberScores(r.data)).catch(console.error);
+        // 8개 요청을 병렬로 동시 수행 (N+1 쿼리 및 순차 폭포수 체인 완전 제거)
+        const [
+          commonCdRes,
+          teamInfoRes,
+          memberRes,
+          accountRes,
+          paymentRes,
+          scoreRes,
+          weightRes,
+          userRes
+        ] = await Promise.all([
+          cachedCommonCodes ? Promise.resolve(null) : api.get('/common_cd/search'),
+          api.get('/team_info/search?use_yn=Y'),
+          api.get(`/team_member/search?team_uid=${TEAM_UID}`),
+          api.get(`/teamAccount/search?team_uid=${TEAM_UID}`),
+          api.get(`/payment/search?team_uid=${TEAM_UID}`),
+          api.get(`/memberScore/search?team_uid=${TEAM_UID}`),
+          cachedWeights ? Promise.resolve(null) : api.get('/position_point/search'),
+          api.get('/user/get')
+        ]);
+
+        // 1. 공통코드 캐싱 및 반영
+        if (cachedCommonCodes) {
+          setCodeLists(cachedCommonCodes);
+        } else if (commonCdRes?.data) {
+          const grouped: Record<string, CommonCd[]> = {
+            bank_cd: [], payment_cd: [], region_cd: [], level_cd: [],
+            day_cd: [], gender_cd: [], score_cd: [], status_cd: []
+          };
+          commonCdRes.data.forEach((item: any) => {
+            if (!grouped[item.group_cd]) grouped[item.group_cd] = [];
+            grouped[item.group_cd].push(item);
+          });
+          cachedCommonCodes = grouped;
+          setCodeLists(grouped);
+        }
+
+        // 2. 포지션 가중치 캐싱 및 반영
+        if (cachedWeights) {
+          setPositionWeights(cachedWeights);
+        } else if (weightRes?.data && weightRes.data.length > 0) {
+          const loaded: Record<string, Record<string, number>> = JSON.parse(JSON.stringify(DEFAULT_POSITION_WEIGHTS));
+          for (const item of weightRes.data) {
+            if (!loaded[item.position_cd]) loaded[item.position_cd] = {};
+            loaded[item.position_cd][item.score_cd] = parseFloat(item.position_val) || 0;
           }
-        })
-        .catch(err => console.error('팀 정보를 불러오는데 실패했습니다.', err))
-        .finally(() => setIsGlobalLoading(false));
+          setCachedPositionWeights(loaded);
+          setPositionWeights(loaded);
+        }
 
-      // Load position weights from DB
-      api.get('/position_point/search')
-        .then(res => {
-          if (res.data && res.data.length > 0) {
-            const loaded: Record<string, Record<string, number>> = JSON.parse(JSON.stringify(DEFAULT_POSITION_WEIGHTS));
-            for (const item of res.data) {
-              if (!loaded[item.position_cd]) loaded[item.position_cd] = {};
-              loaded[item.position_cd][item.score_cd] = parseFloat(item.position_val) || 0;
+        // 3. 관리자 권한 셋 구성 (1회의 /user/get 결과로 즉시 매핑)
+        const adminUserSet = new Set<string>();
+        if (userRes?.data && Array.isArray(userRes.data)) {
+          userRes.data.forEach((u: any) => {
+            if (u.auth_cd === '01') adminUserSet.add(u.userid);
+          });
+        }
+
+        // 4. 팀 멤버 목록 및 관리자 여부 매핑
+        let members: TeamMember[] = [];
+        if (memberRes?.data) {
+          members = memberRes.data.sort((a: any, b: any) =>
+            (a.member_name || '').localeCompare(b.member_name || '')
+          );
+          setTeamMembers(members);
+
+          const adminMap: Record<string, boolean> = {};
+          members.forEach(m => {
+            if (m.user_id) {
+              adminMap[m.member_uid] = adminUserSet.has(m.user_id);
             }
-            setPositionWeights(loaded);
-          }
-        })
-        .catch(() => { /* fallback to default */ });
-    }
-  }, [teamInfo]);
+          });
+          setMemberAdminMap(adminMap);
+        }
 
-  // Load admin status for members with user_id
-  useEffect(() => {
-    const membersWithUserId = teamMembers.filter(m => m.user_id);
-    if (membersWithUserId.length === 0) return;
-    Promise.all(
-      membersWithUserId.map(m =>
-        api.get(`/user/get?userid=${m.user_id}`)
-          .then(res => ({ member_uid: m.member_uid, auth_cd: res.data?.[0]?.auth_cd ?? '02' }))
-          .catch(() => ({ member_uid: m.member_uid, auth_cd: '02' }))
-      )
-    ).then(results => {
-      const map: Record<string, boolean> = {};
-      results.forEach(r => { map[r.member_uid] = r.auth_cd === '01'; });
-      setMemberAdminMap(map);
-    });
-  }, [teamMembers]);
+        // 5. 팀 정보 세팅
+        if (teamInfoRes?.data && teamInfoRes.data.length > 0) {
+          const team = teamInfoRes.data[0];
+          team.member_count = members.length;
+          setTeamInfo(team);
+        }
+
+        // 6. 계좌, 결제, 스탯 세팅
+        if (accountRes?.data) setTeamAccounts(accountRes.data);
+        if (paymentRes?.data) setPayments(paymentRes.data);
+        if (scoreRes?.data) setMemberScores(scoreRes.data);
+
+      } catch (err) {
+        console.error('팀 정보를 불러오는데 실패했습니다.', err);
+      } finally {
+        setIsGlobalLoading(false);
+      }
+    };
+
+    loadInitialData();
+  }, [teamInfo]);
 
   // ── Helper functions ──────────────────────────────────────────────────────
   const copyToClipboard = (text: string) => {
@@ -517,17 +561,28 @@ export default function TeamTab({ isAdmin }: { isAdmin?: boolean }) {
       await api.post('/team_member/insert', {
         members: [{ team_uid: TEAM_UID, member_name: newMemberName.trim(), status_cd: '01' }]
       });
-      // Reload members and scores
-      const res = await api.get(`/team_member/search?team_uid=${TEAM_UID}`);
-      const sorted = res.data.sort((a: any, b: any) =>
+      // Reload members, scores, users in parallel
+      const [mRes, sRes, uRes] = await Promise.all([
+        api.get(`/team_member/search?team_uid=${TEAM_UID}`),
+        api.get(`/memberScore/search?team_uid=${TEAM_UID}`),
+        api.get('/user/get')
+      ]);
+      const sorted = (mRes.data || []).sort((a: any, b: any) =>
         (a.member_name || '').localeCompare(b.member_name || '')
       );
       setTeamMembers(sorted);
       if (teamInfo) setTeamInfo({ ...teamInfo, member_count: sorted.length });
+      setMemberScores(sRes.data || []);
 
-      // Reload scores so new member's 13-point default stats are loaded
-      const scoreRes = await api.get(`/memberScore/search?team_uid=${TEAM_UID}`);
-      setMemberScores(scoreRes.data);
+      const adminUserSet = new Set<string>();
+      if (uRes?.data && Array.isArray(uRes.data)) {
+        uRes.data.forEach((u: any) => { if (u.auth_cd === '01') adminUserSet.add(u.userid); });
+      }
+      const adminMap: Record<string, boolean> = {};
+      sorted.forEach((m: TeamMember) => {
+        if (m.user_id) adminMap[m.member_uid] = adminUserSet.has(m.user_id);
+      });
+      setMemberAdminMap(adminMap);
 
       setNewMemberName('');
       setShowAddMember(false);
@@ -580,6 +635,7 @@ export default function TeamTab({ isAdmin }: { isAdmin?: boolean }) {
         }
       }
       await api.post('/position_point/bulk_upsert', { items });
+      setCachedPositionWeights(weights);
       setPositionWeights(weights);
       setShowWeightEditor(false);
       alert('포지션 가중치가 성공적으로 저장되었습니다.');
