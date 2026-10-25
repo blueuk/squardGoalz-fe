@@ -1020,3 +1020,40 @@ h2 {
   transform: scale(0.98);
 }
 
+
+/* Soccer Ball Loader Animation */
+@keyframes soccerRoll {
+  0% {
+    transform: translateX(-35px) rotate(0deg);
+  }
+  50% {
+    transform: translateX(35px) rotate(360deg);
+  }
+  100% {
+    transform: translateX(-35px) rotate(720deg);
+  }
+}
+
+.soccer-ball-loader {
+  display: inline-block;
+  font-size: 38px;
+  line-height: 1;
+  animation: soccerRoll 1.4s ease-in-out infinite;
+  user-select: none;
+}
+
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 99999;
+}

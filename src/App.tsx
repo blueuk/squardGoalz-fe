@@ -9,7 +9,10 @@ import footerTeam from './img/footerTeam.png';
 import footerMy from './img/footerMy.png';
 import './App.css';
 import CalendarTab from './components/CalendarTab';
-import TeamTab from './components/TeamTab';
+import TeamTab, { PositionLabels } from './components/TeamTab';
+import SoccerBallLoader from './components/SoccerBallLoader';
+import RadarChart from './components/RadarChart';
+import { calculateRadarScores, DEFAULT_POSITION_WEIGHTS } from './components/positionUtils';
 
 interface User {
   userid: string;
@@ -46,6 +49,11 @@ function App() {
   const [isRollingPlaying, setIsRollingPlaying] = useState(true);
   const [currentRollingIdx, setCurrentRollingIdx] = useState(0);
   const [isFading, setIsFading] = useState(false);
+
+  // MY 탭 스탯 및 가중치 상태
+  const [myMemberScores, setMyMemberScores] = useState<any[]>([]);
+  const [myPositionWeights, setMyPositionWeights] = useState<Record<string, Record<string, number>>>(DEFAULT_POSITION_WEIGHTS);
+  const [myScoresLoading, setMyScoresLoading] = useState(false);
 
   useEffect(() => {
     let interval: any = null;
@@ -92,12 +100,10 @@ function App() {
   useEffect(() => {
     const checkSession = async () => {
       try {
-        // 백엔드의 세션 체크 엔드포인트 호출
         const res = await api.get('/kakao/session');
         if (res.data && res.data.userid) {
           const sessionUser = res.data;
           
-          // 유저 상세 정보 조회 (이름, 전화번호 등)
           try {
             const userRes = await api.get('/user/get', { params: { userid: sessionUser.userid } });
             if (userRes.data && userRes.data.length > 0) {
@@ -115,7 +121,7 @@ function App() {
           }
         }
       } catch (error) {
-        // 401 등 세션이 없으면 무시 (null 상태 유지)
+        // 세션 없으면 무시
       } finally {
         setLoading(false);
       }
@@ -123,14 +129,14 @@ function App() {
     checkSession();
   }, []);
 
-  // user가 세팅되면 풋고추FC 전체 참석률(HOME 화면용)을 조회합니다.
+  // user가 세팅되면 풋고추FC 전체 참석률 조회
   useEffect(() => {
     if (user) {
       fetchRates();
     }
   }, [user]);
 
-  // MY 탭 진입 시 현재 로그인한 유저의 올해 참석 횟수를 개별 조회합니다.
+  // MY 탭 진입 시 현재 로그인한 유저의 올해 참석 횟수 및 스탯 조회
   useEffect(() => {
     if (activeTab === 'MY' && user && rates.length > 0) {
       fetchMyRate();
@@ -139,11 +145,9 @@ function App() {
 
   const fetchRates = async () => {
     try {
-      // 풋고추FC의 2026 참석률 조회
-      // rateController의 GET /rate/search API를 호출합니다.
       const res = await api.get('/rate/search', {
         params: {
-          team_uid: 'df743e05-9440-4c1e-bfdb-fa07159ef0c9', // 풋고추FC 고유 식별자
+          team_uid: 'df743e05-9440-4c1e-bfdb-fa07159ef0c9',
           year: '2026',
         }
       });
@@ -154,8 +158,6 @@ function App() {
   };
 
   const fetchMyRate = async () => {
-    // 홈 화면 용으로 조회된 rates에서 내 member_uid를 찾습니다.
-    // 카카오 연동(user_id)이 DB에 비어있을 수 있으므로 실명(member_name)을 Fallback으로 사용합니다.
     const myInfo = rates.find(r => 
       (r.user_id && r.user_id === user?.userid) || 
       (r.member_name === user?.username)
@@ -174,13 +176,35 @@ function App() {
       if (res.data && res.data.length > 0) {
         setMyAttendCount(res.data[0].attend_count);
       }
+
+      // 내 스탯 조회
+      setMyScoresLoading(true);
+      const scoreRes = await api.get('/memberScore/search', {
+        params: {
+          team_uid: 'df743e05-9440-4c1e-bfdb-fa07159ef0c9',
+          member_uid: myInfo.member_uid
+        }
+      });
+      setMyMemberScores(scoreRes.data || []);
+
+      // 포지션 가중치 조회
+      const weightRes = await api.get('/position_point/search');
+      if (weightRes.data && weightRes.data.length > 0) {
+        const loaded: Record<string, Record<string, number>> = JSON.parse(JSON.stringify(DEFAULT_POSITION_WEIGHTS));
+        for (const item of weightRes.data) {
+          if (!loaded[item.position_cd]) loaded[item.position_cd] = {};
+          loaded[item.position_cd][item.score_cd] = parseFloat(item.position_val) || 0;
+        }
+        setMyPositionWeights(loaded);
+      }
     } catch (error) {
-      console.error("내 올해 참석률 개별 조회 실패:", error);
+      console.error("내 데이터 조회 실패:", error);
+    } finally {
+      setMyScoresLoading(false);
     }
   };
 
   const handleKakaoLogin = () => {
-    // 백엔드의 카카오 로그인 라우터로 이동하여 소셜 로그인을 시작합니다.
     window.location.href = '/kakao/login';
   };
 
@@ -212,7 +236,6 @@ function App() {
         const schedules = schedRes.data || [];
         
         const now = new Date();
-        // offset to KST to prevent timezone bug in string comparison
         const kstOffset = 9 * 60 * 60 * 1000;
         const kstNow = new Date(now.getTime() + kstOffset);
         const nowStr = kstNow.toISOString().split('T')[0];
@@ -320,7 +343,7 @@ function App() {
       });
       alert('상태가 성공적으로 변경되었습니다.');
       setEditingStatus(false);
-      fetchRates(); // 변경 후 정보 다시 불러오기
+      fetchRates();
     } catch (error) {
       alert('상태 변경 중 오류가 발생했습니다.');
     } finally {
@@ -336,13 +359,14 @@ function App() {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
       });
       alert('회원가입이 완료되었습니다!');
-      window.location.href = '/'; // 메인으로 리다이렉트 (다시 세션 체크)
+      window.location.href = '/';
     } catch (error) {
       alert('회원가입 중 오류가 발생했습니다.');
     }
   };
 
-  if (loading) return <div style={{textAlign:'center', marginTop:'50px'}}>로딩 중...</div>;
+  // 로딩 모션 (축구공 좌우 롤링)
+  if (loading) return <SoccerBallLoader message="풋고추FC 로딩 중..." />;
 
   if (isRegister) {
     return (
@@ -373,6 +397,8 @@ function App() {
 
   return (
     <div className="app-container">
+      {statusUpdating && <SoccerBallLoader message="상태를 변경하는 중입니다..." />}
+
       {!user ? (
         <div style={{ textAlign: 'center', marginTop: '100px', padding: '20px' }}>
           <img 
@@ -405,7 +431,7 @@ function App() {
             alignItems: 'center', 
             width: '100%',
             maxWidth: '1200px',
-            height: '50px',
+            height: '50px', 
             padding: '0 15px', 
             borderBottom: '1px solid #ddd',
             backgroundColor: '#fff',
@@ -492,7 +518,7 @@ function App() {
                               <th>강수량</th>
                             </tr>
                             {[weatherData.targetTime, weatherData.targetTime + 1, weatherData.targetTime + 2].map(hour => {
-                              if (hour > 23) return null; // prevent out of bounds
+                              if (hour > 23) return null;
                               const temp = weatherData.hourly.temperature_2m[hour];
                               const prob = weatherData.hourly.precipitation_probability[hour];
                               const amount = weatherData.hourly.precipitation[hour];
@@ -655,8 +681,41 @@ function App() {
                     </span>
                   </div>
                 </div>
+
+                {/* MY 탭 내 능력치 6각형 그래프 & 포지션별 라벨+점수 */}
+                <div style={{ borderTop: '1px solid #eee', paddingTop: '15px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                    <span style={{ fontSize: '15px', fontWeight: 'bold', color: '#191f28' }}>📊 내 능력치 분석</span>
+                  </div>
+
+                  {myScoresLoading ? (
+                    <div style={{ textAlign: 'center', padding: '20px 0', color: '#8b95a1', fontSize: '13px' }}>
+                      능력치를 분석하는 중입니다...
+                    </div>
+                  ) : myMemberScores.length > 0 ? (
+                    <div style={{ backgroundColor: '#f9fafb', borderRadius: '14px', padding: '16px', border: '1px solid #f2f4f6' }}>
+                      {/* 6각형 레이더 그래프 */}
+                      <div style={{ textAlign: 'center', marginBottom: '10px' }}>
+                        <RadarChart scores={calculateRadarScores(myMemberScores)} size={220} showValues={true} />
+                      </div>
+
+                      {/* 포지션별 라벨 + 점수 */}
+                      <div style={{ marginTop: '14px', borderTop: '1px solid #eef0f2', paddingTop: '12px' }}>
+                        <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#4e5968', marginBottom: '6px' }}>
+                          포지션별 환산 점수 (100점 만점)
+                        </div>
+                        <PositionLabels memberScoreList={myMemberScores} positionWeights={myPositionWeights} />
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ textAlign: 'center', padding: '15px 0', color: '#8b95a1', fontSize: '13px' }}>
+                      등록된 능력치 정보가 없습니다.
+                    </div>
+                  )}
+                </div>
+
                 <button onClick={handleLogout} className="btn" style={{ 
-                  marginTop: '30px', 
+                  marginTop: '20px', 
                   backgroundColor: '#f8f9fa', 
                   color: '#dc3545',
                   border: '1px solid #ddd'
