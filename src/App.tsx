@@ -585,17 +585,52 @@ function App() {
 
             {activeTab === 'MY' && user && (
               <div className="card" style={{ textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                <div style={{ textAlign: 'center', marginBottom: '10px' }}>
+                {/* 1. 프로필 요약 */}
+                <div style={{ textAlign: 'center', marginBottom: '5px' }}>
                   <div style={{ 
                     width: '80px', height: '80px', borderRadius: '50%', backgroundColor: '#eee', 
-                    margin: '0 auto 10px auto', display: 'flex', alignItems: 'center', justifyContent: 'center' 
+                    margin: '0 auto 10px auto', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '32px'
                   }}>
                     👤
                   </div>
                   <h3 style={{ margin: 0 }}>{user.username || '이름 없음'}</h3>
                   <p style={{ margin: '5px 0 0 0', color: '#888' }}>{user.nickname}</p>
                 </div>
-                
+
+                {/* 2. 두 번째: 내 능력치 분석 (6각형 레이더 그래프 & 포지션별 라벨+점수) */}
+                <div style={{ borderTop: '1px solid #eee', paddingTop: '15px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                    <span style={{ fontSize: '15px', fontWeight: 'bold', color: '#191f28' }}>📊 내 능력치 분석</span>
+                  </div>
+
+                  {myScoresLoading ? (
+                    <div style={{ textAlign: 'center', padding: '20px 0', color: '#8b95a1', fontSize: '13px' }}>
+                      능력치를 분석하는 중입니다...
+                    </div>
+                  ) : myMemberScores.length > 0 ? (
+                    <div style={{ backgroundColor: '#f9fafb', borderRadius: '14px', padding: '16px', border: '1px solid #f2f4f6' }}>
+                      {/* 6각형 레이더 그래프 */}
+                      <div style={{ textAlign: 'center', marginBottom: '10px' }}>
+                        <RadarChart scores={calculateRadarScores(myMemberScores)} size={220} showValues={true} />
+                      </div>
+
+                      {/* 포지션별 라벨 + 점수 */}
+                      <div style={{ marginTop: '14px', borderTop: '1px solid #eef0f2', paddingTop: '12px' }}>
+                        <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#4e5968', marginBottom: '6px' }}>
+                          포지션별 환산 점수 (100점 만점)
+                        </div>
+                        <PositionLabels memberScoreList={myMemberScores} positionWeights={myPositionWeights} />
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ textAlign: 'center', padding: '15px 0', color: '#8b95a1', fontSize: '13px' }}>
+                      등록된 능력치 정보가 없습니다.
+                    </div>
+                  )}
+                </div>
+
+                {/* 3. 세 번째: 회원 상세 정보 */}
                 <div style={{ borderTop: '1px solid #eee', paddingTop: '15px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span style={{ color: '#888' }}>ID (카카오)</span>
@@ -682,40 +717,9 @@ function App() {
                   </div>
                 </div>
 
-                {/* MY 탭 내 능력치 6각형 그래프 & 포지션별 라벨+점수 */}
-                <div style={{ borderTop: '1px solid #eee', paddingTop: '15px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                    <span style={{ fontSize: '15px', fontWeight: 'bold', color: '#191f28' }}>📊 내 능력치 분석</span>
-                  </div>
-
-                  {myScoresLoading ? (
-                    <div style={{ textAlign: 'center', padding: '20px 0', color: '#8b95a1', fontSize: '13px' }}>
-                      능력치를 분석하는 중입니다...
-                    </div>
-                  ) : myMemberScores.length > 0 ? (
-                    <div style={{ backgroundColor: '#f9fafb', borderRadius: '14px', padding: '16px', border: '1px solid #f2f4f6' }}>
-                      {/* 6각형 레이더 그래프 */}
-                      <div style={{ textAlign: 'center', marginBottom: '10px' }}>
-                        <RadarChart scores={calculateRadarScores(myMemberScores)} size={220} showValues={true} />
-                      </div>
-
-                      {/* 포지션별 라벨 + 점수 */}
-                      <div style={{ marginTop: '14px', borderTop: '1px solid #eef0f2', paddingTop: '12px' }}>
-                        <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#4e5968', marginBottom: '6px' }}>
-                          포지션별 환산 점수 (100점 만점)
-                        </div>
-                        <PositionLabels memberScoreList={myMemberScores} positionWeights={myPositionWeights} />
-                      </div>
-                    </div>
-                  ) : (
-                    <div style={{ textAlign: 'center', padding: '15px 0', color: '#8b95a1', fontSize: '13px' }}>
-                      등록된 능력치 정보가 없습니다.
-                    </div>
-                  )}
-                </div>
-
+                {/* 4. 네 번째: 로그아웃 버튼 */}
                 <button onClick={handleLogout} className="btn" style={{ 
-                  marginTop: '20px', 
+                  marginTop: '15px', 
                   backgroundColor: '#f8f9fa', 
                   color: '#dc3545',
                   border: '1px solid #ddd'
