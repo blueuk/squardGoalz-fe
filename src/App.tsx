@@ -12,6 +12,7 @@ import CalendarTab from './components/CalendarTab';
 import TeamTab, { PositionLabels } from './components/TeamTab';
 import SoccerBallLoader from './components/SoccerBallLoader';
 import RadarChart from './components/RadarChart';
+import HomeMatchCard from './components/HomeMatchCard';
 import { calculateRadarScores, DEFAULT_POSITION_WEIGHTS, buildWeightsFromRows, getCachedPositionWeights, setCachedPositionWeights } from './components/positionUtils';
 
 interface User {
@@ -230,70 +231,6 @@ function App() {
   const [statusUpdating, setStatusUpdating] = useState(false);
   const myInfo = rates.find(r => (r.user_id && r.user_id === user?.userid) || (r.member_name === user?.username));
 
-  // 날씨 관련 상태
-  const [weatherData, setWeatherData] = useState<any>(null);
-  const [weatherError, setWeatherError] = useState(false);
-
-  useEffect(() => {
-    const fetchWeather = async () => {
-      try {
-        const schedRes = await api.get('/schedule/search', { params: { team_uid: 1 } });
-        const schedules = schedRes.data || [];
-        
-        const now = new Date();
-        const kstOffset = 9 * 60 * 60 * 1000;
-        const kstNow = new Date(now.getTime() + kstOffset);
-        const nowStr = kstNow.toISOString().split('T')[0];
-        
-        let targetSchedule = null;
-        let minDiff = Infinity;
-        
-        for (const s of schedules) {
-          if (s.play_date >= nowStr) {
-            const diff = new Date(s.play_date).getTime() - new Date(nowStr).getTime();
-            if (diff < minDiff) {
-              minDiff = diff;
-              targetSchedule = s;
-            }
-          }
-        }
-        
-        let dateStr = '';
-        let lat = 37.58;
-        let lon = 127.24;
-        let locationName = '월문3리 풋살구장';
-        let targetTime = 7;
-        
-        if (targetSchedule) {
-          dateStr = targetSchedule.play_date;
-          locationName = targetSchedule.play_location || '월문3리 풋살구장';
-          if (locationName.includes('다산')) {
-            lat = 37.618;
-            lon = 127.158;
-          }
-          
-          if (targetSchedule.play_start_time) {
-            const parsedTime = parseInt(targetSchedule.play_start_time.split(':')[0], 10);
-            if (!isNaN(parsedTime)) targetTime = parsedTime;
-          }
-        } else {
-          const distToSat = (6 - now.getDay() + 7) % 7;
-          const satDate = new Date(now.getTime() + distToSat * 24 * 60 * 60 * 1000);
-          dateStr = satDate.toISOString().split('T')[0];
-        }
-
-        const apiUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,precipitation_probability,precipitation,weathercode&timezone=Asia%2FSeoul&start_date=${dateStr}&end_date=${dateStr}`;
-        const response = await fetch(apiUrl);
-        const data = await response.json();
-        setWeatherData({ hourly: data.hourly, dateStr, locationName, targetTime });
-      } catch (e) {
-        console.error(e);
-        setWeatherError(true);
-      }
-    };
-    fetchWeather();
-  }, []);
-
   // 유튜브 관련 상태
   const [videos, setVideos] = useState<any[]>([]);
   const [videosLoading, setVideosLoading] = useState(true);
@@ -328,14 +265,6 @@ function App() {
     };
     fetchVideos();
   }, []);
-
-  const getWeatherEmoji = (code: number) => {
-    if (code === 0) return "☀️";
-    if (code <= 3) return "⛅";
-    if (code >= 61 && code <= 65) return "☔";
-    if (code >= 71 && code <= 75) return "❄️";
-    return "☁️";
-  };
 
   const handleStatusChange = async () => {
     if (!myInfo?.member_uid) return;
@@ -504,49 +433,7 @@ function App() {
                   </div>
                 </div>
                 
-                <div className="weather-card" style={{ marginTop: '20px' }}>
-                  <div className="weather-location">월문3리 풋살구장 (07:00 ~ 09:00)</div>
-                  <div id="weather-content">
-                    {weatherError ? (
-                      <p>날씨 정보를 불러오지 못했습니다.</p>
-                    ) : !weatherData ? (
-                      <p className="loading">데이터를 가져오는 중...</p>
-                    ) : (
-                      <>
-                        <table className="weather-table">
-                          <tbody>
-                            <tr className="weather-header">
-                              <th>시간</th>
-                              <th>상태</th>
-                              <th>기온</th>
-                              <th>확률</th>
-                              <th>강수량</th>
-                            </tr>
-                            {[weatherData.targetTime, weatherData.targetTime + 1, weatherData.targetTime + 2].map(hour => {
-                              if (hour > 23) return null;
-                              const temp = weatherData.hourly.temperature_2m[hour];
-                              const prob = weatherData.hourly.precipitation_probability[hour];
-                              const amount = weatherData.hourly.precipitation[hour];
-                              const code = weatherData.hourly.weathercode[hour];
-                              return (
-                                <tr key={hour} className="weather-row">
-                                  <td className="weather-time">{hour}:00</td>
-                                  <td>{getWeatherEmoji(code)}</td>
-                                  <td className="weather-temp">{temp}°</td>
-                                  <td className="weather-precip-prob">{prob}%</td>
-                                  <td className="weather-precip-amount">{amount}mm</td>
-                                </tr>
-                              );
-                            })}
-                          </tbody>
-                        </table>
-                        <p style={{ fontSize: '0.7rem', color: '#999', marginTop: '15px' }}>
-                          기준일: {weatherData.dateStr}
-                        </p>
-                      </>
-                    )}
-                  </div>
-                </div>
+                <HomeMatchCard isAdmin={user?.auth_cd === '01'} />
               </div>
             )}
 

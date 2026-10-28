@@ -1,0 +1,245 @@
+/* ── 홈 화면 최근 경기 / 팀 배정 카드 ─────────────────────────────────────── */
+
+.match-card {
+  margin-top: 20px;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.match-empty {
+  margin: 0;
+  padding: 0.75rem 0;
+  text-align: center;
+  font-size: calc(13px * var(--scale-factor, 1));
+  color: var(--toss-gray, #8b95a1);
+}
+
+/* 경기일자 | 경기장소 */
+.match-label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.4rem;
+  font-size: calc(15px * var(--scale-factor, 1));
+  font-weight: 700;
+  color: #191f28;
+}
+
+.match-label > span {
+  overflow-wrap: anywhere;
+}
+
+.match-label-sep {
+  color: #c5cdd7;
+}
+
+/* 1시간 간격 날씨 라벨 */
+.match-weather {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  margin: 0.625rem 0 0.9rem;
+}
+
+.match-weather-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.55rem;
+  border-radius: 999px;
+  background: #f2f4f6;
+  font-size: calc(12px * var(--scale-factor, 1));
+  color: #4e5968;
+  white-space: nowrap;
+}
+
+.match-weather-chip b {
+  color: #191f28;
+}
+
+.match-weather-chip .precip {
+  color: var(--toss-blue, #3182f6);
+}
+
+.match-weather-empty {
+  font-size: calc(12px * var(--scale-factor, 1));
+  color: var(--toss-gray, #8b95a1);
+}
+
+/* 팀 배정 결과 */
+.arrange-teams {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 8.5rem), 1fr));
+  gap: 0.625rem;
+}
+
+.arrange-team {
+  border: 1px solid #f2f4f6;
+  border-top: 4px solid;
+  border-radius: 12px;
+  padding: 0.625rem;
+  background: #fff;
+  min-width: 0;
+}
+
+.arrange-team-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.4rem;
+}
+
+.arrange-team-img {
+  width: 2.75rem;
+  height: 2.75rem;
+  object-fit: contain;
+}
+
+.arrange-team-count {
+  font-size: calc(13px * var(--scale-factor, 1));
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.arrange-team-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.arrange-team-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+  font-size: calc(13px * var(--scale-factor, 1));
+  color: #191f28;
+}
+
+.arrange-keeper {
+  flex-shrink: 0;
+  width: 1.3rem;
+  height: 1.3rem;
+  border-radius: 50%;
+  color: #fff;
+  font-size: calc(11px * var(--scale-factor, 1));
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.arrange-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.arrange-merc {
+  flex-shrink: 0;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: #fff4e5;
+  color: #e67700;
+  font-size: calc(10px * var(--scale-factor, 1));
+  font-weight: 700;
+}
+
+/* 배정 폼 */
+.arrange-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.arrange-form-summary {
+  font-size: calc(13px * var(--scale-factor, 1));
+  color: #4e5968;
+}
+
+.arrange-form-summary .ok { color: #137333; }
+.arrange-form-summary .warn { color: #f04452; }
+
+.arrange-form-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.arrange-form-fields label {
+  flex: 1 1 5.5rem;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: calc(12px * var(--scale-factor, 1));
+  color: #4e5968;
+  font-weight: 600;
+}
+
+.arrange-form-fields input,
+.arrange-form-fields select {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.5rem;
+  border-radius: 8px;
+  border: 1px solid #ccd3dc;
+  background: #fff;
+  font-size: calc(14px * var(--scale-factor, 1));
+  margin: 0;
+}
+
+.arrange-form-hint {
+  margin: 0;
+  font-size: calc(11px * var(--scale-factor, 1));
+  color: #8b95a1;
+}
+
+.arrange-preview-badge {
+  align-self: flex-start;
+  padding: 2px 8px;
+  border-radius: 8px;
+  background: #fff4e5;
+  color: #e67700;
+  font-size: calc(11px * var(--scale-factor, 1));
+  font-weight: 700;
+}
+
+/* 버튼 */
+.arrange-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.625rem;
+}
+
+.arrange-btn {
+  flex: 1 1 5rem;
+  min-width: 0;
+  white-space: nowrap;
+  padding: 0.65rem;
+  border: none;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: calc(13px * var(--scale-factor, 1));
+  cursor: pointer;
+}
+
+.arrange-btn.ghost { background: #f2f4f6; color: #4e5968; }
+.arrange-btn.secondary { background: #e8f3ff; color: var(--toss-blue, #3182f6); }
+.arrange-btn.primary { background: var(--toss-blue, #3182f6); color: #fff; }
+
+.arrange-btn.big {
+  width: 100%;
+  padding: 1.1rem;
+  font-size: calc(17px * var(--scale-factor, 1));
+  background: var(--toss-blue, #3182f6);
+  color: #fff;
+  border-radius: 14px;
+  box-shadow: 0 4px 12px rgba(49, 130, 246, 0.25);
+}
