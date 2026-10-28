@@ -25,6 +25,7 @@ const TEAM_STYLES = [
 const DEFAULT_LOCATION = { name: '월문3리 풋살구장', lat: 37.58, lon: 127.24 };
 const WEATHER_HOURS = 3; // 종료시간이 없으므로 시작시간부터 3개(2시간) 표시
 const WEATHER_MIN_SCALE = 0.7; // 날씨 라벨 최소 축소 비율 (12px -> 8.4px)
+const TOAST_DURATION = 2000;
 
 interface Schedule {
   vote_seq: number;
@@ -258,8 +259,18 @@ export default function HomeMatchCard({ isAdmin }: { isAdmin?: boolean }) {
   const handleCopyShareText = async () => {
     if (!schedule || arrangement.length === 0) return;
     const ok = await copyText(buildShareText(schedule.play_date, arrangement));
-    alert(ok ? '팀 배정 내용이 복사되었습니다.\n카카오톡 채팅창에 붙여넣기 해주세요.' : '복사에 실패했습니다.');
+    showToast(ok ? '✅ 복사되었습니다. 카톡에 붙여넣어 주세요' : '복사에 실패했습니다');
   };
+
+  // ── 토스트 (2초 후 자동으로 사라짐) ─────────────────────────────────────────
+  const [toast, setToast] = useState<string | null>(null);
+  const toastTimer = useRef<number | undefined>(undefined);
+  const showToast = (message: string) => {
+    window.clearTimeout(toastTimer.current);
+    setToast(message);
+    toastTimer.current = window.setTimeout(() => setToast(null), TOAST_DURATION);
+  };
+  useEffect(() => () => window.clearTimeout(toastTimer.current), []);
 
   const saveArrange = async () => {
     if (!schedule || !preview) return;
@@ -358,6 +369,7 @@ export default function HomeMatchCard({ isAdmin }: { isAdmin?: boolean }) {
   return (
     <div className="card match-card">
       <SoccerBallLoader visible={busy} message={busyMessage} />
+      {toast && <div className="match-toast" role="status">{toast}</div>}
       {showModal && renderModal()}
 
       {preview ? (
