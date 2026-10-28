@@ -63,12 +63,9 @@ const formatPlayDate = (d: string) => {
 
 const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
 
-// 총 인원으로 기본 팀 수 / 팀당 인원 추천
-const suggestOptions = (total: number) => {
-  const teamCount = clamp(Math.round(total / 5) || 2, 2, MAX_TEAM_COUNT);
-  const teamSize = clamp(Math.ceil(total / teamCount), MIN_TEAM_SIZE, MAX_TEAM_SIZE);
-  return { teamCount, teamSize };
-};
+// 팀 배정 모달 기본값
+const DEFAULT_TEAM_COUNT = 2;
+const DEFAULT_TEAM_SIZE = 6;
 
 export default function HomeMatchCard({ isAdmin }: { isAdmin?: boolean }) {
   const [loading, setLoading] = useState(true);
@@ -82,8 +79,8 @@ export default function HomeMatchCard({ isAdmin }: { isAdmin?: boolean }) {
   const [participants, setParticipants] = useState<ArrangeParticipant[]>([]);
   const [weights, setWeights] = useState<Record<string, Record<string, number>>>({});
   const [mercCount, setMercCount] = useState(0);
-  const [teamCount, setTeamCount] = useState(2);
-  const [teamSize, setTeamSize] = useState(5);
+  const [teamCount, setTeamCount] = useState(DEFAULT_TEAM_COUNT);
+  const [teamSize, setTeamSize] = useState(DEFAULT_TEAM_SIZE);
   const [preview, setPreview] = useState<ArrangedMember[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [busyMessage, setBusyMessage] = useState('');
@@ -174,9 +171,8 @@ export default function HomeMatchCard({ isAdmin }: { isAdmin?: boolean }) {
         }));
       setParticipants(list);
 
-      const suggested = suggestOptions(list.length + mercCount);
-      setTeamCount(suggested.teamCount);
-      setTeamSize(suggested.teamSize);
+      setTeamCount(DEFAULT_TEAM_COUNT);
+      setTeamSize(DEFAULT_TEAM_SIZE);
       setShowModal(true);
     } catch (err) {
       console.error(err);
