@@ -138,16 +138,35 @@ export function calculateRadarScores(
     scoreMap[s.score_cd] = typeof s.score_val === 'string' ? parseFloat(s.score_val) || 13 : s.score_val;
   });
 
+  const hasScores = Object.keys(scoreMap).length > 0;
   const radarValues: Record<string, number> = {};
   RADAR_CATEGORIES.forEach(cat => {
+    // 점수 데이터가 있으면 삭제된 항목(점수 없음)은 평균에서 제외
+    const codes = hasScores ? cat.codes.filter(c => c in scoreMap) : cat.codes;
     let sum = 0;
-    cat.codes.forEach(c => {
+    codes.forEach(c => {
       sum += scoreMap[c] ?? 13;
     });
-    radarValues[cat.key] = cat.codes.length > 0 ? parseFloat((sum / cat.codes.length).toFixed(1)) : 13;
+    radarValues[cat.key] = codes.length > 0 ? parseFloat((sum / codes.length).toFixed(1)) : 13;
   });
 
   return radarValues;
+}
+
+/**
+ * /position_point/search 결과를 포지션별 가중치 맵으로 변환
+ * DB에 저장된 항목만 사용 (삭제된 항목이 기본값으로 되살아나지 않도록 기본값과 병합하지 않음)
+ */
+export function buildWeightsFromRows(
+  rows: Array<{ position_cd: string; score_cd: string; position_val: string | number | null }> | null | undefined
+): Record<string, Record<string, number>> {
+  if (!rows || rows.length === 0) return JSON.parse(JSON.stringify(DEFAULT_POSITION_WEIGHTS));
+  const loaded: Record<string, Record<string, number>> = {};
+  for (const item of rows) {
+    if (!loaded[item.position_cd]) loaded[item.position_cd] = {};
+    loaded[item.position_cd][item.score_cd] = parseFloat(String(item.position_val)) || 0;
+  }
+  return loaded;
 }
 
 // In-memory cache for position weights across tabs

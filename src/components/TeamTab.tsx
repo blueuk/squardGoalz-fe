@@ -6,6 +6,7 @@ import './TeamTab.css';
 import {
   POSITIONS,
   DEFAULT_POSITION_WEIGHTS,
+  buildWeightsFromRows,
   calculatePositionScores,
   calculateRadarScores,
   getCachedPositionWeights,
@@ -59,7 +60,21 @@ interface Payment {
 interface CommonCd {
   code: string;
   code_name: string;
+  code_seq?: number;
   reference_1?: string;
+  reference_2?: string; // score_cd: 능력치 리포트 분류 (SCORE_CATEGORIES id)
+}
+
+interface ScoreItem {
+  code: string;
+  name: string;
+  category?: string;
+}
+
+interface WeightChange {
+  position_cd: string;
+  score_cd: string;
+  position_val: number;
 }
 
 const TEAM_UID = 'df743e05-9440-4c1e-bfdb-fa07159ef0c9';
@@ -80,7 +95,12 @@ const STAT_NAMES: Record<string, string> = {
   '027':'시야','028':'일관성',
 };
 
-const ALL_SCORE_CODES = Object.keys(STAT_NAMES);
+// 기본 분류에 속하지 않는 추가 항목용
+const ETC_CATEGORY = { id: 'etc', title: '기타', icon: '📌', color: '#4e5968', bgColor: '#f2f4f6', codes: [] as string[] };
+
+const CATEGORY_OPTIONS = [...SCORE_CATEGORIES, ETC_CATEGORY].map(c => ({ id: c.id, title: c.title }));
+
+const NEW_SCORE_ITEM_DEFAULT = 10;
 
 // ─── Position Labels Component ────────────────────────────────────────────────
 // [FIX] : 파란색, [PIV] : 빨간색, [ALA] : 초록색, [GOL] : 노란색, [CEN] : 보라색
@@ -123,23 +143,37 @@ export function PositionLabels({
 }
 
 // ─── Weight Editor Component ──────────────────────────────────────────────────
+const WEIGHT_EPSILON = 1e-6;
+
 function WeightEditor({
   weights,
+  scoreItems,
   onSave,
+  onAddItem,
+  onDeleteItem,
   onClose,
   isSaving
 }: {
   weights: Record<string, Record<string, number>>;
-  onSave: (w: Record<string, Record<string, number>>) => void;
+  scoreItems: ScoreItem[];
+  onSave: (changes: WeightChange[], nextWeights: Record<string, Record<string, number>>) => void;
+  onAddItem: (name: string, category: string) => Promise<string | null>;
+  onDeleteItem: (item: ScoreItem) => Promise<boolean>;
   onClose: () => void;
   isSaving: boolean;
 }) {
   const [localWeights, setLocalWeights] = useState<Record<string, Record<string, number>>>(
     JSON.parse(JSON.stringify(weights))
   );
+  // 입력 중인 문자열 (예: "0." 처럼 아직 숫자가 완성되지 않은 값 유지용)
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [activePos, setActivePos] = useState('FIX');
+  const [newItemName, setNewItemName] = useState('');
+  const [newItemCategory, setNewItemCategory] = useState(ETC_CATEGORY.id);
+  const [isItemBusy, setIsItemBusy] = useState(false);
 
   const updateWeight = (pos: string, code: string, val: string) => {
+    setDrafts(prev => ({ ...prev, [`${pos}:${code}`]: val }));
     const num = parseFloat(val);
     setLocalWeights(prev => ({
       ...prev,
@@ -148,14 +182,31 @@ function WeightEditor({
   };
 
   const getTotal = (pos: string) => {
-    const sum = Object.values(localWeights[pos] ?? {}).reduce((a, b) => a + b, 0);
+    const sum = scoreItems.reduce((acc, item) => acc + (localWeights[pos]?.[item.code] ?? 0), 0);
     return Math.round(sum * 10000) / 10000;
   };
+
+  const isChanged = (pos: string, code: string) =>
+    Math.abs((localWeights[pos]?.[code] ?? 0) - (weights[pos]?.[code] ?? 0)) > WEIGHT_EPSILON;
+
+  // 저장 대상: 원본과 값이 달라진 항목만
+  const changes: WeightChange[] = [];
+  POSITIONS.forEach(pos => {
+    scoreItems.forEach(item => {
+      if (isChanged(pos.code, item.code)) {
+        changes.push({ position_cd: pos.code, score_cd: item.code, position_val: localWeights[pos.code]?.[item.code] ?? 0 });
+      }
+    });
+  });
 
   const currentTotal = getTotal(activePos);
   const isTotalValid = Math.abs(currentTotal - 1) < 0.005;
 
   const handleSaveClick = () => {
+    if (changes.length === 0) {
+      alert('변경된 가중치가 없습니다.');
+      return;
+    }
     // 모든 포지션의 가중치 합계가 1인지 검증
     for (const pos of POSITIONS) {
       const tot = getTotal(pos.code);
@@ -165,7 +216,43 @@ function WeightEditor({
         return;
       }
     }
-    onSave(localWeights);
+    onSave(changes, localWeights);
+  };
+
+  const handleAddItemClick = async () => {
+    const name = newItemName.trim();
+    if (!name || isItemBusy) return;
+    if (scoreItems.some(item => item.name === name)) {
+      alert(`이미 존재하는 항목입니다: ${name}`);
+      return;
+    }
+    setIsItemBusy(true);
+    const newCode = await onAddItem(name, newItemCategory);
+    setIsItemBusy(false);
+    if (!newCode) return;
+    // 새 항목은 모든 포지션 가중치 0으로 시작 (총합 유지)
+    setLocalWeights(prev => {
+      const next = { ...prev };
+      POSITIONS.forEach(pos => { next[pos.code] = { ...next[pos.code], [newCode]: 0 }; });
+      return next;
+    });
+    setNewItemName('');
+  };
+
+  const handleDeleteItemClick = async (item: ScoreItem) => {
+    if (isItemBusy) return;
+    setIsItemBusy(true);
+    const ok = await onDeleteItem(item);
+    setIsItemBusy(false);
+    if (!ok) return;
+    setLocalWeights(prev => {
+      const next = { ...prev };
+      Object.keys(next).forEach(pos => {
+        const { [item.code]: _removed, ...rest } = next[pos];
+        next[pos] = rest;
+      });
+      return next;
+    });
   };
 
   return (
@@ -209,6 +296,8 @@ function WeightEditor({
         backgroundColor: isTotalValid ? '#e6f4ea' : '#fce8e6',
         color: isTotalValid ? '#137333' : '#c5221f',
         display: 'flex',
+        flexWrap: 'wrap',
+        gap: '4px 12px',
         justifyContent: 'space-between',
         alignItems: 'center'
       }}>
@@ -217,32 +306,83 @@ function WeightEditor({
       </div>
 
       <div style={{ maxHeight: '300px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '6px', paddingRight: '4px' }}>
-        {ALL_SCORE_CODES.map(code => (
-          <div key={code} style={{ display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: '#fff', padding: '6px 10px', borderRadius: '8px', border: '1px solid #f2f4f6' }}>
-            <span style={{ fontSize: '12px', color: '#8b95a1', width: '28px' }}>{code}</span>
-            <span style={{ fontSize: '13px', color: '#191f28', fontWeight: 500, flex: 1 }}>{STAT_NAMES[code]}</span>
-            <input
-              type="number"
-              step="0.001"
-              min="0"
-              max="1"
-              value={localWeights[activePos]?.[code] ?? 0}
-              onChange={e => updateWeight(activePos, code, e.target.value)}
-              style={{
-                width: '76px',
-                padding: '4px 6px',
-                borderRadius: '6px',
-                border: '1px solid #ccd3dc',
-                fontSize: '13px',
-                textAlign: 'right',
-                margin: 0,
-                outline: 'none',
-                fontWeight: 'bold',
-                color: '#191f28'
-              }}
-            />
-          </div>
-        ))}
+        {scoreItems.map(item => {
+          const changed = isChanged(activePos, item.code);
+          const draftKey = `${activePos}:${item.code}`;
+          return (
+            <div key={item.code} style={{
+              display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: changed ? '#f8faff' : '#fff',
+              padding: '6px 10px', borderRadius: '8px', border: changed ? '1px solid var(--toss-blue, #3182f6)' : '1px solid #f2f4f6'
+            }}>
+              <span style={{ fontSize: '12px', color: '#8b95a1', width: '28px', flexShrink: 0 }}>{item.code}</span>
+              <span style={{ fontSize: '13px', color: '#191f28', fontWeight: 500, flex: 1, minWidth: 0, overflowWrap: 'anywhere' }}>{item.name}</span>
+              <input
+                type="number"
+                step="0.001"
+                min="0"
+                max="1"
+                value={drafts[draftKey] ?? String(localWeights[activePos]?.[item.code] ?? 0)}
+                onChange={e => updateWeight(activePos, item.code, e.target.value)}
+                onBlur={() => setDrafts(prev => { const { [draftKey]: _done, ...rest } = prev; return rest; })}
+                style={{
+                  width: '76px',
+                  flexShrink: 0,
+                  padding: '4px 6px',
+                  borderRadius: '6px',
+                  border: '1px solid #ccd3dc',
+                  fontSize: '13px',
+                  textAlign: 'right',
+                  margin: 0,
+                  outline: 'none',
+                  fontWeight: 'bold',
+                  color: '#191f28'
+                }}
+              />
+              <button
+                onClick={() => handleDeleteItemClick(item)}
+                disabled={isItemBusy}
+                title="항목 삭제"
+                style={{ flexShrink: 0, fontSize: '12px', padding: '4px 7px', borderRadius: '6px', border: 'none', backgroundColor: '#fce8e6', color: '#f04452', cursor: 'pointer', fontWeight: 'bold' }}
+              >
+                ✕
+              </button>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Add score item */}
+      <div style={{ marginTop: '12px', padding: '12px', backgroundColor: '#fff', borderRadius: '10px', border: '1px dashed #c0d8ff' }}>
+        <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#191f28', marginBottom: '8px' }}>
+          ➕ 가중치 항목 추가
+          <span style={{ marginLeft: '6px', fontSize: '11px', fontWeight: 500, color: '#8b95a1' }}>
+            (모든 포지션 가중치 0, 선수단 전원 기본 {NEW_SCORE_ITEM_DEFAULT}점)
+          </span>
+        </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+          <input
+            type="text"
+            placeholder="항목 이름 (예: 킥력)"
+            value={newItemName}
+            onChange={e => setNewItemName(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') handleAddItemClick(); }}
+            style={{ flex: '1 1 8rem', minWidth: 0, padding: '8px 10px', borderRadius: '8px', border: '1px solid #ccd3dc', fontSize: '13px', margin: 0, boxSizing: 'border-box' }}
+          />
+          <select
+            value={newItemCategory}
+            onChange={e => setNewItemCategory(e.target.value)}
+            style={{ flex: '0 1 auto', padding: '8px', borderRadius: '8px', border: '1px solid #ccd3dc', fontSize: '13px', margin: 0, backgroundColor: '#fff' }}
+          >
+            {CATEGORY_OPTIONS.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
+          </select>
+          <button
+            onClick={handleAddItemClick}
+            disabled={isItemBusy || !newItemName.trim()}
+            style={{ flex: '0 0 auto', whiteSpace: 'nowrap', padding: '8px 14px', borderRadius: '8px', border: 'none', backgroundColor: 'var(--toss-blue, #3182f6)', color: '#fff', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}
+          >
+            {isItemBusy ? '처리 중...' : '추가'}
+          </button>
+        </div>
       </div>
 
       <div style={{ display: 'flex', gap: '8px', marginTop: '14px' }}>
@@ -257,7 +397,7 @@ function WeightEditor({
           disabled={isSaving}
           style={{ flex: 2, padding: '11px', borderRadius: '10px', border: 'none', backgroundColor: 'var(--toss-blue, #3182f6)', color: '#fff', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}
         >
-          {isSaving ? '저장 중...' : '가중치 저장하기'}
+          {isSaving ? '저장 중...' : `가중치 저장하기${changes.length > 0 ? ` (${changes.length}개 변경)` : ''}`}
         </button>
       </div>
     </div>
@@ -391,11 +531,7 @@ export default function TeamTab({ isAdmin }: { isAdmin?: boolean }) {
         if (cachedWeights) {
           setPositionWeights(cachedWeights);
         } else if (weightRes?.data && weightRes.data.length > 0) {
-          const loaded: Record<string, Record<string, number>> = JSON.parse(JSON.stringify(DEFAULT_POSITION_WEIGHTS));
-          for (const item of weightRes.data) {
-            if (!loaded[item.position_cd]) loaded[item.position_cd] = {};
-            loaded[item.position_cd][item.score_cd] = parseFloat(item.position_val) || 0;
-          }
+          const loaded = buildWeightsFromRows(weightRes.data);
           setCachedPositionWeights(loaded);
           setPositionWeights(loaded);
         }
@@ -446,6 +582,28 @@ export default function TeamTab({ isAdmin }: { isAdmin?: boolean }) {
 
     loadInitialData();
   }, [teamInfo]);
+
+  // ── 능력치(가중치) 항목: 공통코드 score_cd 기준 (없으면 기본 28개) ─────────────
+  const scoreItems: ScoreItem[] = codeLists.score_cd?.length
+    ? codeLists.score_cd.map(c => ({ code: c.code, name: c.code_name, category: c.reference_2 }))
+    : Object.entries(STAT_NAMES).map(([code, name]) => ({ code, name }));
+
+  const categoryOf = (item: ScoreItem) => {
+    if (item.category && CATEGORY_OPTIONS.some(c => c.id === item.category)) return item.category;
+    return SCORE_CATEGORIES.find(c => c.codes.includes(item.code))?.id ?? ETC_CATEGORY.id;
+  };
+
+  const reportCategories = [...SCORE_CATEGORIES, ETC_CATEGORY]
+    .map(cat => ({ ...cat, codes: scoreItems.filter(item => categoryOf(item) === cat.id).map(item => item.code) }))
+    .filter(cat => cat.codes.length > 0);
+
+  const applyScoreCodes = (nextScoreCodes: CommonCd[]) => {
+    setCodeLists(prev => {
+      const next = { ...prev, score_cd: nextScoreCodes };
+      cachedCommonCodes = next;
+      return next;
+    });
+  };
 
   // ── Helper functions ──────────────────────────────────────────────────────
   const copyToClipboard = (text: string) => {
@@ -528,7 +686,7 @@ export default function TeamTab({ isAdmin }: { isAdmin?: boolean }) {
   const handleStartEditScores = (memberUid: string) => {
     const scoresForMember = memberScores.filter(s => s.member_uid === memberUid);
     const scoreMap: Record<string, number> = {};
-    ALL_SCORE_CODES.forEach(code => {
+    scoreItems.forEach(({ code }) => {
       const found = scoresForMember.find(s => s.score_cd === code);
       scoreMap[code] = found ? parseInt(found.score_val, 10) || 13 : 13;
     });
@@ -682,25 +840,81 @@ export default function TeamTab({ isAdmin }: { isAdmin?: boolean }) {
   };
 
   // ── Position weight save ──────────────────────────────────────────────────
-  const handleSaveWeights = async (weights: Record<string, Record<string, number>>) => {
+  const handleSaveWeights = async (changes: WeightChange[], weights: Record<string, Record<string, number>>) => {
     setIsSavingWeights(true);
     setIsGlobalLoading(true);
     setLoadingMessage('포지션 가중치를 저장하는 중...');
     try {
-      const items = [];
-      for (const pos of POSITIONS) {
-        for (const code of ALL_SCORE_CODES) {
-          items.push({ position_cd: pos.code, score_cd: code, position_val: weights[pos.code]?.[code] ?? 0 });
-        }
-      }
-      await api.post('/position_point/bulk_upsert', { items });
+      // 변경된 항목만 전송
+      await api.post('/position_point/bulk_upsert', { items: changes });
       setCachedPositionWeights(weights);
       setPositionWeights(weights);
       setShowWeightEditor(false);
-      alert('포지션 가중치가 성공적으로 저장되었습니다.');
+      alert(`포지션 가중치 ${changes.length}개가 저장되었습니다.`);
     } catch (err) { console.error(err); alert('가중치 저장에 실패했습니다.'); }
     finally {
       setIsSavingWeights(false);
+      setIsGlobalLoading(false);
+    }
+  };
+
+  // ── Score item add / delete ───────────────────────────────────────────────
+  const handleAddScoreItem = async (name: string, category: string): Promise<string | null> => {
+    if (!window.confirm(`[${name}] 가중치 항목을 추가하시겠습니까?\n모든 포지션 가중치는 0으로 시작하고, 선수단 전원에게 기본 ${NEW_SCORE_ITEM_DEFAULT}점이 부여됩니다.`)) return null;
+    setIsGlobalLoading(true);
+    setLoadingMessage('가중치 항목을 추가하는 중...');
+    try {
+      const res = await api.post('/position_point/score_item/insert', { code_name: name, category });
+      const { score_cd, code_seq, member_count } = res.data;
+
+      applyScoreCodes([...(codeLists.score_cd || []), { code: score_cd, code_name: name, code_seq, reference_2: category }]);
+      const nextWeights = { ...positionWeights };
+      POSITIONS.forEach(pos => { nextWeights[pos.code] = { ...nextWeights[pos.code], [score_cd]: 0 }; });
+      setCachedPositionWeights(nextWeights);
+      setPositionWeights(nextWeights);
+
+      const sRes = await api.get(`/memberScore/search?team_uid=${TEAM_UID}`);
+      setMemberScores(sRes.data || []);
+
+      alert(`[${name}] 항목이 추가되었습니다. (${member_count}명에게 기본 ${NEW_SCORE_ITEM_DEFAULT}점 부여)\n포지션별 가중치를 입력한 뒤 저장해주세요.`);
+      return score_cd;
+    } catch (err: any) {
+      console.error(err);
+      alert(err.response?.data?.detail || '가중치 항목 추가에 실패했습니다.');
+      return null;
+    } finally {
+      setIsGlobalLoading(false);
+    }
+  };
+
+  const handleDeleteScoreItem = async (item: ScoreItem): Promise<boolean> => {
+    const weighted = POSITIONS.filter(pos => (positionWeights[pos.code]?.[item.code] ?? 0) > 0);
+    const weightWarning = weighted.length > 0
+      ? `\n가중치가 있는 포지션(${weighted.map(p => p.abbr).join(', ')})은 총합이 1.0보다 작아지므로 다시 맞춰 저장해야 합니다.`
+      : '';
+    if (!window.confirm(`[${item.name}] 항목을 삭제하시겠습니까?\n모든 포지션 가중치와 선수들의 해당 능력치 점수가 삭제되며 되돌릴 수 없습니다.${weightWarning}`)) return false;
+    setIsGlobalLoading(true);
+    setLoadingMessage('가중치 항목을 삭제하는 중...');
+    try {
+      await api.post('/position_point/score_item/delete', { score_cd: item.code });
+
+      applyScoreCodes((codeLists.score_cd || []).filter(c => c.code !== item.code));
+      const nextWeights: Record<string, Record<string, number>> = {};
+      Object.entries(positionWeights).forEach(([pos, w]) => {
+        const { [item.code]: _removed, ...rest } = w;
+        nextWeights[pos] = rest;
+      });
+      setCachedPositionWeights(nextWeights);
+      setPositionWeights(nextWeights);
+      setMemberScores(prev => prev.filter(s => s.score_cd !== item.code));
+
+      alert(`[${item.name}] 항목이 삭제되었습니다.`);
+      return true;
+    } catch (err: any) {
+      console.error(err);
+      alert(err.response?.data?.detail || '가중치 항목 삭제에 실패했습니다.');
+      return false;
+    } finally {
       setIsGlobalLoading(false);
     }
   };
@@ -931,7 +1145,10 @@ export default function TeamTab({ isAdmin }: { isAdmin?: boolean }) {
                 {showWeightEditor && (
                   <WeightEditor
                     weights={positionWeights}
+                    scoreItems={scoreItems}
                     onSave={handleSaveWeights}
+                    onAddItem={handleAddScoreItem}
+                    onDeleteItem={handleDeleteScoreItem}
                     onClose={() => setShowWeightEditor(false)}
                     isSaving={isSavingWeights}
                   />
@@ -1122,7 +1339,7 @@ export default function TeamTab({ isAdmin }: { isAdmin?: boolean }) {
 
                           {/* Grouped Stats Categories */}
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                            {SCORE_CATEGORIES.map(category => {
+                            {reportCategories.map(category => {
                               const catScores = category.codes.map(code => {
                                 const found = memberScoreList.find(s => s.score_cd === code);
                                 return isEditingThisMember ? (editingScores[code] ?? 13) : (found ? parseInt(found.score_val, 10) : 13);

@@ -12,7 +12,7 @@ import CalendarTab from './components/CalendarTab';
 import TeamTab, { PositionLabels } from './components/TeamTab';
 import SoccerBallLoader from './components/SoccerBallLoader';
 import RadarChart from './components/RadarChart';
-import { calculateRadarScores, DEFAULT_POSITION_WEIGHTS, getCachedPositionWeights, setCachedPositionWeights } from './components/positionUtils';
+import { calculateRadarScores, DEFAULT_POSITION_WEIGHTS, buildWeightsFromRows, getCachedPositionWeights, setCachedPositionWeights } from './components/positionUtils';
 
 interface User {
   userid: string;
@@ -198,11 +198,7 @@ function App() {
       if (cachedWeights) {
         setMyPositionWeights(cachedWeights);
       } else if (weightRes?.data && weightRes.data.length > 0) {
-        const loaded: Record<string, Record<string, number>> = JSON.parse(JSON.stringify(DEFAULT_POSITION_WEIGHTS));
-        for (const item of weightRes.data) {
-          if (!loaded[item.position_cd]) loaded[item.position_cd] = {};
-          loaded[item.position_cd][item.score_cd] = parseFloat(item.position_val) || 0;
-        }
+        const loaded = buildWeightsFromRows(weightRes.data);
         setCachedPositionWeights(loaded);
         setMyPositionWeights(loaded);
       }
