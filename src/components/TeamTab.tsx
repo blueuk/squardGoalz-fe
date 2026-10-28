@@ -39,6 +39,7 @@ interface TeamMember {
   member_name: string;
   user_id?: string;
   status_cd?: string;
+  terminate_dt?: string;
 }
 
 interface MemberScore {
@@ -265,6 +266,18 @@ function WeightEditor({
 let cachedCommonCodes: Record<string, CommonCd[]> | null = null;
 
 // ─── Main Component ───────────────────────────────────────────────────────────
+// ── 탈퇴자 목록 헬퍼 (terminate_dt: YYYYMMDDHHMMSS) ──────────────────────────
+const nowDtString = () => {
+  const d = new Date();
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`;
+};
+const formatDt = (dt?: string) =>
+  dt && dt.length >= 8 ? `${dt.substring(0, 4)}.${dt.substring(4, 6)}.${dt.substring(6, 8)}` : '-';
+// 최근 탈퇴자 순
+const sortTerminated = (list: TeamMember[]) =>
+  [...list].sort((a, b) => (b.terminate_dt || '').localeCompare(a.terminate_dt || ''));
+
 export default function TeamTab({ isAdmin }: { isAdmin?: boolean }) {
   const [subTab, setSubTab] = useState<'INFO' | 'SQUAD'>('INFO');
   const [teamInfo, setTeamInfo] = useState<TeamInfo | null>(null);
@@ -312,6 +325,17 @@ export default function TeamTab({ isAdmin }: { isAdmin?: boolean }) {
 
   // Admin map for members with user_id
   const [memberAdminMap, setMemberAdminMap] = useState<Record<string, boolean>>({});
+
+  // Terminated members (관리자 전용)
+  const [terminatedMembers, setTerminatedMembers] = useState<TeamMember[]>([]);
+
+  // ── 탈퇴자 목록 로드 (관리자만) ─────────────────────────────────────────────
+  useEffect(() => {
+    if (!isAdmin) return;
+    api.get(`/team_member/terminated/search?team_uid=${TEAM_UID}`)
+      .then(res => setTerminatedMembers(sortTerminated(res.data || [])))
+      .catch(err => console.error('탈퇴자 목록을 불러오는데 실패했습니다.', err));
+  }, [isAdmin]);
 
   // ── Initial data load (병렬 최적화 & N+1 제거) ───────────────────────────
   useEffect(() => {
@@ -591,17 +615,50 @@ export default function TeamTab({ isAdmin }: { isAdmin?: boolean }) {
     finally { setIsAddingMember(false); setIsGlobalLoading(false); }
   };
 
-  // ── Delete member ─────────────────────────────────────────────────────────
+  // ── Terminate member (탈퇴자 목록으로 이동) ─────────────────────────────────
   const handleDeleteMember = async (member: TeamMember) => {
-    if (!window.confirm(`정말 [${member.member_name}] 선수를 삭제(탈퇴) 처리하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`)) return;
+    if (!window.confirm(`[${member.member_name}] 선수를 탈퇴 처리하시겠습니까?\n탈퇴자 목록으로 이동되며, 이후 복구할 수 있습니다.`)) return;
     setIsGlobalLoading(true);
-    setLoadingMessage('선수를 삭제하는 중...');
+    setLoadingMessage('선수를 탈퇴 처리하는 중...');
     try {
       await api.post('/team_member/terminate', { team_uid: TEAM_UID, member_uid: member.member_uid });
       setTeamMembers(prev => prev.filter(m => m.member_uid !== member.member_uid));
+      setTerminatedMembers(prev => sortTerminated([...prev, { ...member, terminate_dt: nowDtString() }]));
       if (teamInfo) setTeamInfo({ ...teamInfo, member_count: Math.max(0, (teamInfo.member_count || 1) - 1) });
-      alert(`[${member.member_name}] 선수가 삭제되었습니다.`);
-    } catch (err) { console.error(err); alert('선수 삭제에 실패했습니다.'); }
+      if (expandedMemberUid === member.member_uid) setExpandedMemberUid(null);
+      alert(`[${member.member_name}] 선수가 탈퇴자 목록으로 이동되었습니다.`);
+    } catch (err) { console.error(err); alert('선수 탈퇴 처리에 실패했습니다.'); }
+    finally { setIsGlobalLoading(false); }
+  };
+
+  // ── Restore member (선수단 목록으로 복구) ──────────────────────────────────
+  const handleRestoreMember = async (member: TeamMember) => {
+    if (!window.confirm(`[${member.member_name}] 선수를 선수단으로 복구하시겠습니까?`)) return;
+    setIsGlobalLoading(true);
+    setLoadingMessage('선수를 복구하는 중...');
+    try {
+      await api.post('/team_member/restore', { team_uid: TEAM_UID, member_uid: member.member_uid });
+      setTerminatedMembers(prev => prev.filter(m => m.member_uid !== member.member_uid));
+      setTeamMembers(prev => [...prev, { ...member, terminate_dt: undefined }].sort((a, b) =>
+        (a.member_name || '').localeCompare(b.member_name || '')
+      ));
+      if (teamInfo) setTeamInfo({ ...teamInfo, member_count: (teamInfo.member_count || 0) + 1 });
+      alert(`[${member.member_name}] 선수가 복구되었습니다.`);
+    } catch (err) { console.error(err); alert('선수 복구에 실패했습니다.'); }
+    finally { setIsGlobalLoading(false); }
+  };
+
+  // ── Purge member (완전 삭제) ───────────────────────────────────────────────
+  const handlePurgeMember = async (member: TeamMember) => {
+    if (!window.confirm(`[${member.member_name}] 선수를 완전 삭제하시겠습니까?\n능력치, 투표, 기록 데이터가 모두 삭제되며 되돌릴 수 없습니다.`)) return;
+    setIsGlobalLoading(true);
+    setLoadingMessage('선수를 완전 삭제하는 중...');
+    try {
+      await api.post('/team_member/delete', { team_uid: TEAM_UID, member_uid: member.member_uid });
+      setTerminatedMembers(prev => prev.filter(m => m.member_uid !== member.member_uid));
+      setMemberScores(prev => prev.filter(s => s.member_uid !== member.member_uid));
+      alert(`[${member.member_name}] 선수가 완전 삭제되었습니다.`);
+    } catch (err) { console.error(err); alert('선수 완전 삭제에 실패했습니다.'); }
     finally { setIsGlobalLoading(false); }
   };
 
@@ -1145,6 +1202,60 @@ export default function TeamTab({ isAdmin }: { isAdmin?: boolean }) {
                 })}
               </div>
             </div>
+
+            {/* Terminated Members (관리자 전용) */}
+            {isAdmin && (
+              <div className="card" style={{ padding: '20px', backgroundColor: '#fff', borderRadius: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                  <div>
+                    <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#191f28', margin: '0 0 4px 0' }}>🚪 탈퇴자 목록</h3>
+                    <p style={{ fontSize: '13px', color: '#8b95a1', margin: 0 }}>
+                      관리자만 볼 수 있습니다. 복구하거나 완전 삭제할 수 있습니다.
+                    </p>
+                  </div>
+                  <span style={{ backgroundColor: '#f2f4f6', padding: '6px 12px', borderRadius: '14px', fontSize: '13px', fontWeight: 'bold', color: '#4e5968', flexShrink: 0 }}>
+                    총 {terminatedMembers.length}명
+                  </span>
+                </div>
+
+                {terminatedMembers.length === 0 ? (
+                  <div style={{ padding: '20px', textAlign: 'center', fontSize: '13px', color: '#8b95a1', backgroundColor: '#f9fafb', borderRadius: '12px' }}>
+                    탈퇴한 선수가 없습니다.
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    {terminatedMembers.map(member => (
+                      <div key={member.member_uid} style={{
+                        padding: '12px 16px', border: '1px solid #f2f4f6', borderRadius: '14px', backgroundColor: '#f9fafb',
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px'
+                      }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                            <span style={{ fontWeight: 'bold', fontSize: '15px', color: '#4e5968' }}>{member.member_name}</span>
+                            {member.user_id && (
+                              <span style={{ backgroundColor: '#FEE500', color: '#000', padding: '2px 6px', borderRadius: '4px', fontSize: '10px', fontWeight: 'bold' }}>K</span>
+                            )}
+                          </div>
+                          <div style={{ fontSize: '12px', color: '#8b95a1', marginTop: '2px' }}>
+                            탈퇴일 {formatDt(member.terminate_dt)}
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+                          <button onClick={() => handleRestoreMember(member)}
+                            style={{ fontSize: '12px', padding: '6px 10px', borderRadius: '8px', border: 'none', backgroundColor: '#e8f3ff', color: '#3182f6', cursor: 'pointer', fontWeight: 'bold' }}>
+                            복구
+                          </button>
+                          <button onClick={() => handlePurgeMember(member)}
+                            style={{ fontSize: '12px', padding: '6px 10px', borderRadius: '8px', border: 'none', backgroundColor: '#fce8e6', color: '#f04452', cursor: 'pointer', fontWeight: 'bold' }}>
+                            완전 삭제
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>
