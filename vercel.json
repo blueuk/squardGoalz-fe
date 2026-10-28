@@ -16,6 +16,7 @@
     { "source": "/position_point/:path*", "destination": "http://8.235.113.192:8000/position_point/:path*" },
     { "source": "/teamAccount/:path*", "destination": "http://8.235.113.192:8000/teamAccount/:path*" },
     { "source": "/payment/:path*", "destination": "http://8.235.113.192:8000/payment/:path*" },
+    { "source": "/youtube/:path*", "destination": "http://8.235.113.192:8000/youtube/:path*" },
     {
       "source": "/(.*)",
       "destination": "/index.html"

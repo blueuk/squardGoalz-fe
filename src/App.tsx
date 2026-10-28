@@ -239,21 +239,10 @@ function App() {
   useEffect(() => {
     const fetchVideos = async () => {
       try {
-        const CHANNEL_ID = 'UChlDg9qBmP_JlwQ1_2by5kQ';
-        const rssUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${CHANNEL_ID}`;
-        const apiUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`;
-        
-        const response = await fetch(apiUrl);
-        const data = await response.json();
-        if (data.status === 'ok' && data.items.length > 0) {
-          const latestVideos = data.items.slice(0, 20).map((v: any) => {
-            let thumb = v.thumbnail;
-            if (thumb.includes('hqdefault')) {
-              thumb = thumb.replace('hqdefault', 'mqdefault');
-            }
-            return { ...v, thumbnail: thumb };
-          });
-          setVideos(latestVideos);
+        // 백엔드가 유튜브 채널 RSS를 대신 읽어 전달 (브라우저에서 직접 읽으면 CORS로 막힘)
+        const res = await api.get('/youtube/latest');
+        if (Array.isArray(res.data) && res.data.length > 0) {
+          setVideos(res.data);
         } else {
           setVideosError(true);
         }
