@@ -77,8 +77,8 @@ export default function HomeMatchCard({ isAdmin }: { isAdmin?: boolean }) {
   const [weatherError, setWeatherError] = useState(false);
   const [arrangement, setArrangement] = useState<ArrangedMember[]>([]);
 
-  // 배정 폼 / 미리보기
-  const [showForm, setShowForm] = useState(false);
+  // 배정 모달 / 미리보기
+  const [showModal, setShowModal] = useState(false);
   const [participants, setParticipants] = useState<ArrangeParticipant[]>([]);
   const [weights, setWeights] = useState<Record<string, Record<string, number>>>({});
   const [mercCount, setMercCount] = useState(0);
@@ -177,8 +177,7 @@ export default function HomeMatchCard({ isAdmin }: { isAdmin?: boolean }) {
       const suggested = suggestOptions(list.length + mercCount);
       setTeamCount(suggested.teamCount);
       setTeamSize(suggested.teamSize);
-      setPreview(null);
-      setShowForm(true);
+      setShowModal(true);
     } catch (err) {
       console.error(err);
       alert('참석자 정보를 불러오지 못했습니다.');
@@ -198,6 +197,7 @@ export default function HomeMatchCard({ isAdmin }: { isAdmin?: boolean }) {
     if (totalPlayers > capacity &&
       !window.confirm(`총 ${totalPlayers}명이 정원 ${capacity}명(${teamCount}팀 x ${teamSize}명)보다 많습니다.\n초과 인원은 팀에 랜덤으로 추가 배정됩니다. 계속하시겠습니까?`)) return;
     setPreview(arrangeTeams(participants, weights, { mercCount, teamCount, teamSize }));
+    setShowModal(false);
   };
 
   const saveArrange = async () => {
@@ -214,7 +214,6 @@ export default function HomeMatchCard({ isAdmin }: { isAdmin?: boolean }) {
       });
       setArrangement(preview);
       setPreview(null);
-      setShowForm(false);
       alert('팀 배정이 저장되었습니다.');
     } catch (err: any) {
       console.error(err);
@@ -234,16 +233,18 @@ export default function HomeMatchCard({ isAdmin }: { isAdmin?: boolean }) {
           const teamMembers = members.filter(m => m.team_no === no).sort((a, b) => a.keeper_order - b.keeper_order);
           return (
             <div key={no} className="arrange-team" style={{ borderTopColor: style.color }}>
-              <div className="arrange-team-head">
-                <img src={style.img} alt={`${style.name}팀`} className="arrange-team-img" />
-                <span className="arrange-team-count" style={{ color: style.color }}>{teamMembers.length}명</span>
+              <div className="arrange-team-head" style={{ color: style.color }}>
+                {style.name}팀 <span className="arrange-team-count">{teamMembers.length}명</span>
               </div>
               <ul className="arrange-team-list">
                 {teamMembers.map(m => (
                   <li key={m.member_uid}>
-                    <span className="arrange-keeper" style={{ backgroundColor: style.color }}>{m.keeper_order}</span>
-                    <span className="arrange-name">{m.member_name}</span>
-                    {m.merc_yn === 'Y' && <span className="arrange-merc">용병</span>}
+                    {/* 유니폼 이미지 안에 키퍼 순번 */}
+                    <span className="arrange-jersey">
+                      <img src={style.img} alt="" />
+                      <span className="arrange-jersey-no">{m.keeper_order}</span>
+                    </span>
+                    <span className="arrange-name" style={{ backgroundColor: style.color }}>{m.member_name}</span>
                   </li>
                 ))}
               </ul>
@@ -254,46 +255,40 @@ export default function HomeMatchCard({ isAdmin }: { isAdmin?: boolean }) {
     );
   };
 
-  const renderForm = () => (
-    <div className="arrange-form">
-      <div className="arrange-form-summary">
-        참석 {participants.length}명 + 용병 {mercCount}명 = 총 <b>{totalPlayers}명</b>
-        <span className={totalPlayers === capacity ? 'ok' : 'warn'}> / 정원 {capacity}명</span>
-      </div>
-      <div className="arrange-form-fields">
-        <label>
-          용병 수
-          <input type="number" min={0} max={20} value={mercCount}
-            onChange={e => setMercCount(clamp(parseInt(e.target.value, 10) || 0, 0, 20))} />
-        </label>
-        <label>
-          팀 수
-          <select value={teamCount} onChange={e => setTeamCount(Number(e.target.value))}>
-            {Array.from({ length: MAX_TEAM_COUNT - 1 }, (_, i) => i + 2).map(n => <option key={n} value={n}>{n}팀</option>)}
-          </select>
-        </label>
-        <label>
-          팀당 인원
-          <select value={teamSize} onChange={e => setTeamSize(Number(e.target.value))}>
-            {Array.from({ length: MAX_TEAM_SIZE - MIN_TEAM_SIZE + 1 }, (_, i) => i + MIN_TEAM_SIZE).map(n => <option key={n} value={n}>{n}명</option>)}
-          </select>
-        </label>
-      </div>
-      <p className="arrange-form-hint">
-        포지션별 상한: {POSITIONS.map(p => `${p.abbr} ${(p.code === 'FIX' || p.code === 'ALA' ? 2 : 1) * teamCount}`).join(' · ')}
-      </p>
-
-      {preview && (
-        <>
-          <div className="arrange-preview-badge">미리보기 · 저장 전</div>
-          {renderTeams(preview)}
-        </>
-      )}
-
-      <div className="arrange-actions">
-        <button className="arrange-btn ghost" onClick={() => { setShowForm(false); setPreview(null); }}>취소</button>
-        <button className="arrange-btn secondary" onClick={runArrange}>{preview ? '다시 섞기' : '배정하기'}</button>
-        {preview && <button className="arrange-btn primary" onClick={saveArrange}>저장</button>}
+  const renderModal = () => (
+    <div className="arrange-modal-overlay" onClick={() => setShowModal(false)}>
+      <div className="arrange-modal" onClick={e => e.stopPropagation()}>
+        <h3 className="arrange-modal-title">팀 배정</h3>
+        <div className="arrange-form-summary">
+          참석 {participants.length}명 + 용병 {mercCount}명 = 총 <b>{totalPlayers}명</b>
+          <span className={totalPlayers === capacity ? 'ok' : 'warn'}> / 정원 {capacity}명</span>
+        </div>
+        <div className="arrange-form-fields">
+          <label>
+            용병 수
+            <input type="number" min={0} max={20} value={mercCount}
+              onChange={e => setMercCount(clamp(parseInt(e.target.value, 10) || 0, 0, 20))} />
+          </label>
+          <label>
+            팀 수
+            <select value={teamCount} onChange={e => setTeamCount(Number(e.target.value))}>
+              {Array.from({ length: MAX_TEAM_COUNT - 1 }, (_, i) => i + 2).map(n => <option key={n} value={n}>{n}팀</option>)}
+            </select>
+          </label>
+          <label>
+            팀당 인원
+            <select value={teamSize} onChange={e => setTeamSize(Number(e.target.value))}>
+              {Array.from({ length: MAX_TEAM_SIZE - MIN_TEAM_SIZE + 1 }, (_, i) => i + MIN_TEAM_SIZE).map(n => <option key={n} value={n}>{n}명</option>)}
+            </select>
+          </label>
+        </div>
+        <p className="arrange-form-hint">
+          포지션별 상한: {POSITIONS.map(p => `${p.abbr} ${(p.code === 'FIX' || p.code === 'ALA' ? 2 : 1) * teamCount}`).join(' · ')}
+        </p>
+        <div className="arrange-actions">
+          <button className="arrange-btn ghost" onClick={() => setShowModal(false)}>취소</button>
+          <button className="arrange-btn green" onClick={runArrange}>배정하기</button>
+        </div>
       </div>
     </div>
   );
@@ -309,11 +304,12 @@ export default function HomeMatchCard({ isAdmin }: { isAdmin?: boolean }) {
   return (
     <div className="card match-card">
       <SoccerBallLoader visible={busy} message={busyMessage} />
+      {showModal && renderModal()}
 
+      {/* 구장명 / 날짜 요일 라벨 */}
       <div className="match-label">
-        <span>{formatPlayDate(schedule.play_date)}</span>
-        <span className="match-label-sep">|</span>
-        <span>{schedule.play_location || DEFAULT_LOCATION.name}</span>
+        <span className="match-chip">📍 {schedule.play_location || DEFAULT_LOCATION.name}</span>
+        <span className="match-chip">📅 {formatPlayDate(schedule.play_date)}</span>
       </div>
 
       <div className="match-weather">
@@ -335,7 +331,17 @@ export default function HomeMatchCard({ isAdmin }: { isAdmin?: boolean }) {
         )}
       </div>
 
-      {showForm ? renderForm() : arrangement.length > 0 ? (
+      {preview ? (
+        <>
+          <div className="arrange-preview-badge">미리보기 · 저장 전</div>
+          {renderTeams(preview)}
+          <div className="arrange-actions">
+            <button className="arrange-btn ghost" onClick={() => setPreview(null)}>취소</button>
+            <button className="arrange-btn secondary" onClick={() => setShowModal(true)}>다시 배정</button>
+            <button className="arrange-btn green" onClick={saveArrange}>저장</button>
+          </div>
+        </>
+      ) : arrangement.length > 0 ? (
         <>
           {renderTeams(arrangement)}
           {isAdmin && (
@@ -345,7 +351,7 @@ export default function HomeMatchCard({ isAdmin }: { isAdmin?: boolean }) {
           )}
         </>
       ) : isAdmin ? (
-        <button className="arrange-btn big" onClick={openForm}>⚽ 팀배정하기</button>
+        <button className="arrange-btn big" onClick={openForm}>배정하기</button>
       ) : (
         <p className="match-empty">아직 팀 배정 전입니다.</p>
       )}
