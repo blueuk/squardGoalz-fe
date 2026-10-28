@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import api from '../api';
 import RadarChart from './RadarChart';
 import SoccerBallLoader from './SoccerBallLoader';
+import './TeamTab.css';
 import {
   POSITIONS,
   DEFAULT_POSITION_WEIGHTS,
@@ -94,10 +95,11 @@ export function PositionLabels({
   const results = calculatePositionScores(memberScoreList, positionWeights);
 
   return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '5px' }}>
+    <div className="position-labels">
       {results.map(pos => (
         <span
           key={pos.code}
+          className="position-label"
           style={{
             display: 'inline-flex',
             alignItems: 'center',
@@ -942,17 +944,17 @@ export default function TeamTab({ isAdmin }: { isAdmin?: boolean }) {
         {/* ══ SQUAD TAB ═════════════════════════════════════════════════════ */}
         {subTab === 'SQUAD' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-            <div className="card" style={{ padding: '20px', backgroundColor: '#fff', borderRadius: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+            <div className="card squad-card" style={{ padding: '20px', backgroundColor: '#fff', borderRadius: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
 
               {/* Squad Header */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-                <div>
+              <div className="squad-header">
+                <div className="squad-header-title">
                   <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#191f28', margin: '0 0 4px 0' }}>🏃 선수단 명단</h3>
                   <p style={{ fontSize: '13px', color: '#8b95a1', margin: 0 }}>
                     {isAdmin ? '선수를 탭하면 능력치를 확인하고 수정할 수 있습니다.' : '선수를 탭하면 6각형 능력치 레이더를 확인할 수 있습니다.'}
                   </p>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div className="squad-header-actions">
                   <span style={{ backgroundColor: '#f2f4f6', padding: '6px 12px', borderRadius: '14px', fontSize: '13px', fontWeight: 'bold', color: '#4e5968' }}>
                     총 {teamMembers.length}명
                   </span>
@@ -1023,13 +1025,12 @@ export default function TeamTab({ isAdmin }: { isAdmin?: boolean }) {
                           handleCancelEditScores();
                         }
                         setExpandedMemberUid(isExpanded ? null : member.member_uid);
-                      }} style={{
-                        padding: '14px 16px', backgroundColor: isExpanded ? '#fbfcfe' : '#fff',
-                        cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start'
+                      }} className={`member-card-header${isAdmin ? ' member-card-header--admin' : ''}`} style={{
+                        padding: '14px 16px', backgroundColor: isExpanded ? '#fbfcfe' : '#fff', cursor: 'pointer'
                       }}>
-                        <div style={{ flex: 1, minWidth: 0 }}>
+                        <div className="member-card-info">
                           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', marginBottom: '2px' }}>
-                            <span style={{ fontWeight: 'bold', fontSize: '16px', color: '#191f28' }}>{member.member_name}</span>
+                            <span className="member-card-name" style={{ fontWeight: 'bold', fontSize: '16px', color: '#191f28' }}>{member.member_name}</span>
                             {member.user_id && (
                               <span style={{ backgroundColor: '#FEE500', color: '#000', padding: '2px 6px', borderRadius: '4px', fontSize: '10px', fontWeight: 'bold' }}>K</span>
                             )}
@@ -1041,7 +1042,7 @@ export default function TeamTab({ isAdmin }: { isAdmin?: boolean }) {
                           <PositionLabels memberScoreList={memberScoreList} positionWeights={positionWeights} />
                         </div>
 
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0, marginLeft: '8px' }}>
+                        <div className="member-card-actions">
                           {isAdmin && (
                             <>
                               <select onClick={e => e.stopPropagation()} value={member.status_cd || '01'}
@@ -1205,17 +1206,19 @@ export default function TeamTab({ isAdmin }: { isAdmin?: boolean }) {
 
             {/* Terminated Members (관리자 전용) */}
             {isAdmin && (
-              <div className="card" style={{ padding: '20px', backgroundColor: '#fff', borderRadius: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-                  <div>
+              <div className="card squad-card" style={{ padding: '20px', backgroundColor: '#fff', borderRadius: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+                <div className="squad-header">
+                  <div className="squad-header-title">
                     <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#191f28', margin: '0 0 4px 0' }}>🚪 탈퇴자 목록</h3>
                     <p style={{ fontSize: '13px', color: '#8b95a1', margin: 0 }}>
                       관리자만 볼 수 있습니다. 복구하거나 완전 삭제할 수 있습니다.
                     </p>
                   </div>
-                  <span style={{ backgroundColor: '#f2f4f6', padding: '6px 12px', borderRadius: '14px', fontSize: '13px', fontWeight: 'bold', color: '#4e5968', flexShrink: 0 }}>
-                    총 {terminatedMembers.length}명
-                  </span>
+                  <div className="squad-header-actions">
+                    <span style={{ backgroundColor: '#f2f4f6', padding: '6px 12px', borderRadius: '14px', fontSize: '13px', fontWeight: 'bold', color: '#4e5968' }}>
+                      총 {terminatedMembers.length}명
+                    </span>
+                  </div>
                 </div>
 
                 {terminatedMembers.length === 0 ? (
@@ -1225,13 +1228,12 @@ export default function TeamTab({ isAdmin }: { isAdmin?: boolean }) {
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     {terminatedMembers.map(member => (
-                      <div key={member.member_uid} style={{
-                        padding: '12px 16px', border: '1px solid #f2f4f6', borderRadius: '14px', backgroundColor: '#f9fafb',
-                        display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px'
+                      <div key={member.member_uid} className="terminated-row" style={{
+                        padding: '12px 16px', border: '1px solid #f2f4f6', borderRadius: '14px', backgroundColor: '#f9fafb'
                       }}>
-                        <div style={{ flex: 1, minWidth: 0 }}>
+                        <div className="member-card-info">
                           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                            <span style={{ fontWeight: 'bold', fontSize: '15px', color: '#4e5968' }}>{member.member_name}</span>
+                            <span className="member-card-name" style={{ fontWeight: 'bold', fontSize: '15px', color: '#4e5968' }}>{member.member_name}</span>
                             {member.user_id && (
                               <span style={{ backgroundColor: '#FEE500', color: '#000', padding: '2px 6px', borderRadius: '4px', fontSize: '10px', fontWeight: 'bold' }}>K</span>
                             )}
@@ -1240,7 +1242,7 @@ export default function TeamTab({ isAdmin }: { isAdmin?: boolean }) {
                             탈퇴일 {formatDt(member.terminate_dt)}
                           </div>
                         </div>
-                        <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+                        <div className="member-card-actions">
                           <button onClick={() => handleRestoreMember(member)}
                             style={{ fontSize: '12px', padding: '6px 10px', borderRadius: '8px', border: 'none', backgroundColor: '#e8f3ff', color: '#3182f6', cursor: 'pointer', fontWeight: 'bold' }}>
                             복구

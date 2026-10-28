@@ -1,0 +1,108 @@
+/* ── 선수단 탭 반응형 레이아웃 ─────────────────────────────────────────────── */
+
+.squad-card {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* 섹션 헤더 (제목 + 총 N명 뱃지 + 선수 추가 버튼) */
+.squad-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.625rem;
+  margin-bottom: 0.9rem;
+}
+
+.squad-header-title {
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+
+.squad-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.squad-header-actions > * {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* 선수 카드 헤더 (이름/포지션 태그 + 관리 버튼) */
+.member-card-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.member-card-info {
+  flex: 1 1 10rem;
+  min-width: 0;
+}
+
+.member-card-name {
+  overflow-wrap: anywhere;
+}
+
+.member-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.375rem;
+  margin-left: auto;
+  max-width: 100%;
+}
+
+.member-card-actions > * {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.member-card-actions select {
+  max-width: 100%;
+}
+
+/* 포지션 태그 ([FIX], [CEN] ...) */
+.position-labels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.3rem;
+  margin-top: 0.3rem;
+}
+
+.position-label {
+  white-space: nowrap;
+}
+
+/* 탈퇴자 목록 행 */
+.terminated-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* 모바일: 관리 버튼/헤더 액션을 한 줄 전체로 내려 정렬 */
+@media (max-width: 480px) {
+  .squad-header-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  /* 관리자 카드만 버튼이 많으므로 버튼 묶음을 다음 줄로 내림 */
+  .member-card-header--admin .member-card-info {
+    flex-basis: 100%;
+  }
+
+  .member-card-header--admin .member-card-actions {
+    width: 100%;
+  }
+}
