@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import api from '../api';
 import RadarChart from './RadarChart';
 import SoccerBallLoader from './SoccerBallLoader';
+import { copyText } from './clipboard';
+import { useToast } from './Toast';
 import './TeamTab.css';
 import {
   POSITIONS,
@@ -101,6 +103,9 @@ const ETC_CATEGORY = { id: 'etc', title: '기타', icon: '📌', color: '#4e5968
 const CATEGORY_OPTIONS = [...SCORE_CATEGORIES, ETC_CATEGORY].map(c => ({ id: c.id, title: c.title }));
 
 const NEW_SCORE_ITEM_DEFAULT = 10;
+
+// 입금 안내 예금주 (공개 화면·공유 문구용으로 가운데 글자 마스킹)
+const getAccountHolder = (paymentCd: string) => (paymentCd === '01' ? '이*범' : '강*지');
 
 // ─── Position Labels Component ────────────────────────────────────────────────
 // [FIX] : 파란색, [PIV] : 빨간색, [ALA] : 초록색, [GOL] : 노란색, [CEN] : 보라색
@@ -458,6 +463,7 @@ export default function TeamTab({ isAdmin }: { isAdmin?: boolean }) {
 
   // Global loading
   const [isGlobalLoading, setIsGlobalLoading] = useState(false);
+  const { toast, showToast } = useToast();
   const [loadingMessage, setLoadingMessage] = useState('');
 
   // Add member modal
@@ -606,10 +612,24 @@ export default function TeamTab({ isAdmin }: { isAdmin?: boolean }) {
   };
 
   // ── Helper functions ──────────────────────────────────────────────────────
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text)
-      .then(() => alert('계좌번호가 복사되었습니다!'))
-      .catch(() => alert('복사에 실패했습니다.'));
+  const copyToClipboard = async (text: string) => {
+    showToast(await copyText(text) ? '✅ 계좌번호가 복사되었습니다' : '복사에 실패했습니다');
+  };
+
+  // 카톡 공유용 입금 안내 문구
+  const handleCopyPaymentText = async () => {
+    const lines = ['💸 풋고추 FC 입금 안내'];
+    payments.forEach(payment => {
+      const account = teamAccounts.find(a => a.team_account_seq === payment.team_account_seq);
+      const paymentName = getCodeName('payment_cd', payment.payment_cd) || (payment.payment_cd === '01' ? '월회비' : '지각비');
+      lines.push('', `[${paymentName}] ${Number(payment.amount).toLocaleString()}원`);
+      if (payment.payment_cd === '01') lines.push('(상/하반기 일시납 각 6만원)');
+      if (account) {
+        lines.push(`🏦 ${getCodeName('bank_cd', account.bank_cd)} ${account.account_enc}`);
+        lines.push(`👤 예금주: ${getAccountHolder(payment.payment_cd)}`);
+      }
+    });
+    showToast(await copyText(lines.join('\n')) ? '✅ 복사되었습니다. 카톡에 붙여넣어 주세요' : '복사에 실패했습니다');
   };
 
   const formatTime = (timeStr?: string) => {
@@ -923,6 +943,7 @@ export default function TeamTab({ isAdmin }: { isAdmin?: boolean }) {
   return (
     <div style={{ padding: '0px', backgroundColor: '#f9f9f9', minHeight: '100vh', paddingBottom: editingMemberUid ? '140px' : '70px' }}>
       <SoccerBallLoader visible={isGlobalLoading} message={loadingMessage} />
+      {toast}
 
       {/* Sub Tab Navigation (Toss Segmented Control) */}
       <div style={{
@@ -1032,8 +1053,18 @@ export default function TeamTab({ isAdmin }: { isAdmin?: boolean }) {
             <div className="card" style={{ padding: '20px', backgroundColor: '#fff', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
                 <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#333', margin: 0 }}>💸 입금 안내</h3>
-                {isAdmin && !isPaymentEditing && (
-                  <button onClick={handlePaymentEditClick} style={{ padding: '6px 12px', fontSize: '13px', backgroundColor: '#f0f0f0', color: '#333', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>수정</button>
+                {!isPaymentEditing && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    {payments.length > 0 && (
+                      <button onClick={handleCopyPaymentText} title="카톡 공유용 입금 안내 복사" aria-label="카톡 공유용 입금 안내 복사"
+                        style={{ width: '32px', height: '32px', padding: 0, fontSize: '16px', backgroundColor: '#e6f4ea', border: 'none', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        📋
+                      </button>
+                    )}
+                    {isAdmin && (
+                      <button onClick={handlePaymentEditClick} style={{ padding: '6px 12px', fontSize: '13px', backgroundColor: '#f0f0f0', color: '#333', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>수정</button>
+                    )}
+                  </div>
                 )}
                 {isAdmin && isPaymentEditing && (
                   <div>
@@ -1062,7 +1093,7 @@ export default function TeamTab({ isAdmin }: { isAdmin?: boolean }) {
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#f4f4f4', padding: '10px 15px', borderRadius: '8px' }}>
                             <div style={{ fontSize: '14px', color: '#333' }}>
                               <strong>{bankName}</strong> {account.account_enc}<br />
-                              <span style={{ fontSize: '12px', color: '#888' }}>예금주: {isMonthly ? '이진범' : '강승지'}</span>
+                              <span style={{ fontSize: '12px', color: '#888' }}>예금주: {getAccountHolder(payment.payment_cd)}</span>
                             </div>
                             <button onClick={() => copyToClipboard(account.account_enc)}
                               style={{ padding: '6px 12px', fontSize: '12px', backgroundColor: primaryColor, color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>

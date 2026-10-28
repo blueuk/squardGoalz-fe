@@ -10,6 +10,8 @@ import orangeTeam from '../img/orangeTeam.png';
 import greenTeam from '../img/greenTeam.png';
 import blueTeam from '../img/blueTeam.png';
 import pinkTeam from '../img/pinkTeam.png';
+import { copyText } from './clipboard';
+import { useToast } from './Toast';
 import './HomeMatchCard.css';
 
 const TEAM_UID = 'df743e05-9440-4c1e-bfdb-fa07159ef0c9';
@@ -25,7 +27,6 @@ const TEAM_STYLES = [
 const DEFAULT_LOCATION = { name: '월문3리 풋살구장', lat: 37.58, lon: 127.24 };
 const WEATHER_HOURS = 3; // 종료시간이 없으므로 시작시간부터 3개(2시간) 표시
 const WEATHER_MIN_SCALE = 0.7; // 날씨 라벨 최소 축소 비율 (12px -> 8.4px)
-const TOAST_DURATION = 2000;
 
 interface Schedule {
   vote_seq: number;
@@ -88,25 +89,6 @@ const buildShareText = (playDate: string, members: ArrangedMember[]) => {
   ].join('\n');
 };
 
-// 클립보드 복사 (Clipboard API가 막힌 인앱 브라우저 등은 execCommand 로 재시도)
-const copyText = async (text: string) => {
-  try {
-    await navigator.clipboard.writeText(text);
-    return true;
-  } catch {
-    const textarea = document.createElement('textarea');
-    textarea.value = text;
-    textarea.setAttribute('readonly', '');
-    textarea.style.position = 'fixed';
-    textarea.style.opacity = '0';
-    document.body.appendChild(textarea);
-    textarea.select();
-    const ok = document.execCommand('copy');
-    document.body.removeChild(textarea);
-    return ok;
-  }
-};
-
 // 팀 배정 모달 기본값
 const DEFAULT_TEAM_COUNT = 2;
 const DEFAULT_TEAM_SIZE = 6;
@@ -128,6 +110,7 @@ export default function HomeMatchCard({ isAdmin }: { isAdmin?: boolean }) {
   const [preview, setPreview] = useState<ArrangedMember[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [busyMessage, setBusyMessage] = useState('');
+  const { toast, showToast } = useToast();
 
   // ── 날씨 라벨을 항상 한 줄로: 넘치면 폭에 맞춰 글자 크기 축소 (최소 70%) ──────
   const weatherRef = useRef<HTMLDivElement>(null);
@@ -262,15 +245,6 @@ export default function HomeMatchCard({ isAdmin }: { isAdmin?: boolean }) {
     showToast(ok ? '✅ 복사되었습니다. 카톡에 붙여넣어 주세요' : '복사에 실패했습니다');
   };
 
-  // ── 토스트 (2초 후 자동으로 사라짐) ─────────────────────────────────────────
-  const [toast, setToast] = useState<string | null>(null);
-  const toastTimer = useRef<number | undefined>(undefined);
-  const showToast = (message: string) => {
-    window.clearTimeout(toastTimer.current);
-    setToast(message);
-    toastTimer.current = window.setTimeout(() => setToast(null), TOAST_DURATION);
-  };
-  useEffect(() => () => window.clearTimeout(toastTimer.current), []);
 
   const saveArrange = async () => {
     if (!schedule || !preview) return;
@@ -369,7 +343,7 @@ export default function HomeMatchCard({ isAdmin }: { isAdmin?: boolean }) {
   return (
     <div className="card match-card">
       <SoccerBallLoader visible={busy} message={busyMessage} />
-      {toast && <div className="match-toast" role="status">{toast}</div>}
+      {toast}
       {showModal && renderModal()}
 
       {preview ? (

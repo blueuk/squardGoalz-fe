@@ -308,33 +308,3 @@
   border-radius: 14px;
   box-shadow: 0 4px 12px rgba(34, 179, 94, 0.3);
 }
-
-/* 토스트 (하단 탭바 50px 위) */
-.match-toast {
-  position: fixed;
-  left: 50%;
-  bottom: calc(50px + 1rem + env(safe-area-inset-bottom, 0px));
-  transform: translateX(-50%);
-  z-index: 11000;
-  max-width: calc(100vw - 2rem);
-  box-sizing: border-box;
-  width: max-content;
-  padding: 0.7rem 1.1rem;
-  border-radius: 1.25rem;
-  background: rgba(25, 31, 40, 0.88);
-  color: #fff;
-  font-size: calc(13px * var(--scale-factor, 1));
-  font-weight: 600;
-  text-align: center;
-  word-break: keep-all; /* 좁은 화면에서는 잘리지 않고 단어 단위로 줄바꿈 */
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
-  pointer-events: none;
-  animation: match-toast-in 2s ease forwards;
-}
-
-@keyframes match-toast-in {
-  0% { opacity: 0; transform: translate(-50%, 0.5rem); }
-  10% { opacity: 1; transform: translate(-50%, 0); }
-  85% { opacity: 1; transform: translate(-50%, 0); }
-  100% { opacity: 0; transform: translate(-50%, 0); }
-}
