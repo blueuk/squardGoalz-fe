@@ -373,7 +373,7 @@ export default function HomeMatchCard({ isAdmin }: { isAdmin?: boolean }) {
       {showModal && renderModal()}
 
       {preview ? (
-        <button className="match-corner-btn" onClick={rerollArrange} title="같은 설정으로 다시 섞기" aria-label="같은 설정으로 다시 섞기">
+        <button className="match-corner-btn reroll" onClick={rerollArrange} title="같은 설정으로 다시 섞기" aria-label="같은 설정으로 다시 섞기">
           ↻
         </button>
       ) : arrangement.length > 0 && (
