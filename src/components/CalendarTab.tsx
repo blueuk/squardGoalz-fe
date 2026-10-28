@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api';
 import SoccerBallLoader from './SoccerBallLoader';
+import './CalendarTab.css';
 
 // Module-level cache for common options
 let cachedLocationOptions: any[] | null = null;
@@ -206,12 +207,18 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members, isAdmin = f
     return dateStr;
   };
 
+  // 날짜·시간 / 장소를 따로 렌더링해 좁은 화면에서 자연스럽게 줄바꿈되도록 함
   const formatScheduleHeader = () => {
-    if (!selectedDate) return '';
+    if (!selectedDate) return null;
     const dateFormatted = formatDateOnly(selectedDate);
     const timeStr = selectedSchedule?.play_start_time || '미정';
     const locStr = selectedSchedule?.play_location || '미정';
-    return `${dateFormatted} ${timeStr} | 장소: ${locStr}`;
+    return (
+      <>
+        <span>{dateFormatted} {timeStr}</span>
+        <span>장소: {locStr}</span>
+      </>
+    );
   };
 
   const handleToggleEditMode = async () => {
@@ -482,8 +489,9 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members, isAdmin = f
           const isSelected = selectedMembers.includes(v.member_uid);
           
           return (
-            <div 
-              key={i} 
+            <div
+              key={i}
+              className="vote-chip"
               onClick={() => {
                 if (!isEditMode) return;
                 if (isSelected) {
@@ -538,16 +546,17 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members, isAdmin = f
       const canceled = votes.filter(v => v.vote_cd === '04');
 
       return (
-        <div className="card" style={{ marginTop: '15px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-            <div>
+        <div className="card vote-panel" style={{ marginTop: '15px' }}>
+          <div className="vote-header">
+            <div className="vote-header-title">
               <h3 style={{ margin: '0 0 5px 0' }}>투표현황</h3>
-              <p style={{ color: '#191f28', fontSize: 'calc(15px * var(--scale-factor, 1))', fontWeight: 'bold', margin: '0' }}>
+              <p className="vote-header-info" style={{ color: '#191f28', fontSize: 'calc(15px * var(--scale-factor, 1))', fontWeight: 'bold' }}>
                 {formatScheduleHeader()}
               </p>
             </div>
             {!isPastDate && (
-              <button 
+              <button
+                className="vote-header-action"
                 onClick={handleToggleEditMode}
                 disabled={isUpdatingSchedule}
                 style={{ 
@@ -572,8 +581,8 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members, isAdmin = f
               <div style={{ fontSize: 'calc(12px * var(--scale-factor, 1))', fontWeight: 'bold', color: '#4e5968', marginBottom: '8px' }}>
                 일정 정보 수정 (시간 / 장소)
               </div>
-              <div style={{ display: 'flex', gap: '10px' }}>
-                <div style={{ flex: 1 }}>
+              <div className="vote-edit-fields">
+                <div>
                   <label style={{ display: 'block', fontSize: 'calc(11px * var(--scale-factor, 1))', color: '#666', marginBottom: '4px' }}>시간</label>
                   <select 
                     value={editTime} 
@@ -586,7 +595,7 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members, isAdmin = f
                     })}
                   </select>
                 </div>
-                <div style={{ flex: 1 }}>
+                <div>
                   <label style={{ display: 'block', fontSize: 'calc(11px * var(--scale-factor, 1))', color: '#666', marginBottom: '4px' }}>장소</label>
                   <select 
                     value={editLocationCd} 
@@ -642,25 +651,25 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members, isAdmin = f
               <div style={{ fontSize: 'calc(12px * var(--scale-factor, 1))', fontWeight: 'bold', color: '#4e5968', marginBottom: '2px' }}>
                 선택 팀원 상태 변경
               </div>
-              <div style={{ display: 'flex', gap: '8px' }}>
+              <div className="vote-btn-row">
                 <button 
                   onClick={() => handleBulkVoteChange('02')} 
                   className="vote-action-btn attend"
-                  style={{ flex: 1, padding: '10px' }}
+                  style={{ padding: '10px' }}
                 >
                   참석
                 </button>
                 <button 
                   onClick={() => handleBulkVoteChange('03')} 
                   className="vote-action-btn absent"
-                  style={{ flex: 1, padding: '10px' }}
+                  style={{ padding: '10px' }}
                 >
                   불참
                 </button>
                 <button 
                   onClick={() => handleBulkVoteChange('01')} 
                   className="vote-action-btn no-vote"
-                  style={{ flex: 1, padding: '10px' }}
+                  style={{ padding: '10px' }}
                 >
                   미투표
                 </button>
@@ -676,18 +685,18 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members, isAdmin = f
               >
                 미투표 일괄 초기화
               </button>
-              <div style={{ display: 'flex', gap: '8px' }}>
+              <div className="vote-btn-row">
                 <button 
                   onClick={handleCancelMatch} 
                   className="vote-action-btn cancel-match"
-                  style={{ flex: 1, padding: '10px' }}
+                  style={{ padding: '10px' }}
                 >
                   경기취소
                 </button>
                 <button 
                   onClick={() => setShowDeleteScheduleModal(true)} 
                   className="vote-action-btn"
-                  style={{ flex: 1, padding: '10px', backgroundColor: 'var(--toss-red)', color: '#fff' }}
+                  style={{ padding: '10px', backgroundColor: 'var(--toss-red)', color: '#fff' }}
                 >
                   일정삭제
                 </button>
@@ -843,12 +852,12 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members, isAdmin = f
               취소 시 모든 참여자의 투표 상태가<br />
               <strong style={{ color: 'var(--toss-red)' }}>'경기취소(미진행)'</strong>으로 변경됩니다.
             </p>
-            <div style={{ display: 'flex', gap: '8px' }}>
+            <div className="vote-btn-row">
               <button 
                 onClick={() => setShowCancelModal(false)}
                 disabled={isCanceling}
                 className="vote-confirm-btn"
-                style={{ flex: 1, padding: '12px', backgroundColor: '#f2f4f6', color: '#4e5968' }}
+                style={{ padding: '12px', backgroundColor: '#f2f4f6', color: '#4e5968' }}
               >
                 취소
               </button>
@@ -856,7 +865,7 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members, isAdmin = f
                 onClick={handleConfirmCancelMatch}
                 disabled={isCanceling}
                 className="vote-confirm-btn"
-                style={{ flex: 1, padding: '12px', backgroundColor: '#191f28', color: '#fff' }}
+                style={{ padding: '12px', backgroundColor: '#191f28', color: '#fff' }}
               >
                 {isCanceling ? '처리 중...' : '경기취소'}
               </button>
@@ -900,12 +909,12 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members, isAdmin = f
               해당 일자의 모든 팀원 투표 상태가<br />
               <strong style={{ color: 'var(--toss-blue)' }}>'미투표'</strong> 상태로 변경됩니다.
             </p>
-            <div style={{ display: 'flex', gap: '8px' }}>
+            <div className="vote-btn-row">
               <button 
                 onClick={() => setShowResetVoteModal(false)}
                 disabled={isResettingVotes}
                 className="vote-confirm-btn"
-                style={{ flex: 1, padding: '12px', backgroundColor: '#f2f4f6', color: '#4e5968' }}
+                style={{ padding: '12px', backgroundColor: '#f2f4f6', color: '#4e5968' }}
               >
                 취소
               </button>
@@ -913,7 +922,7 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members, isAdmin = f
                 onClick={handleConfirmResetVotes}
                 disabled={isResettingVotes}
                 className="vote-confirm-btn"
-                style={{ flex: 1, padding: '12px', backgroundColor: 'var(--toss-blue)', color: '#fff' }}
+                style={{ padding: '12px', backgroundColor: 'var(--toss-blue)', color: '#fff' }}
               >
                 {isResettingVotes ? '처리 중...' : '초기화'}
               </button>
@@ -957,12 +966,12 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members, isAdmin = f
               해당 일자의 경기 일정 및 모든 참여자의 투표가<br />
               <strong style={{ color: 'var(--toss-red)' }}>영구히 삭제</strong>됩니다.
             </p>
-            <div style={{ display: 'flex', gap: '8px' }}>
+            <div className="vote-btn-row">
               <button 
                 onClick={() => setShowDeleteScheduleModal(false)}
                 disabled={isDeletingSchedule}
                 className="vote-confirm-btn"
-                style={{ flex: 1, padding: '12px', backgroundColor: '#f2f4f6', color: '#4e5968' }}
+                style={{ padding: '12px', backgroundColor: '#f2f4f6', color: '#4e5968' }}
               >
                 취소
               </button>
@@ -970,7 +979,7 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members, isAdmin = f
                 onClick={handleConfirmDeleteSchedule}
                 disabled={isDeletingSchedule}
                 className="vote-confirm-btn"
-                style={{ flex: 1, padding: '12px', backgroundColor: 'var(--toss-red)', color: '#fff' }}
+                style={{ padding: '12px', backgroundColor: 'var(--toss-red)', color: '#fff' }}
               >
                 {isDeletingSchedule ? '삭제 중...' : '일정삭제'}
               </button>
