@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import api from '../api';
 import SoccerBallLoader from './SoccerBallLoader';
 import { buildWeightsFromRows, getCachedPositionWeights, setCachedPositionWeights } from './positionUtils';
@@ -24,6 +24,7 @@ const TEAM_STYLES = [
 
 const DEFAULT_LOCATION = { name: '월문3리 풋살구장', lat: 37.58, lon: 127.24 };
 const WEATHER_HOURS = 3; // 종료시간이 없으므로 시작시간부터 3개(2시간) 표시
+const WEATHER_MIN_SCALE = 0.7; // 날씨 라벨 최소 축소 비율 (12px -> 8.4px)
 
 interface Schedule {
   vote_seq: number;
@@ -84,6 +85,22 @@ export default function HomeMatchCard({ isAdmin }: { isAdmin?: boolean }) {
   const [preview, setPreview] = useState<ArrangedMember[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [busyMessage, setBusyMessage] = useState('');
+
+  // ── 날씨 라벨을 항상 한 줄로: 넘치면 폭에 맞춰 글자 크기 축소 (최소 70%) ──────
+  const weatherRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const el = weatherRef.current;
+    if (!el) return;
+    const fit = () => {
+      el.style.setProperty('--weather-scale', '1');
+      const ratio = el.clientWidth / el.scrollWidth;
+      el.style.setProperty('--weather-scale', String(Math.max(WEATHER_MIN_SCALE, Math.min(1, ratio * 0.98))));
+    };
+    fit();
+    const observer = new ResizeObserver(fit);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [loading, weather, weatherError]);
 
   // ── 최근 일정 + 날씨 + 배정 이력 ──────────────────────────────────────────
   useEffect(() => {
@@ -307,7 +324,7 @@ export default function HomeMatchCard({ isAdmin }: { isAdmin?: boolean }) {
         <span className="match-chip">📅 {formatPlayDate(schedule.play_date)}</span>
       </div>
 
-      <div className="match-weather">
+      <div className="match-weather" ref={weatherRef}>
         {weatherError ? (
           <span className="match-weather-empty">날씨 예보 없음</span>
         ) : !weather ? (
