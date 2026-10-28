@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import api from '../api';
 import SoccerBallLoader from './SoccerBallLoader';
-import { buildWeightsFromRows, getCachedPositionWeights, setCachedPositionWeights, POSITIONS } from './positionUtils';
+import { buildWeightsFromRows, getCachedPositionWeights, setCachedPositionWeights } from './positionUtils';
 import {
   arrangeTeams, MAX_TEAM_COUNT, MIN_TEAM_SIZE, MAX_TEAM_SIZE,
   type ArrangedMember, type ArrangeParticipant
@@ -186,18 +186,18 @@ export default function HomeMatchCard({ isAdmin }: { isAdmin?: boolean }) {
     }
   };
 
-  const totalPlayers = participants.length + mercCount;
-  const capacity = teamCount * teamSize;
-
   const runArrange = () => {
-    if (totalPlayers === 0) {
+    if (participants.length + mercCount === 0) {
       alert('참석자가 없습니다. 투표 현황 또는 용병 수를 확인해주세요.');
       return;
     }
-    if (totalPlayers > capacity &&
-      !window.confirm(`총 ${totalPlayers}명이 정원 ${capacity}명(${teamCount}팀 x ${teamSize}명)보다 많습니다.\n초과 인원은 팀에 랜덤으로 추가 배정됩니다. 계속하시겠습니까?`)) return;
     setPreview(arrangeTeams(participants, weights, { mercCount, teamCount, teamSize }));
     setShowModal(false);
+  };
+
+  // 현재 설정(용병 수, 팀 수, 팀당 인원) 그대로 다시 섞기
+  const rerollArrange = () => {
+    setPreview(arrangeTeams(participants, weights, { mercCount, teamCount, teamSize }));
   };
 
   const saveArrange = async () => {
@@ -259,10 +259,6 @@ export default function HomeMatchCard({ isAdmin }: { isAdmin?: boolean }) {
     <div className="arrange-modal-overlay" onClick={() => setShowModal(false)}>
       <div className="arrange-modal" onClick={e => e.stopPropagation()}>
         <h3 className="arrange-modal-title">팀 배정</h3>
-        <div className="arrange-form-summary">
-          참석 {participants.length}명 + 용병 {mercCount}명 = 총 <b>{totalPlayers}명</b>
-          <span className={totalPlayers === capacity ? 'ok' : 'warn'}> / 정원 {capacity}명</span>
-        </div>
         <div className="arrange-form-fields">
           <label>
             용병 수
@@ -282,9 +278,6 @@ export default function HomeMatchCard({ isAdmin }: { isAdmin?: boolean }) {
             </select>
           </label>
         </div>
-        <p className="arrange-form-hint">
-          포지션별 상한: {POSITIONS.map(p => `${p.abbr} ${(p.code === 'FIX' || p.code === 'ALA' ? 2 : 1) * teamCount}`).join(' · ')}
-        </p>
         <div className="arrange-actions">
           <button className="arrange-btn ghost" onClick={() => setShowModal(false)}>취소</button>
           <button className="arrange-btn green" onClick={runArrange}>배정하기</button>
@@ -306,8 +299,14 @@ export default function HomeMatchCard({ isAdmin }: { isAdmin?: boolean }) {
       <SoccerBallLoader visible={busy} message={busyMessage} />
       {showModal && renderModal()}
 
+      {preview && (
+        <button className="arrange-reroll" onClick={rerollArrange} title="같은 설정으로 다시 섞기" aria-label="같은 설정으로 다시 섞기">
+          ↻
+        </button>
+      )}
+
       {/* 구장명 / 날짜 요일 라벨 */}
-      <div className="match-label">
+      <div className={`match-label${preview ? ' with-reroll' : ''}`}>
         <span className="match-chip">📍 {schedule.play_location || DEFAULT_LOCATION.name}</span>
         <span className="match-chip">📅 {formatPlayDate(schedule.play_date)}</span>
       </div>
@@ -337,7 +336,6 @@ export default function HomeMatchCard({ isAdmin }: { isAdmin?: boolean }) {
           {renderTeams(preview)}
           <div className="arrange-actions">
             <button className="arrange-btn ghost" onClick={() => setPreview(null)}>취소</button>
-            <button className="arrange-btn secondary" onClick={() => setShowModal(true)}>다시 배정</button>
             <button className="arrange-btn green" onClick={saveArrange}>저장</button>
           </div>
         </>

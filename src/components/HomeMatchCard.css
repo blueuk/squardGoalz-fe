@@ -1,9 +1,36 @@
 /* ── 홈 화면 최근 경기 / 팀 배정 카드 ─────────────────────────────────────── */
 
 .match-card {
+  position: relative;
   margin-top: 20px;
   max-width: 100%;
   box-sizing: border-box;
+}
+
+/* 우측 상단 리롤(같은 설정으로 다시 섞기) 버튼 */
+.arrange-reroll {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: #e6f4ea;
+  color: #1f9d55;
+  font-size: calc(17px * var(--scale-factor, 1));
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.arrange-reroll:active {
+  transform: rotate(-90deg);
+  transition: transform 0.15s ease;
 }
 
 .match-empty {
@@ -20,6 +47,11 @@
   flex-wrap: wrap;
   justify-content: center;
   gap: 0.4rem;
+}
+
+/* 리롤 버튼과 겹치지 않도록 좌우 여백 */
+.match-label.with-reroll {
+  padding: 0 2.25rem;
 }
 
 .match-chip {
@@ -204,15 +236,6 @@
   color: #191f28;
 }
 
-.arrange-form-summary {
-  text-align: center;
-  font-size: calc(13px * var(--scale-factor, 1));
-  color: #4e5968;
-}
-
-.arrange-form-summary .ok { color: #137333; }
-.arrange-form-summary .warn { color: #f04452; }
-
 .arrange-form-fields {
   display: flex;
   flex-wrap: wrap;
@@ -242,13 +265,6 @@
   margin: 0;
 }
 
-.arrange-form-hint {
-  margin: 0;
-  text-align: center;
-  font-size: calc(11px * var(--scale-factor, 1));
-  color: #8b95a1;
-}
-
 /* 버튼 */
 .arrange-actions {
   display: flex;
@@ -270,7 +286,6 @@
 }
 
 .arrange-btn.ghost { background: #f2f4f6; color: #4e5968; }
-.arrange-btn.secondary { background: #e6f4ea; color: #1f9d55; }
 .arrange-btn.green { background: #22b35e; color: #fff; }
 
 .arrange-btn.big {
