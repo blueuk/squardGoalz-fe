@@ -16,8 +16,8 @@ const TEAM_UID = 'df743e05-9440-4c1e-bfdb-fa07159ef0c9';
 
 // team_no 1~4 순서
 const TEAM_STYLES = [
-  { name: '오렌지', img: orangeTeam, color: '#ff6b1a' },
-  { name: '그린', img: greenTeam, color: '#2ecc71' },
+  { name: '주황', img: orangeTeam, color: '#ff6b1a' },
+  { name: '형광', img: greenTeam, color: '#2ecc71' },
   { name: '블루', img: blueTeam, color: '#3182f6' },
   { name: '핑크', img: pinkTeam, color: '#ff5c9a' },
 ];
@@ -63,6 +63,48 @@ const formatPlayDate = (d: string) => {
 };
 
 const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
+
+const pad2 = (n: number) => String(n).padStart(2, '0');
+
+// 카톡 공유용 배정 텍스트
+const buildShareText = (playDate: string, members: ArrangedMember[]) => {
+  const now = new Date();
+  const lookup = `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())} ${pad2(now.getHours())}:${pad2(now.getMinutes())}`;
+  const teamNos = [...new Set(members.map(m => m.team_no))].sort((a, b) => a - b);
+  const teamLines = teamNos.map(no => {
+    const names = members
+      .filter(m => m.team_no === no)
+      .sort((a, b) => a.keeper_order - b.keeper_order)
+      .map(m => m.member_name);
+    return `[${(TEAM_STYLES[no - 1] ?? TEAM_STYLES[0]).name}팀] ${names.join(', ')}`;
+  });
+  return [
+    '⚽ 풋고추 FC 팀 배정',
+    `📅 경기일: ${playDate.slice(0, 4)}-${playDate.slice(4, 6)}-${playDate.slice(6, 8)}`,
+    `🕒 조회일시: ${lookup}`,
+    '',
+    ...teamLines,
+  ].join('\n');
+};
+
+// 클립보드 복사 (Clipboard API가 막힌 인앱 브라우저 등은 execCommand 로 재시도)
+const copyText = async (text: string) => {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.setAttribute('readonly', '');
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    const ok = document.execCommand('copy');
+    document.body.removeChild(textarea);
+    return ok;
+  }
+};
 
 // 팀 배정 모달 기본값
 const DEFAULT_TEAM_COUNT = 2;
@@ -213,6 +255,12 @@ export default function HomeMatchCard({ isAdmin }: { isAdmin?: boolean }) {
     setPreview(arrangeTeams(participants, weights, { mercCount, teamCount, teamSize }));
   };
 
+  const handleCopyShareText = async () => {
+    if (!schedule || arrangement.length === 0) return;
+    const ok = await copyText(buildShareText(schedule.play_date, arrangement));
+    alert(ok ? '팀 배정 내용이 복사되었습니다.\n카카오톡 채팅창에 붙여넣기 해주세요.' : '복사에 실패했습니다.');
+  };
+
   const saveArrange = async () => {
     if (!schedule || !preview) return;
     if (arrangement.length > 0 && !window.confirm('기존 팀 배정 이력을 새 배정으로 교체하시겠습니까?')) return;
@@ -312,14 +360,18 @@ export default function HomeMatchCard({ isAdmin }: { isAdmin?: boolean }) {
       <SoccerBallLoader visible={busy} message={busyMessage} />
       {showModal && renderModal()}
 
-      {preview && (
-        <button className="arrange-reroll" onClick={rerollArrange} title="같은 설정으로 다시 섞기" aria-label="같은 설정으로 다시 섞기">
+      {preview ? (
+        <button className="match-corner-btn" onClick={rerollArrange} title="같은 설정으로 다시 섞기" aria-label="같은 설정으로 다시 섞기">
           ↻
+        </button>
+      ) : arrangement.length > 0 && (
+        <button className="match-corner-btn" onClick={handleCopyShareText} title="카톡 공유용 텍스트 복사" aria-label="카톡 공유용 텍스트 복사">
+          📋
         </button>
       )}
 
       {/* 구장명 / 날짜 요일 라벨 */}
-      <div className={`match-label${preview ? ' with-reroll' : ''}`}>
+      <div className={`match-label${preview || arrangement.length > 0 ? ' with-corner-btn' : ''}`}>
         <span className="match-chip">📍 {schedule.play_location || DEFAULT_LOCATION.name}</span>
         <span className="match-chip">📅 {formatPlayDate(schedule.play_date)}</span>
       </div>

@@ -7,8 +7,8 @@
   box-sizing: border-box;
 }
 
-/* 우측 상단 리롤(같은 설정으로 다시 섞기) 버튼 */
-.arrange-reroll {
+/* 우측 상단 버튼 (미리보기: 리롤 / 저장된 배정: 공유 텍스트 복사) */
+.match-corner-btn {
   position: absolute;
   top: 0.75rem;
   right: 0.75rem;
@@ -28,7 +28,7 @@
   justify-content: center;
 }
 
-.arrange-reroll:active {
+.match-corner-btn:active {
   transform: rotate(-90deg);
   transition: transform 0.15s ease;
 }
@@ -49,8 +49,8 @@
   gap: 0.4rem;
 }
 
-/* 리롤 버튼과 겹치지 않도록 좌우 여백 */
-.match-label.with-reroll {
+/* 우측 상단 버튼과 겹치지 않도록 좌우 여백 */
+.match-label.with-corner-btn {
   padding: 0 2.25rem;
 }
 
