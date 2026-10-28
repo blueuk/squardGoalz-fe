@@ -81,6 +81,78 @@
   white-space: nowrap;
 }
 
+/* ── 선수 카드 펼침 영역 (레이더 + 능력치 리포트) ───────────────────────────── */
+.member-expanded {
+  padding: 1rem;
+}
+
+.radar-box {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.report-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.report-header-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.report-header-title > *,
+.report-header-action > * {
+  white-space: nowrap;
+}
+
+.report-header-action {
+  margin-left: auto;
+}
+
+.report-category-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.report-category-header > * {
+  white-space: nowrap;
+}
+
+/* 최대 2열, 한 칸이 9.5rem보다 좁아지면 1열로 전환 */
+.report-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(max(9.5rem, calc((100% - 0.5rem) / 2)), 1fr));
+  gap: 0.5rem;
+}
+
+.report-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.report-item-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.report-item > :last-child {
+  flex-shrink: 0;
+}
+
 /* 탈퇴자 목록 행 */
 .terminated-row {
   display: flex;
@@ -104,5 +176,9 @@
 
   .member-card-header--admin .member-card-actions {
     width: 100%;
+  }
+
+  .member-expanded {
+    padding: 0.75rem;
   }
 }

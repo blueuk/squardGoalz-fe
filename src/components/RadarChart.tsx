@@ -42,7 +42,8 @@ export default function RadarChart({ scores, size = 260, showValues = true }: Ra
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-      <svg width={size} height={size} style={{ overflow: 'visible' }}>
+      {/* viewBox로 비율 유지: 좁은 화면에서는 컨테이너 폭에 맞춰 축소 */}
+      <svg viewBox={`0 0 ${size} ${size}`} width="100%" style={{ maxWidth: size, height: 'auto', overflow: 'visible' }}>
         {/* 배경 6각형 가이드 라인 */}
         {gridPolygons.map((pts, idx) => (
           <polygon

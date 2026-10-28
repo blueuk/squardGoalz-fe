@@ -1082,9 +1082,9 @@ export default function TeamTab({ isAdmin }: { isAdmin?: boolean }) {
 
                       {/* Expanded Section */}
                       {isExpanded && (
-                        <div style={{ padding: '16px', backgroundColor: '#ffffff', borderTop: '1px solid #f2f4f6' }}>
+                        <div className="member-expanded" style={{ backgroundColor: '#ffffff', borderTop: '1px solid #f2f4f6' }}>
                           {/* 6각형 그래프 영역 (모든 사용자에게 노출) */}
-                          <div style={{ marginBottom: '18px', padding: '14px', backgroundColor: '#f9fafb', borderRadius: '12px', border: '1px solid #f2f4f6', textAlign: 'center' }}>
+                          <div className="radar-box" style={{ marginBottom: '18px', padding: '14px', backgroundColor: '#f9fafb', borderRadius: '12px', border: '1px solid #f2f4f6', textAlign: 'center' }}>
                             <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#4e5968', marginBottom: '8px' }}>
                               📊 능력치 6각형 레이더
                             </div>
@@ -1092,21 +1092,21 @@ export default function TeamTab({ isAdmin }: { isAdmin?: boolean }) {
                           </div>
 
                           {/* Stats header bar */}
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', paddingBottom: '12px', borderBottom: '1px solid #f2f4f6' }}>
-                            <div>
+                          <div className="report-header" style={{ marginBottom: '14px', paddingBottom: '12px', borderBottom: '1px solid #f2f4f6' }}>
+                            <div className="report-header-title">
                               <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#191f28' }}>능력치 리포트</span>
                               {isAdmin ? (
-                                <span style={{ marginLeft: '8px', fontSize: '12px', color: 'var(--toss-blue)', fontWeight: 'bold', backgroundColor: 'var(--toss-light-blue)', padding: '2px 8px', borderRadius: '8px' }}>
+                                <span style={{ fontSize: '12px', color: 'var(--toss-blue)', fontWeight: 'bold', backgroundColor: 'var(--toss-light-blue)', padding: '2px 8px', borderRadius: '8px' }}>
                                   ⭐ 평균 {avgScore}점
                                 </span>
                               ) : (
-                                <span style={{ marginLeft: '8px', fontSize: '11px', color: '#8b95a1', backgroundColor: '#f2f4f6', padding: '2px 8px', borderRadius: '8px' }}>
+                                <span style={{ fontSize: '11px', color: '#8b95a1', backgroundColor: '#f2f4f6', padding: '2px 8px', borderRadius: '8px' }}>
                                   🔒 상세 수치 비공개
                                 </span>
                               )}
                             </div>
                             {isAdmin && (
-                              <div>
+                              <div className="report-header-action">
                                 {!isEditingThisMember ? (
                                   <button onClick={e => { e.stopPropagation(); handleStartEditScores(member.member_uid); }}
                                     className="vote-action-btn"
@@ -1131,7 +1131,7 @@ export default function TeamTab({ isAdmin }: { isAdmin?: boolean }) {
 
                               return (
                                 <div key={category.id} style={{ backgroundColor: '#f9fafb', borderRadius: '12px', padding: '12px 14px', border: '1px solid #f2f4f6' }}>
-                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                                  <div className="report-category-header" style={{ marginBottom: '10px' }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                                       <span style={{ fontSize: '14px' }}>{category.icon}</span>
                                       <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#333d4b' }}>{category.title}</span>
@@ -1143,7 +1143,7 @@ export default function TeamTab({ isAdmin }: { isAdmin?: boolean }) {
                                     )}
                                   </div>
 
-                                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
+                                  <div className="report-grid">
                                     {category.codes.map(code => {
                                       const codeObj = codeLists.score_cd?.find(c => c.code === code);
                                       const codeName = codeObj?.code_name || STAT_NAMES[code] || code;
@@ -1151,13 +1151,12 @@ export default function TeamTab({ isAdmin }: { isAdmin?: boolean }) {
                                       const scoreVal = isEditingThisMember ? (editingScores[code] ?? 13) : (existing ? parseInt(existing.score_val, 10) : 13);
 
                                       return (
-                                        <div key={code} style={{
-                                          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                                        <div key={code} className="report-item" style={{
                                           backgroundColor: '#fff', padding: '8px 10px', borderRadius: '8px',
                                           border: isEditingThisMember ? '1px solid #d0d7de' : '1px solid #f2f4f6',
                                           boxShadow: '0 1px 2px rgba(0,0,0,0.02)'
                                         }}>
-                                          <span style={{ fontSize: '12px', color: '#4e5968', fontWeight: 500 }}>{codeName}</span>
+                                          <span className="report-item-name" style={{ fontSize: '12px', color: '#4e5968', fontWeight: 500 }}>{codeName}</span>
 
                                           {/* 권한이 관리자인 경우만 수치 노출, 일반 사용자는 잠금 표시 */}
                                           {isAdmin ? (
