@@ -194,9 +194,21 @@ export default function SettingsTab() {
                   {m.member_name}
                   {m.user_id === myUserid && <span className="member-role-me">나</span>}
                 </span>
-                <select value={m.auth_cd} onChange={e => changeMemberRole(m, e.target.value)}>
-                  {roles.map(r => <option key={r.auth_cd} value={r.auth_cd}>{r.name}</option>)}
-                </select>
+                <div className="member-role-chips" role="radiogroup" aria-label={`${m.member_name} 역할`}>
+                  {roles.map(r => (
+                    <button
+                      key={r.auth_cd}
+                      type="button"
+                      role="radio"
+                      aria-checked={m.auth_cd === r.auth_cd}
+                      className={`member-role-chip${m.auth_cd === r.auth_cd ? ' active' : ''}${r.locked ? ' admin' : ''}`}
+                      disabled={busy}
+                      onClick={() => changeMemberRole(m, r.auth_cd)}
+                    >
+                      {r.name}
+                    </button>
+                  ))}
+                </div>
               </li>
             ))}
           </ul>

@@ -180,12 +180,47 @@
   font-weight: 700;
 }
 
-.member-role-list select {
+.member-role-chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.3rem;
   flex-shrink: 0;
-  padding: 0.4rem 0.5rem;
-  border-radius: 8px;
-  border: 1px solid #ccd3dc;
-  background: #fff;
-  font-size: 13px;
+}
+
+.member-role-chip {
+  padding: 0.35rem 0.7rem;
+  border: 1px solid #e5e8eb;
+  border-radius: 999px;
+  background: #f9fafb;
+  color: #8b95a1;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
   margin: 0;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.member-role-chip:not(.active):hover {
+  border-color: #b0b8c1;
+  color: #4e5968;
+}
+
+.member-role-chip.active {
+  border-color: var(--toss-blue, #3182f6);
+  background: var(--toss-blue, #3182f6);
+  color: #fff;
+  font-weight: 700;
+  cursor: default;
+}
+
+.member-role-chip.active.admin {
+  border-color: #f04452;
+  background: #f04452;
+}
+
+.member-role-chip:disabled:not(.active) {
+  cursor: not-allowed;
+  opacity: 0.6;
 }
