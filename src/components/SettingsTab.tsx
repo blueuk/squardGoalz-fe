@@ -43,6 +43,7 @@ export default function SettingsTab() {
   const [grants, setGrants] = useState<Grants>({});
   const [memberRoles, setMemberRoles] = useState<MemberRole[]>([]);
   const [myUserid, setMyUserid] = useState<string | null>(null);
+  const [userAuth, setUserAuth] = useState<Record<string, string>>({}); // 전체 유저 userid → auth_cd
 
   useEffect(() => {
     const load = async () => {
@@ -60,6 +61,7 @@ export default function SettingsTab() {
         setMyUserid(meRes.data.userid);
 
         const authByUser = new Map<string, string>((userRes.data || []).map((u: any) => [u.userid, u.auth_cd]));
+        setUserAuth(Object.fromEntries(authByUser));
         setMemberRoles((memberRes.data || [])
           .filter((m: any) => m.user_id && authByUser.has(m.user_id))
           .map((m: any) => ({ member_uid: m.member_uid, member_name: m.member_name, user_id: m.user_id, auth_cd: authByUser.get(m.user_id) || '' }))
@@ -107,6 +109,13 @@ export default function SettingsTab() {
   // ── 회원 역할 ────────────────────────────────────────────────────────────
   const changeMemberRole = async (member: MemberRole, authCd: string) => {
     if (authCd === member.auth_cd) return;
+    // 선수 명단에 없는 계정도 있으므로 전체 유저 기준으로 관리자 수를 셈
+    const adminCd = roles.find(r => r.locked)?.auth_cd;
+    const adminCount = Object.values(userAuth).filter(cd => cd === adminCd).length;
+    if (member.auth_cd === adminCd && adminCount <= 1) {
+      showToast('관리자는 최소 1명 이상 있어야 합니다');
+      return;
+    }
     const roleName = roles.find(r => r.auth_cd === authCd)?.name ?? authCd;
     const isMe = member.user_id === myUserid;
     const warning = isMe ? '\n본인의 역할을 변경하면 이 설정 화면에 다시 들어오지 못할 수 있습니다.' : '';
@@ -115,6 +124,7 @@ export default function SettingsTab() {
     try {
       await api.post('/user/update', { userid: member.user_id, auth_cd: authCd });
       setMemberRoles(prev => prev.map(m => (m.user_id === member.user_id ? { ...m, auth_cd: authCd } : m)));
+      setUserAuth(prev => ({ ...prev, [member.user_id]: authCd }));
       if (isMe) await reloadMyPermissions();
       showToast(`✅ ${member.member_name} 님의 역할이 변경되었습니다`);
     } catch (err: any) {
