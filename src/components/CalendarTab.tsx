@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import api from '../api';
 import SoccerBallLoader from './SoccerBallLoader';
 import './CalendarTab.css';
+import { usePermission } from '../permissions';
 
 // Module-level cache for common options
 let cachedLocationOptions: any[] | null = null;
@@ -10,10 +11,13 @@ let cachedStatusOptions: any[] | null = null;
 interface CalendarTabProps {
   teamUid: string;
   members: any[]; // The rates list from App.tsx
-  isAdmin?: boolean;
 }
 
-const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members, isAdmin = false }) => {
+const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members }) => {
+  const { can } = usePermission();
+  const canSchedule = can('schedule.manage'); // 일정 등록 / 시간·장소 수정 / 삭제
+  const canVote = can('vote.manage');         // 팀원 투표 변경 / 일괄 초기화 / 경기취소
+  const canPast = can('schedule.past');       // 지난 일정 수정
   const getUpcomingSaturdayDate = () => {
     const d = new Date();
     const day = d.getDay();
@@ -235,6 +239,7 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members, isAdmin = f
       }
 
       if (
+        canSchedule &&
         selectedSchedule &&
         (finalLocation !== (selectedSchedule.play_location || '') ||
           editTime !== (selectedSchedule.play_start_time || ''))
@@ -493,7 +498,7 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members, isAdmin = f
               key={i}
               className="vote-chip"
               onClick={() => {
-                if (!isEditMode) return;
+                if (!isEditMode || !canVote) return;
                 if (isSelected) {
                   setSelectedMembers(prev => prev.filter(uid => uid !== v.member_uid));
                 } else {
@@ -508,7 +513,7 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members, isAdmin = f
                 fontSize: 'calc(13px * var(--scale-factor, 1))',
                 color: isSelected ? 'var(--toss-blue)' : '#333',
                 boxShadow: isSelected ? '0 0 0 2px var(--toss-blue)' : '0 1px 2px rgba(0,0,0,0.05)',
-                cursor: isEditMode ? 'pointer' : 'default',
+                cursor: isEditMode && canVote ? 'pointer' : 'default',
                 transition: 'all 0.2s'
               }}
             >
@@ -536,7 +541,7 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members, isAdmin = f
 
     const today = new Date();
     const todayStr = formatYYYYMMDD(today.getFullYear(), today.getMonth(), today.getDate());
-    const isPastDate = isAdmin ? false : selectedDate < todayStr;
+    const isPastDate = canPast ? false : selectedDate < todayStr;
 
     if (selectedSchedule) {
       // Vote Panel
@@ -554,7 +559,7 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members, isAdmin = f
                 {formatScheduleHeader()}
               </p>
             </div>
-            {!isPastDate && (
+            {!isPastDate && (canSchedule || canVote) && (
               <button
                 className="vote-header-action"
                 onClick={handleToggleEditMode}
@@ -576,7 +581,7 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members, isAdmin = f
             )}
           </div>
 
-          {isEditMode && (
+          {isEditMode && canSchedule && (
             <div style={{ backgroundColor: '#f8f9fa', padding: '12px 14px', borderRadius: '12px', marginBottom: '12px', border: '1px solid #eef0f2' }}>
               <div style={{ fontSize: 'calc(12px * var(--scale-factor, 1))', fontWeight: 'bold', color: '#4e5968', marginBottom: '8px' }}>
                 일정 정보 수정 (시간 / 장소)
@@ -621,7 +626,7 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members, isAdmin = f
             </div>
           )}
           
-          {isEditMode && (
+          {isEditMode && canVote && (
             <p style={{ fontSize: 'calc(12px * var(--scale-factor, 1))', color: 'var(--toss-blue)', margin: '5px 0 0 0' }}>변경할 팀원을 선택한 후 아래의 상태 버튼을 눌러주세요.</p>
           )}
           
@@ -648,6 +653,7 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members, isAdmin = f
 
           {isEditMode && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderTop: '1px solid #eee', paddingTop: '20px' }}>
+              {canVote && (<>
               <div style={{ fontSize: 'calc(12px * var(--scale-factor, 1))', fontWeight: 'bold', color: '#4e5968', marginBottom: '2px' }}>
                 선택 팀원 상태 변경
               </div>
@@ -674,32 +680,39 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members, isAdmin = f
                   미투표
                 </button>
               </div>
+              </>)}
 
               <div style={{ fontSize: 'calc(12px * var(--scale-factor, 1))', fontWeight: 'bold', color: '#4e5968', marginTop: '10px', marginBottom: '2px' }}>
                 전체 일정 및 투표 관리
               </div>
-              <button 
-                onClick={() => setShowResetVoteModal(true)} 
-                className="vote-action-btn"
-                style={{ width: '100%', padding: '10px', backgroundColor: '#e5e8eb', color: '#333d4b' }}
-              >
-                미투표 일괄 초기화
-              </button>
-              <div className="vote-btn-row">
+              {canVote && (
                 <button 
-                  onClick={handleCancelMatch} 
-                  className="vote-action-btn cancel-match"
-                  style={{ padding: '10px' }}
-                >
-                  경기취소
-                </button>
-                <button 
-                  onClick={() => setShowDeleteScheduleModal(true)} 
+                  onClick={() => setShowResetVoteModal(true)} 
                   className="vote-action-btn"
-                  style={{ padding: '10px', backgroundColor: 'var(--toss-red)', color: '#fff' }}
+                  style={{ width: '100%', padding: '10px', backgroundColor: '#e5e8eb', color: '#333d4b' }}
                 >
-                  일정삭제
+                  미투표 일괄 초기화
                 </button>
+              )}
+              <div className="vote-btn-row">
+                {canVote && (
+                  <button 
+                    onClick={handleCancelMatch} 
+                    className="vote-action-btn cancel-match"
+                    style={{ padding: '10px' }}
+                  >
+                    경기취소
+                  </button>
+                )}
+                {canSchedule && (
+                  <button 
+                    onClick={() => setShowDeleteScheduleModal(true)} 
+                    className="vote-action-btn"
+                    style={{ padding: '10px', backgroundColor: 'var(--toss-red)', color: '#fff' }}
+                  >
+                    일정삭제
+                  </button>
+                )}
               </div>
             </div>
           )}
@@ -719,6 +732,10 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members, isAdmin = f
           {isPastDate ? (
             <p style={{ color: '#e74c3c', fontSize: 'calc(14px * var(--scale-factor, 1))', marginBottom: '15px', fontWeight: 'bold' }}>
               과거의 날짜에는 새로운 일정을 등록할 수 없습니다.
+            </p>
+          ) : !canSchedule ? (
+            <p style={{ color: '#888', fontSize: 'calc(13px * var(--scale-factor, 1))', marginBottom: '15px' }}>
+              이 날짜에는 아직 일정이 없습니다.
             </p>
           ) : (
             <>

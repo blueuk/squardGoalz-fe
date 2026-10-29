@@ -12,6 +12,7 @@ import blueTeam from '../img/blueTeam.png';
 import pinkTeam from '../img/pinkTeam.png';
 import { copyText } from './clipboard';
 import { useToast } from './Toast';
+import { usePermission } from '../permissions';
 import './HomeMatchCard.css';
 
 const TEAM_UID = 'df743e05-9440-4c1e-bfdb-fa07159ef0c9';
@@ -93,7 +94,9 @@ const buildShareText = (playDate: string, members: ArrangedMember[]) => {
 const DEFAULT_TEAM_COUNT = 2;
 const DEFAULT_TEAM_SIZE = 6;
 
-export default function HomeMatchCard({ isAdmin }: { isAdmin?: boolean }) {
+export default function HomeMatchCard() {
+  const { can } = usePermission();
+  const canArrange = can('arrange.manage');
   const [loading, setLoading] = useState(true);
   const [schedule, setSchedule] = useState<Schedule | null>(null);
   const [weather, setWeather] = useState<WeatherHour[] | null>(null);
@@ -393,13 +396,13 @@ export default function HomeMatchCard({ isAdmin }: { isAdmin?: boolean }) {
       ) : arrangement.length > 0 ? (
         <>
           {renderTeams(arrangement)}
-          {isAdmin && (
+          {canArrange && (
             <div className="arrange-actions">
               <button className="arrange-btn ghost" onClick={openForm}>다시 배정</button>
             </div>
           )}
         </>
-      ) : isAdmin ? (
+      ) : canArrange ? (
         <button className="arrange-btn big" onClick={openForm}>배정하기</button>
       ) : (
         <p className="match-empty">아직 팀 배정 전입니다.</p>

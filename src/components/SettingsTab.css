@@ -1,0 +1,191 @@
+/* ── 팀 > 설정 탭 (권한 관리) ─────────────────────────────────────────────── */
+
+.settings {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.settings-card {
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 20px;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  margin-bottom: 0;
+}
+
+.settings-title {
+  margin: 0 0 4px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #191f28;
+}
+
+.settings-desc {
+  margin: 0 0 14px;
+  font-size: 13px;
+  color: #8b95a1;
+}
+
+.settings-empty {
+  margin: 0;
+  padding: 0.75rem 0;
+  text-align: center;
+  font-size: 13px;
+  color: #8b95a1;
+}
+
+/* 권한 표 */
+.perm-grid {
+  display: grid;
+  align-items: center;
+  column-gap: 0.25rem;
+}
+
+.perm-head {
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid #e5e8eb;
+}
+
+.perm-role {
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: #4e5968;
+  white-space: nowrap;
+}
+
+.perm-group {
+  margin-top: 0.75rem;
+}
+
+.perm-screen {
+  margin-bottom: 0.25rem;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--toss-blue, #3182f6);
+}
+
+.perm-row {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #f2f4f6;
+}
+
+.perm-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.perm-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #191f28;
+}
+
+.perm-desc {
+  font-size: 11px;
+  color: #8b95a1;
+  overflow-wrap: anywhere;
+}
+
+.perm-check {
+  display: flex;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.perm-check input {
+  width: 1.15rem;
+  height: 1.15rem;
+  margin: 0;
+  accent-color: var(--toss-blue, #3182f6);
+  cursor: pointer;
+}
+
+.perm-check input:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+/* 버튼 */
+.settings-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.settings-btn {
+  flex: 1 1 5rem;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0.7rem;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.settings-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.settings-btn.ghost { background: #f2f4f6; color: #4e5968; }
+.settings-btn.primary { flex-grow: 2; background: var(--toss-blue, #3182f6); color: #fff; }
+
+/* 회원 역할 */
+.member-role-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.member-role-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid #f2f4f6;
+}
+
+.member-role-name {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #191f28;
+  overflow-wrap: anywhere;
+}
+
+.member-role-me {
+  flex-shrink: 0;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: #e8f3ff;
+  color: var(--toss-blue, #3182f6);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.member-role-list select {
+  flex-shrink: 0;
+  padding: 0.4rem 0.5rem;
+  border-radius: 8px;
+  border: 1px solid #ccd3dc;
+  background: #fff;
+  font-size: 13px;
+  margin: 0;
+}

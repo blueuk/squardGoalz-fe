@@ -13,6 +13,7 @@ import TeamTab, { PositionLabels } from './components/TeamTab';
 import SoccerBallLoader from './components/SoccerBallLoader';
 import RadarChart from './components/RadarChart';
 import HomeMatchCard from './components/HomeMatchCard';
+import { PermissionProvider } from './permissions';
 import { calculateRadarScores, DEFAULT_POSITION_WEIGHTS, buildWeightsFromRows, getCachedPositionWeights, setCachedPositionWeights } from './components/positionUtils';
 
 interface User {
@@ -319,6 +320,7 @@ function App() {
   }
 
   return (
+    <PermissionProvider userid={user?.userid}>
     <div className="app-container">
       {statusUpdating && <SoccerBallLoader message="상태를 변경하는 중입니다..." />}
 
@@ -422,7 +424,7 @@ function App() {
                   </div>
                 </div>
                 
-                <HomeMatchCard isAdmin={user?.auth_cd === '01'} />
+                <HomeMatchCard />
               </div>
             )}
 
@@ -459,10 +461,10 @@ function App() {
             )}
 
             {activeTab === 'SCHEDULE' && (
-              <CalendarTab teamUid="df743e05-9440-4c1e-bfdb-fa07159ef0c9" members={rates} isAdmin={user?.auth_cd === '01'} />
+              <CalendarTab teamUid="df743e05-9440-4c1e-bfdb-fa07159ef0c9" members={rates} />
             )}
 
-            {activeTab === 'TEAM' && <TeamTab isAdmin={user?.auth_cd === '01'} />}
+            {activeTab === 'TEAM' && <TeamTab />}
 
             {activeTab === 'MY' && user && (
               <div className="card" style={{ textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '15px' }}>
@@ -685,6 +687,7 @@ function App() {
         </>
       )}
     </div>
+    </PermissionProvider>
   );
 }
 
