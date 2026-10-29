@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import api from './api';
 import teamLogo from './img/teamlogo.png';
 import letterLogo from './img/letterLogo.png';
@@ -38,6 +38,12 @@ interface Rate {
   status_cd?: string;
   code_name?: string;
 }
+
+// 참석 현황에서 텍스트 대신 아이콘으로 보여줄 선수 상태 (없는 상태는 [상태명] 텍스트로 표시)
+const STATUS_ICONS: Record<string, ReactNode> = {
+  '육아': '🍼',
+  '부상': <span style={{ color: '#e5323b', fontWeight: 900 }}>✚</span>,
+};
 
 function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -400,9 +406,15 @@ function App() {
                                     <span className="rank-name" style={{ fontSize: 'calc(min(15px, 3.8vw) * var(--scale-factor, 1))', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                         {rate.member_name}
                                         {rate.status_cd && rate.status_cd !== '01' && rate.code_name && (
-                                            <span style={{ fontSize: 'calc(min(12px, 3vw) * var(--scale-factor, 1))', color: '#dc3545', marginLeft: '4px', fontWeight: 'bold' }}>
-                                                [{rate.code_name}]
-                                            </span>
+                                            STATUS_ICONS[rate.code_name] ? (
+                                                <span title={rate.code_name} aria-label={rate.code_name} style={{ fontSize: 'calc(min(14px, 3.5vw) * var(--scale-factor, 1))', marginLeft: '4px' }}>
+                                                    {STATUS_ICONS[rate.code_name]}
+                                                </span>
+                                            ) : (
+                                                <span style={{ fontSize: 'calc(min(12px, 3vw) * var(--scale-factor, 1))', color: '#dc3545', marginLeft: '4px', fontWeight: 'bold' }}>
+                                                    [{rate.code_name}]
+                                                </span>
+                                            )
                                         )}
                                         {crown}
                                     </span>
