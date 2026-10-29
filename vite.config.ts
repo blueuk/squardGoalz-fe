@@ -22,7 +22,8 @@ export default defineConfig({
       '/position_point': { target: 'http://8.235.113.192:8000', changeOrigin: true },
       '/teamAccount': { target: 'http://8.235.113.192:8000', changeOrigin: true },
       '/payment': { target: 'http://8.235.113.192:8000', changeOrigin: true },
-      '/youtube': { target: 'http://8.235.113.192:8000', changeOrigin: true }
+      '/youtube': { target: 'http://8.235.113.192:8000', changeOrigin: true },
+      '/permission': { target: 'http://8.235.113.192:8000', changeOrigin: true }
     }
   }
 })
