@@ -138,10 +138,16 @@ export default function HomeMatchCard() {
       try {
         const schedRes = await api.get('/schedule/search', { params: { team_uid: TEAM_UID } });
         const schedules: Schedule[] = schedRes.data || [];
-        // 경기일자가 가장 늦은 일정 (같은 날이면 나중에 등록된 일정)
-        const latest = [...schedules].sort((a, b) =>
-          b.play_date.localeCompare(a.play_date) || b.vote_seq - a.vote_seq
-        )[0];
+        // 오늘을 포함한 미래 일정 중 가장 가까운 일정 (같은 날이면 시작시간이 이른 일정)
+        const now = new Date();
+        const today = `${now.getFullYear()}${pad2(now.getMonth() + 1)}${pad2(now.getDate())}`;
+        const latest = schedules
+          .filter(s => s.play_date >= today)
+          .sort((a, b) =>
+            a.play_date.localeCompare(b.play_date)
+            || (a.play_start_time || '').localeCompare(b.play_start_time || '')
+            || a.vote_seq - b.vote_seq
+          )[0];
         if (!mounted) return;
         setSchedule(latest ?? null);
         if (!latest) return;
@@ -340,7 +346,7 @@ export default function HomeMatchCard() {
   }
 
   if (!schedule) {
-    return <div className="card match-card"><p className="match-empty">등록된 일정이 없습니다.</p></div>;
+    return <div className="card match-card"><p className="match-empty">예정된 일정이 없습니다.</p></div>;
   }
 
   return (
