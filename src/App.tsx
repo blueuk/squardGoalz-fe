@@ -300,27 +300,27 @@ function App() {
 
   if (isRegister) {
     return (
-      <div style={{ maxWidth: '400px', margin: '100px auto', textAlign: 'center' }}>
-        <h2>⚽ 풋고추FC 회원가입</h2>
-        <p>서비스 이용을 위해 추가 정보를 입력해주세요.</p>
-        <form onSubmit={handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginTop: '20px' }}>
-          <input type="hidden" name="userid" value={registerUserId || ''} />
-          <div>
-            <label style={{ display: 'block', textAlign: 'left', marginBottom: '5px' }}>이름(실명)</label>
-            <input type="text" name="username" required style={{ width: '100%', padding: '10px' }} />
-          </div>
-          <div>
-            <label style={{ display: 'block', textAlign: 'left', marginBottom: '5px' }}>닉네임</label>
-            <input type="text" name="nickname" defaultValue={registerNickname || ''} required style={{ width: '100%', padding: '10px' }} />
-          </div>
-          <div>
-            <label style={{ display: 'block', textAlign: 'left', marginBottom: '5px' }}>전화번호</label>
-            <input type="text" name="phone" placeholder="010-1234-5678" required style={{ width: '100%', padding: '10px' }} />
-          </div>
-          <button type="submit" style={{ padding: '12px', backgroundColor: '#FEE500', color: '#000', border: 'none', fontWeight: 'bold', cursor: 'pointer' }}>
-            가입 완료하기
-          </button>
-        </form>
+      <div className="register-page">
+        <div className="register-card">
+          <h2 className="register-title">⚽ 풋고추FC 회원가입</h2>
+          <p className="register-desc">서비스 이용을 위해 추가 정보를 입력해주세요.</p>
+          <form className="register-form" onSubmit={handleRegister}>
+            <input type="hidden" name="userid" value={registerUserId || ''} />
+            <label className="register-field">
+              <span>이름(실명)</span>
+              <input type="text" name="username" autoComplete="name" required />
+            </label>
+            <label className="register-field">
+              <span>닉네임</span>
+              <input type="text" name="nickname" autoComplete="nickname" defaultValue={registerNickname || ''} required />
+            </label>
+            <label className="register-field">
+              <span>전화번호</span>
+              <input type="tel" name="phone" inputMode="tel" autoComplete="tel" placeholder="010-1234-5678" required />
+            </label>
+            <button type="submit" className="register-submit">가입 완료하기</button>
+          </form>
+        </div>
       </div>
     );
   }

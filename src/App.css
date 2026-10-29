@@ -442,6 +442,7 @@ input,select {
     border:1px solid #eee;
     border-radius:12px;
     background:#f9fafb;
+    color:var(--toss-text);
     font-size: calc(16px * var(--scale-factor, 1));
     margin-bottom:10px;
 }
@@ -1056,4 +1057,92 @@ h2 {
   align-items: center;
   justify-content: center;
   z-index: 99999;
+}
+
+/* ── 회원가입 화면 ─────────────────────────────────────────────────────────
+   기기 폭/글자 배율(--scale-factor)과 관계없이 밀리거나 넘치지 않도록 고정 크기 사용.
+   입력창 글자는 16px 이상이어야 iOS에서 포커스 시 화면이 확대되지 않음 */
+.register-page {
+  width: 100%;
+  min-height: 100svh;
+  padding: clamp(32px, 12vh, 100px) 16px 32px;
+  background: var(--toss-bg);
+  color: var(--toss-text);
+}
+
+.register-card {
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto;
+  padding: 28px 20px;
+  border-radius: 16px;
+  background: var(--toss-card);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.register-title {
+  margin: 0 0 8px;
+  text-align: center;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--toss-text);
+  word-break: keep-all;
+}
+
+.register-desc {
+  margin: 0 0 24px;
+  text-align: center;
+  font-size: 14px;
+  color: var(--toss-gray);
+  word-break: keep-all;
+}
+
+.register-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.register-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.register-field span {
+  font-size: 14px;
+  font-weight: 600;
+  color: #4e5968;
+}
+
+.register-field input {
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid #e5e8eb;
+  border-radius: 12px;
+  background: #f9fafb;
+  color: var(--toss-text);
+  font-size: 16px;
+}
+
+.register-field input:focus {
+  outline: none;
+  border-color: var(--toss-blue);
+  background: #fff;
+}
+
+.register-submit {
+  width: 100%;
+  margin-top: 8px;
+  padding: 14px;
+  border: none;
+  border-radius: 12px;
+  background: #fee500;
+  color: #000;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
 }
