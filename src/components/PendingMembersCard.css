@@ -1,0 +1,129 @@
+/* ── 팀 > 선수단: 가입 승인 대기 ─────────────────────────────────────────── */
+
+.pending-card {
+  padding: 20px;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  border: 1px solid #ffe08a;
+}
+
+.pending-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 14px;
+}
+
+.pending-title {
+  margin: 0 0 4px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #191f28;
+}
+
+.pending-desc {
+  margin: 0;
+  font-size: 13px;
+  color: #8b95a1;
+  word-break: keep-all;
+}
+
+.pending-count {
+  flex-shrink: 0;
+  padding: 6px 12px;
+  border-radius: 14px;
+  background: #fff4cc;
+  color: #b07800;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.pending-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pending-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 12px 14px;
+  border: 1px solid #f2f4f6;
+  border-radius: 14px;
+  background: #f9fafb;
+}
+
+.pending-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.pending-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: #191f28;
+  overflow-wrap: anywhere;
+}
+
+.pending-nick {
+  margin-left: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #8b95a1;
+}
+
+.pending-meta {
+  font-size: 12px;
+  color: #8b95a1;
+}
+
+.pending-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex: 1 1 15rem;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+.pending-actions select {
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 0;
+  max-width: 12rem;
+  margin: 0;
+  padding: 0.45rem 0.5rem;
+  border: 1px solid #e5e8eb;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 13px;
+}
+
+.pending-btn {
+  flex-shrink: 0;
+  padding: 0.45rem 0.7rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.pending-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pending-btn.approve { background: #e8f3ff; color: #3182f6; }
+.pending-btn.reject { background: #fce8e6; color: #f04452; }

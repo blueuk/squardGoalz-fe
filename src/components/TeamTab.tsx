@@ -5,6 +5,7 @@ import SoccerBallLoader from './SoccerBallLoader';
 import { copyText } from './clipboard';
 import { useToast } from './Toast';
 import SettingsTab from './SettingsTab';
+import PendingMembersCard from './PendingMembersCard';
 import { usePermission } from '../permissions';
 import './TeamTab.css';
 import {
@@ -748,6 +749,20 @@ export default function TeamTab() {
     }
   };
 
+  // ── Reload members, scores in parallel (선수 추가 / 가입 승인 후) ──────────────
+  const reloadSquad = async () => {
+    const [mRes, sRes] = await Promise.all([
+      api.get(`/team_member/search?team_uid=${TEAM_UID}`),
+      api.get(`/memberScore/search?team_uid=${TEAM_UID}`),
+    ]);
+    const sorted = (mRes.data || []).sort((a: any, b: any) =>
+      (a.member_name || '').localeCompare(b.member_name || '')
+    );
+    setTeamMembers(sorted);
+    setTeamInfo(prev => (prev ? { ...prev, member_count: sorted.length } : prev));
+    setMemberScores(sRes.data || []);
+  };
+
   // ── Add member ────────────────────────────────────────────────────────────
   const handleAddMember = async () => {
     if (!newMemberName.trim() || isAddingMember) return;
@@ -758,17 +773,7 @@ export default function TeamTab() {
       await api.post('/team_member/insert', {
         members: [{ team_uid: TEAM_UID, member_name: newMemberName.trim(), status_cd: '01' }]
       });
-      // Reload members, scores in parallel
-      const [mRes, sRes] = await Promise.all([
-        api.get(`/team_member/search?team_uid=${TEAM_UID}`),
-        api.get(`/memberScore/search?team_uid=${TEAM_UID}`),
-      ]);
-      const sorted = (mRes.data || []).sort((a: any, b: any) =>
-        (a.member_name || '').localeCompare(b.member_name || '')
-      );
-      setTeamMembers(sorted);
-      if (teamInfo) setTeamInfo({ ...teamInfo, member_count: sorted.length });
-      setMemberScores(sRes.data || []);
+      await reloadSquad();
 
       setNewMemberName('');
       setShowAddMember(false);
@@ -1157,6 +1162,11 @@ export default function TeamTab() {
         {/* ══ SQUAD TAB ═════════════════════════════════════════════════════ */}
         {subTab === 'SQUAD' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+            {/* 가입 승인 대기 (선수 관리 권한, 대기자가 있을 때만 표시) */}
+            {canMember && (
+              <PendingMembersCard teamUid={TEAM_UID} members={teamMembers} onApproved={reloadSquad} showToast={showToast} />
+            )}
+
             <div className="card squad-card" style={{ padding: '20px', backgroundColor: '#fff', borderRadius: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
 
               {/* Squad Header */}

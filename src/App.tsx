@@ -14,6 +14,7 @@ import SoccerBallLoader from './components/SoccerBallLoader';
 import RadarChart from './components/RadarChart';
 import HomeMatchCard from './components/HomeMatchCard';
 import { PermissionProvider } from './permissions';
+import PendingGate from './components/PendingGate';
 import { calculateRadarScores, DEFAULT_POSITION_WEIGHTS, buildWeightsFromRows, getCachedPositionWeights, setCachedPositionWeights } from './components/positionUtils';
 
 interface User {
@@ -229,7 +230,6 @@ function App() {
 
   const queryParams = new URLSearchParams(window.location.search);
   const isRegister = window.location.pathname === '/register';
-  const registerUserId = queryParams.get('userid');
   const registerNickname = queryParams.get('nickname');
 
   // 내 상태 변경 관리를 위한 상태
@@ -285,13 +285,15 @@ function App() {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     try {
-      await api.post('/login/register', formData, {
+      const res = await api.post('/login/register', formData, {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
       });
-      alert('회원가입이 완료되었습니다!');
+      alert(res.data?.linked
+        ? '회원가입이 완료되었습니다!'
+        : '회원가입이 완료되었습니다.\n관리자가 가입을 승인하면 이용할 수 있습니다.');
       window.location.href = '/';
-    } catch (error) {
-      alert('회원가입 중 오류가 발생했습니다.');
+    } catch (error: any) {
+      alert(error.response?.data?.detail || '회원가입 중 오류가 발생했습니다.');
     }
   };
 
@@ -305,7 +307,6 @@ function App() {
           <h2 className="register-title">⚽ 풋고추FC 회원가입</h2>
           <p className="register-desc">서비스 이용을 위해 추가 정보를 입력해주세요.</p>
           <form className="register-form" onSubmit={handleRegister}>
-            <input type="hidden" name="userid" value={registerUserId || ''} />
             <label className="register-field">
               <span>이름(실명)</span>
               <input type="text" name="username" autoComplete="name" required />
@@ -332,6 +333,7 @@ function App() {
 
   return (
     <PermissionProvider userid={user?.userid}>
+    <PendingGate onLogout={handleLogout}>
     <div className="app-container">
       {statusUpdating && <SoccerBallLoader message="상태를 변경하는 중입니다..." />}
 
@@ -704,6 +706,7 @@ function App() {
         </>
       )}
     </div>
+    </PendingGate>
     </PermissionProvider>
   );
 }
