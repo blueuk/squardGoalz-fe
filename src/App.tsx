@@ -316,7 +316,12 @@ function App() {
             </label>
             <label className="register-field">
               <span>전화번호</span>
-              <input type="tel" name="phone" inputMode="tel" autoComplete="tel" placeholder="010-1234-5678" required />
+              {/* 숫자만 입력: 붙여넣기/자동완성으로 들어온 하이픈·공백도 제거 */}
+              <input
+                type="tel" name="phone" inputMode="numeric" autoComplete="tel"
+                placeholder="01012345678" pattern="[0-9]{10,11}" title="숫자 10~11자리를 입력해주세요" required
+                onInput={e => { e.currentTarget.value = e.currentTarget.value.replace(/\D/g, '').slice(0, 11); }}
+              />
             </label>
             <button type="submit" className="register-submit">가입 완료하기</button>
           </form>
