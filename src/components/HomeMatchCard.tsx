@@ -3,7 +3,7 @@ import api from '../api';
 import SoccerBallLoader from './SoccerBallLoader';
 import { POSITIONS, buildWeightsFromRows, getCachedPositionWeights, setCachedPositionWeights } from './positionUtils';
 import {
-  arrangeTeams, getOverflowInfo, teamPower, MAX_TEAM_COUNT, MIN_TEAM_SIZE, MAX_TEAM_SIZE,
+  arrangeTeams, getOverflowInfo, MAX_TEAM_COUNT, MIN_TEAM_SIZE, MAX_TEAM_SIZE,
   type ArrangedMember, type ArrangeParticipant
 } from './teamArrangeUtils';
 import orangeTeam from '../img/orangeTeam.png';
@@ -317,48 +317,31 @@ export default function HomeMatchCard() {
     );
   };
 
-  // 미리보기 전용: 팀 전력(용병 제외)과 포지션 구성
-  const renderTeamStats = (teamMembers: ArrangedMember[]) => {
-    const power = teamPower(teamMembers);
-    const positionCounts = POSITIONS
-      .map(p => ({ name: p.name, count: teamMembers.filter(m => m.position === p.code).length }))
-      .filter(p => p.count > 0)
-      .map(p => `${p.name} ${p.count}`);
-    return (
-      <>
-        {power !== null && <b>전력 {power.toFixed(1)}</b>}
-        {positionCounts.length > 0 && <span>{positionCounts.join(' · ')}</span>}
-      </>
-    );
-  };
+  // 미리보기 전용: 포지션 구성
+  const renderTeamStats = (teamMembers: ArrangedMember[]) => POSITIONS
+    .map(p => ({ name: p.name, count: teamMembers.filter(m => m.position === p.code).length }))
+    .filter(p => p.count > 0)
+    .map(p => `${p.name} ${p.count}`)
+    .join(' · ');
 
-  // 미리보기 상단: 팀 전력 차와 정원 초과 안내
+  // 미리보기 상단: 정원 초과 안내
   const renderPreviewNotice = (members: ArrangedMember[]) => {
-    const teamNos = [...new Set(members.map(m => m.team_no))];
-    const powers = teamNos
-      .map(no => teamPower(members.filter(m => m.team_no === no)))
-      .filter((p): p is number => p !== null);
-    const gap = powers.length > 1 ? Math.max(...powers) - Math.min(...powers) : null;
     const overflow = getOverflowInfo(members.length, mercCount, teamCount, teamSize);
+    if (!overflow) return null;
     return (
-      <>
-        {gap !== null && <p className="arrange-gap">팀 전력 차 <b>{gap.toFixed(1)}점</b></p>}
-        {overflow && (
-          <div className="arrange-overflow">
-            <p>
-              {overflow.overMax
-                ? `최대 ${MAX_TEAM_COUNT}팀으로 늘려도 정원을 넘습니다 (정원 +${overflow.excess}명). 전원 배정했습니다.`
-                : `정원 +${overflow.excess}명: 전원 배정했습니다.`}
-              {overflow.mercsToRemove && ` 용병 ${overflow.mercsToRemove}명을 줄이면 정원에 맞습니다.`}
-            </p>
-            {overflow.suggestedTeamCount && (
-              <button className="arrange-btn ghost" onClick={() => applySuggestedTeamCount(overflow.suggestedTeamCount!)}>
-                {overflow.suggestedTeamCount}팀으로 다시 배정
-              </button>
-            )}
-          </div>
+      <div className="arrange-overflow">
+        <p>
+          {overflow.overMax
+            ? `최대 ${MAX_TEAM_COUNT}팀으로 늘려도 정원을 넘습니다 (정원 +${overflow.excess}명). 전원 배정했습니다.`
+            : `정원 +${overflow.excess}명: 전원 배정했습니다.`}
+          {overflow.mercsToRemove && ` 용병 ${overflow.mercsToRemove}명을 줄이면 정원에 맞습니다.`}
+        </p>
+        {overflow.suggestedTeamCount && (
+          <button className="arrange-btn ghost" onClick={() => applySuggestedTeamCount(overflow.suggestedTeamCount!)}>
+            {overflow.suggestedTeamCount}팀으로 다시 배정
+          </button>
         )}
-      </>
+      </div>
     );
   };
 

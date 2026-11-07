@@ -13,7 +13,6 @@ export interface ArrangedMember {
   team_no: number;      // 1부터 시작
   keeper_order: number; // 팀 내 1..팀인원 랜덤 순번
   position?: string;    // 필드 포지션 중 최고 포지션 (용병은 없음)
-  power?: number;       // 선수 전력: 필드 포지션 중 최고 점수 (용병은 없음)
 }
 
 export interface ArrangeOptions {
@@ -30,7 +29,7 @@ export const MAX_TEAM_SIZE = 6;
 const CANDIDATE_COUNT = 300;  // 만들어 볼 후보 조합 수
 const ACE_RATIO = 1 / 3;      // 상위 이 비율을 에이스로 보고 먼저 고르게 나눔
 const MAX_SWAP_STEPS = 10;    // 후보당 선수 맞교환 최대 횟수
-export const MAX_POWER_GAP = 1.5; // 허용하는 팀 평균 전력 차 (100점 기준)
+const MAX_POWER_GAP = 1.5; // 허용하는 팀 평균 전력 차 (100점 기준)
 const MIN_POOL_SIZE = 10;     // 조건을 만족한 조합이 이보다 적으면 가장 가까운 조합으로 채움
 const FINAL_POOL_RATIO = 0.5; // 세부 능력이 고른 상위 이 비율 안에서 랜덤 선택 (1등만 고르면 결과가 굳어짐)
 const MAX_PREVIOUS_OVERLAP = 0.8; // 직전 결과와 같은 팀 쌍 비율이 이 이상이면 제외
@@ -216,7 +215,6 @@ export function arrangeTeams(
     team_no: idx + 1,
     keeper_order: 0,
     position: p.positions[0],
-    power: p.power,
   })));
 
   // 용병: 인원이 적은 팀 우선, 동률이면 용병이 적은 팀, 그래도 같으면 랜덤
@@ -242,12 +240,6 @@ export function arrangeTeams(
 
   return teams.flat().sort((a, b) => a.team_no - b.team_no || a.keeper_order - b.keeper_order);
 }
-
-// 팀 평균 전력 (용병 제외). 선수가 없으면 null
-export const teamPower = (members: ArrangedMember[]): number | null => {
-  const powers = members.filter(m => m.merc_yn === 'N' && m.power !== undefined).map(m => m.power as number);
-  return powers.length > 0 ? average(powers) : null;
-};
 
 export interface OverflowInfo {
   excess: number;              // 정원을 넘은 인원
