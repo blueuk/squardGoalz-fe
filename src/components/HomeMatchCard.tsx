@@ -1,15 +1,16 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type MouseEvent } from 'react';
 import api from '../api';
 import SoccerBallLoader from './SoccerBallLoader';
 import { POSITIONS, buildWeightsFromRows, getCachedPositionWeights, setCachedPositionWeights } from './positionUtils';
 import {
-  arrangeTeams, getOverflowInfo, groupPastMatches, MAX_TEAM_COUNT, MIN_TEAM_SIZE, MAX_TEAM_SIZE,
-  type ArrangedMember, type ArrangeParticipant, type PastArrangeRow
+  arrangeTeams, getOverflowInfo, groupPastMatches, trimFixedTeams, MAX_TEAM_COUNT, MIN_TEAM_SIZE, MAX_TEAM_SIZE,
+  type ArrangedMember, type ArrangeParticipant, type FixedTeams, type PastArrangeRow
 } from './teamArrangeUtils';
 import orangeTeam from '../img/orangeTeam.png';
 import greenTeam from '../img/greenTeam.png';
 import blueTeam from '../img/blueTeam.png';
 import pinkTeam from '../img/pinkTeam.png';
+import ArrangeFixBoard from './ArrangeFixBoard';
 import { copyText } from './clipboard';
 import { useToast } from './Toast';
 import { usePermission } from '../permissions';
@@ -90,6 +91,8 @@ const buildShareText = (playDate: string, members: ArrangedMember[]) => {
   ].join('\n');
 };
 
+const MANUAL_HINT = 'Ctrl+클릭: 특정 선수를 미리 팀에 지정';
+
 // 팀 배정 모달 기본값
 const DEFAULT_TEAM_COUNT = 2;
 const DEFAULT_TEAM_SIZE = 6;
@@ -105,6 +108,8 @@ export default function HomeMatchCard() {
 
   // 배정 모달 / 미리보기
   const [showModal, setShowModal] = useState(false);
+  const [manualMode, setManualMode] = useState(false); // Ctrl+클릭: 선수를 미리 팀에 지정
+  const [fixed, setFixed] = useState<FixedTeams>({});
   const [participants, setParticipants] = useState<ArrangeParticipant[]>([]);
   const [pastMatches, setPastMatches] = useState<PastArrangeRow[][]>([]);
   const [weights, setWeights] = useState<Record<string, Record<string, number>>>({});
@@ -196,8 +201,10 @@ export default function HomeMatchCard() {
   }, []);
 
   // ── 배정 폼 열기: 참석자 / 능력치 / 가중치 로드 ───────────────────────────
-  const openForm = async () => {
+  const openForm = async (e: MouseEvent<HTMLButtonElement>) => {
     if (!schedule) return;
+    setManualMode(e.ctrlKey || e.metaKey);
+    setFixed({});
     setBusy(true);
     setBusyMessage('참석자 정보를 불러오는 중...');
     try {
@@ -243,19 +250,19 @@ export default function HomeMatchCard() {
       alert('참석자가 없습니다. 투표 현황 또는 용병 수를 확인해주세요.');
       return;
     }
-    setPreview(arrangeTeams(participants, weights, { mercCount, teamCount, teamSize, previous: arrangement, pastMatches }));
+    setPreview(arrangeTeams(participants, weights, { mercCount, teamCount, teamSize, previous: arrangement, pastMatches, fixed }));
     setShowModal(false);
   };
 
   // 현재 설정(용병 수, 팀 수, 팀당 인원) 그대로 다시 섞기
   const rerollArrange = () => {
-    setPreview(arrangeTeams(participants, weights, { mercCount, teamCount, teamSize, previous: preview ?? undefined, pastMatches }));
+    setPreview(arrangeTeams(participants, weights, { mercCount, teamCount, teamSize, previous: preview ?? undefined, pastMatches, fixed }));
   };
 
   // 정원 초과 안내의 팀 수로 다시 배정
   const applySuggestedTeamCount = (count: number) => {
     setTeamCount(count);
-    setPreview(arrangeTeams(participants, weights, { mercCount, teamCount: count, teamSize, pastMatches }));
+    setPreview(arrangeTeams(participants, weights, { mercCount, teamCount: count, teamSize, pastMatches, fixed }));
   };
 
   const handleCopyShareText = async () => {
@@ -310,7 +317,9 @@ export default function HomeMatchCard() {
                       <img src={style.img} alt="" />
                       <span className="arrange-jersey-no">{m.keeper_order}</span>
                     </span>
-                    <span className="arrange-name" style={{ backgroundColor: style.color }}>{m.member_name}</span>
+                    <span className="arrange-name" style={{ backgroundColor: style.color }}>
+                      {showStats && m.fixed && <span title="미리 지정한 선수">📌 </span>}{m.member_name}
+                    </span>
                   </li>
                 ))}
               </ul>
@@ -328,19 +337,25 @@ export default function HomeMatchCard() {
     .map(p => `${p.name} ${p.count}`)
     .join(' · ');
 
-  // 미리보기 상단: 정원 초과 안내
+  // 미리보기 상단: 정원 초과 / 미리 지정으로 생긴 인원 차이 안내
   const renderPreviewNotice = (members: ArrangedMember[]) => {
     const overflow = getOverflowInfo(members.length, mercCount, teamCount, teamSize);
-    if (!overflow) return null;
+    const sizes = Array.from({ length: teamCount }, (_, i) => members.filter(m => m.team_no === i + 1).length);
+    const sizeGap = Math.max(...sizes) - Math.min(...sizes);
+    const fixedGap = members.some(m => m.fixed) && sizeGap > 1;
+    if (!overflow && !fixedGap) return null;
     return (
       <div className="arrange-overflow">
-        <p>
-          {overflow.overMax
-            ? `최대 ${MAX_TEAM_COUNT}팀으로 늘려도 정원을 넘습니다 (정원 +${overflow.excess}명). 전원 배정했습니다.`
-            : `정원 +${overflow.excess}명: 전원 배정했습니다.`}
-          {overflow.mercsToRemove && ` 용병 ${overflow.mercsToRemove}명을 줄이면 정원에 맞습니다.`}
-        </p>
-        {overflow.suggestedTeamCount && (
+        {overflow && (
+          <p>
+            {overflow.overMax
+              ? `최대 ${MAX_TEAM_COUNT}팀으로 늘려도 정원을 넘습니다 (정원 +${overflow.excess}명). 전원 배정했습니다.`
+              : `정원 +${overflow.excess}명: 전원 배정했습니다.`}
+            {overflow.mercsToRemove && ` 용병 ${overflow.mercsToRemove}명을 줄이면 정원에 맞습니다.`}
+          </p>
+        )}
+        {fixedGap && <p>미리 지정한 선수 때문에 팀 인원이 {sizeGap}명까지 차이 납니다.</p>}
+        {overflow?.suggestedTeamCount && (
           <button className="arrange-btn ghost" onClick={() => applySuggestedTeamCount(overflow.suggestedTeamCount!)}>
             {overflow.suggestedTeamCount}팀으로 다시 배정
           </button>
@@ -351,8 +366,8 @@ export default function HomeMatchCard() {
 
   const renderModal = () => (
     <div className="arrange-modal-overlay" onClick={() => setShowModal(false)}>
-      <div className="arrange-modal" onClick={e => e.stopPropagation()}>
-        <h3 className="arrange-modal-title">팀 배정</h3>
+      <div className={`arrange-modal${manualMode ? ' manual' : ''}`} onClick={e => e.stopPropagation()}>
+        <h3 className="arrange-modal-title">{manualMode ? '팀 배정 (선수 미리 지정)' : '팀 배정'}</h3>
         <div className="arrange-form-fields">
           <label>
             용병 수
@@ -361,17 +376,34 @@ export default function HomeMatchCard() {
           </label>
           <label>
             팀 수
-            <select value={teamCount} onChange={e => setTeamCount(Number(e.target.value))}>
+            <select value={teamCount} onChange={e => {
+              const count = Number(e.target.value);
+              setTeamCount(count);
+              setFixed(prev => trimFixedTeams(prev, count, teamSize));
+            }}>
               {Array.from({ length: MAX_TEAM_COUNT - 1 }, (_, i) => i + 2).map(n => <option key={n} value={n}>{n}팀</option>)}
             </select>
           </label>
           <label>
             팀당 인원
-            <select value={teamSize} onChange={e => setTeamSize(Number(e.target.value))}>
+            <select value={teamSize} onChange={e => {
+              const size = Number(e.target.value);
+              setTeamSize(size);
+              setFixed(prev => trimFixedTeams(prev, teamCount, size));
+            }}>
               {Array.from({ length: MAX_TEAM_SIZE - MIN_TEAM_SIZE + 1 }, (_, i) => i + MIN_TEAM_SIZE).map(n => <option key={n} value={n}>{n}명</option>)}
             </select>
           </label>
         </div>
+        {manualMode && (
+          <ArrangeFixBoard
+            participants={participants}
+            fixed={fixed}
+            teams={TEAM_STYLES.slice(0, teamCount)}
+            teamSize={teamSize}
+            onChange={setFixed}
+          />
+        )}
         <div className="arrange-actions">
           <button className="arrange-btn ghost" onClick={() => setShowModal(false)}>취소</button>
           <button className="arrange-btn green" onClick={runArrange}>배정하기</button>
@@ -444,12 +476,12 @@ export default function HomeMatchCard() {
           {renderTeams(arrangement)}
           {canArrange && (
             <div className="arrange-actions">
-              <button className="arrange-btn ghost" onClick={openForm}>다시 배정</button>
+              <button className="arrange-btn ghost" onClick={openForm} title={MANUAL_HINT}>다시 배정</button>
             </div>
           )}
         </>
       ) : canArrange ? (
-        <button className="arrange-btn big" onClick={openForm}>배정하기</button>
+        <button className="arrange-btn big" onClick={openForm} title={MANUAL_HINT}>배정하기</button>
       ) : (
         <p className="match-empty">아직 팀 배정 전입니다.</p>
       )}

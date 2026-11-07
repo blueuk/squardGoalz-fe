@@ -303,6 +303,106 @@
   margin: 0;
 }
 
+/* Ctrl+클릭: 선수 미리 지정 */
+.arrange-modal.manual {
+  max-width: 48rem;
+}
+
+.fix-board {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  gap: 0.625rem;
+}
+
+.fix-hint {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: calc(12px * var(--scale-factor, 1));
+  color: #6b7684;
+}
+
+.fix-teams {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr));
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.fix-zone {
+  min-width: 0;
+  min-height: 8rem;
+  padding: 0.5rem;
+  border: 2px dashed #e5e8eb;
+  border-radius: 12px;
+  background: #f9fafb;
+}
+
+.fix-zone.over {
+  border-color: #22b35e;
+  background: #eafaf1;
+}
+
+.fix-zone.team {
+  border-top-style: solid;
+  border-top-width: 4px;
+  background: #fff;
+}
+
+.fix-zone.team.over {
+  background: #eafaf1;
+}
+
+.fix-zone.full {
+  opacity: 0.6;
+}
+
+.fix-zone-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.25rem;
+  margin-bottom: 0.4rem;
+  font-size: calc(12px * var(--scale-factor, 1));
+  font-weight: 800;
+  color: #4e5968;
+}
+
+.fix-players {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.fix-player {
+  max-width: 100%;
+  padding: 0.25rem 0.55rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border: 1px solid #e5e8eb;
+  border-radius: 999px;
+  background: #fff;
+  color: #191f28;
+  font-size: calc(12px * var(--scale-factor, 1));
+  font-weight: 600;
+  cursor: grab;
+  user-select: none;
+}
+
+.fix-player.placed {
+  border-color: transparent;
+  color: #fff;
+}
+
+.fix-player.dragging {
+  opacity: 0.4;
+}
+
+@media (max-width: 640px) {
+  .fix-board {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 /* 버튼 */
 .arrange-actions {
   display: flex;
