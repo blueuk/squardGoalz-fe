@@ -3,8 +3,8 @@ import api from '../api';
 import SoccerBallLoader from './SoccerBallLoader';
 import { POSITIONS, buildWeightsFromRows, getCachedPositionWeights, setCachedPositionWeights } from './positionUtils';
 import {
-  arrangeTeams, getOverflowInfo, MAX_TEAM_COUNT, MIN_TEAM_SIZE, MAX_TEAM_SIZE,
-  type ArrangedMember, type ArrangeParticipant
+  arrangeTeams, getOverflowInfo, groupPastMatches, MAX_TEAM_COUNT, MIN_TEAM_SIZE, MAX_TEAM_SIZE,
+  type ArrangedMember, type ArrangeParticipant, type PastArrangeRow
 } from './teamArrangeUtils';
 import orangeTeam from '../img/orangeTeam.png';
 import greenTeam from '../img/greenTeam.png';
@@ -106,6 +106,7 @@ export default function HomeMatchCard() {
   // 배정 모달 / 미리보기
   const [showModal, setShowModal] = useState(false);
   const [participants, setParticipants] = useState<ArrangeParticipant[]>([]);
+  const [pastMatches, setPastMatches] = useState<PastArrangeRow[][]>([]);
   const [weights, setWeights] = useState<Record<string, Record<string, number>>>({});
   const [mercCount, setMercCount] = useState(0);
   const [teamCount, setTeamCount] = useState(DEFAULT_TEAM_COUNT);
@@ -201,11 +202,13 @@ export default function HomeMatchCard() {
     setBusyMessage('참석자 정보를 불러오는 중...');
     try {
       const cachedWeights = getCachedPositionWeights();
-      const [voteRes, memberRes, scoreRes, weightRes] = await Promise.all([
+      const [voteRes, memberRes, scoreRes, weightRes, historyRes] = await Promise.all([
         api.get('/vote/search', { params: { team_uid: TEAM_UID, vote_seq: schedule.vote_seq } }),
         api.get('/team_member/search', { params: { team_uid: TEAM_UID } }),
         api.get('/memberScore/search', { params: { team_uid: TEAM_UID } }),
         cachedWeights ? Promise.resolve(null) : api.get('/position_point/search'),
+        // 이력을 못 불러와도 배정은 가능해야 함 (최상위·최하위 분리만 생략)
+        api.get('/teamArrange/search', { params: { team_uid: TEAM_UID } }).catch(() => ({ data: [] })),
       ]);
 
       const loadedWeights = cachedWeights || buildWeightsFromRows(weightRes?.data);
@@ -222,6 +225,7 @@ export default function HomeMatchCard() {
           scores: scores.filter(s => s.member_uid === v.member_uid),
         }));
       setParticipants(list);
+      setPastMatches(groupPastMatches(historyRes.data || [], schedule.play_date, schedule.vote_seq));
 
       setTeamCount(DEFAULT_TEAM_COUNT);
       setTeamSize(DEFAULT_TEAM_SIZE);
@@ -239,19 +243,19 @@ export default function HomeMatchCard() {
       alert('참석자가 없습니다. 투표 현황 또는 용병 수를 확인해주세요.');
       return;
     }
-    setPreview(arrangeTeams(participants, weights, { mercCount, teamCount, teamSize, previous: arrangement }));
+    setPreview(arrangeTeams(participants, weights, { mercCount, teamCount, teamSize, previous: arrangement, pastMatches }));
     setShowModal(false);
   };
 
   // 현재 설정(용병 수, 팀 수, 팀당 인원) 그대로 다시 섞기
   const rerollArrange = () => {
-    setPreview(arrangeTeams(participants, weights, { mercCount, teamCount, teamSize, previous: preview ?? undefined }));
+    setPreview(arrangeTeams(participants, weights, { mercCount, teamCount, teamSize, previous: preview ?? undefined, pastMatches }));
   };
 
   // 정원 초과 안내의 팀 수로 다시 배정
   const applySuggestedTeamCount = (count: number) => {
     setTeamCount(count);
-    setPreview(arrangeTeams(participants, weights, { mercCount, teamCount: count, teamSize }));
+    setPreview(arrangeTeams(participants, weights, { mercCount, teamCount: count, teamSize, pastMatches }));
   };
 
   const handleCopyShareText = async () => {
