@@ -1,9 +1,9 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import api from '../api';
 import SoccerBallLoader from './SoccerBallLoader';
-import { buildWeightsFromRows, getCachedPositionWeights, setCachedPositionWeights } from './positionUtils';
+import { POSITIONS, buildWeightsFromRows, getCachedPositionWeights, setCachedPositionWeights } from './positionUtils';
 import {
-  arrangeTeams, MAX_TEAM_COUNT, MIN_TEAM_SIZE, MAX_TEAM_SIZE,
+  arrangeTeams, getOverflowInfo, teamPower, MAX_TEAM_COUNT, MIN_TEAM_SIZE, MAX_TEAM_SIZE,
   type ArrangedMember, type ArrangeParticipant
 } from './teamArrangeUtils';
 import orangeTeam from '../img/orangeTeam.png';
@@ -239,13 +239,19 @@ export default function HomeMatchCard() {
       alert('참석자가 없습니다. 투표 현황 또는 용병 수를 확인해주세요.');
       return;
     }
-    setPreview(arrangeTeams(participants, weights, { mercCount, teamCount, teamSize }));
+    setPreview(arrangeTeams(participants, weights, { mercCount, teamCount, teamSize, previous: arrangement }));
     setShowModal(false);
   };
 
   // 현재 설정(용병 수, 팀 수, 팀당 인원) 그대로 다시 섞기
   const rerollArrange = () => {
-    setPreview(arrangeTeams(participants, weights, { mercCount, teamCount, teamSize }));
+    setPreview(arrangeTeams(participants, weights, { mercCount, teamCount, teamSize, previous: preview ?? undefined }));
+  };
+
+  // 정원 초과 안내의 팀 수로 다시 배정
+  const applySuggestedTeamCount = (count: number) => {
+    setTeamCount(count);
+    setPreview(arrangeTeams(participants, weights, { mercCount, teamCount: count, teamSize }));
   };
 
   const handleCopyShareText = async () => {
@@ -279,7 +285,7 @@ export default function HomeMatchCard() {
   };
 
   // ── 렌더링 ────────────────────────────────────────────────────────────────
-  const renderTeams = (members: ArrangedMember[]) => {
+  const renderTeams = (members: ArrangedMember[], showStats = false) => {
     const teamNos = [...new Set(members.map(m => m.team_no))].sort((a, b) => a - b);
     return (
       <div className="arrange-teams">
@@ -291,6 +297,7 @@ export default function HomeMatchCard() {
               <div className="arrange-team-head" style={{ color: style.color }}>
                 {style.name}팀 <span className="arrange-team-count">{teamMembers.length}명</span>
               </div>
+              {showStats && <div className="arrange-team-stats">{renderTeamStats(teamMembers)}</div>}
               <ul className="arrange-team-list">
                 {teamMembers.map(m => (
                   <li key={m.member_uid}>
@@ -307,6 +314,51 @@ export default function HomeMatchCard() {
           );
         })}
       </div>
+    );
+  };
+
+  // 미리보기 전용: 팀 전력(용병 제외)과 포지션 구성
+  const renderTeamStats = (teamMembers: ArrangedMember[]) => {
+    const power = teamPower(teamMembers);
+    const positionCounts = POSITIONS
+      .map(p => ({ name: p.name, count: teamMembers.filter(m => m.position === p.code).length }))
+      .filter(p => p.count > 0)
+      .map(p => `${p.name} ${p.count}`);
+    return (
+      <>
+        {power !== null && <b>전력 {power.toFixed(1)}</b>}
+        {positionCounts.length > 0 && <span>{positionCounts.join(' · ')}</span>}
+      </>
+    );
+  };
+
+  // 미리보기 상단: 팀 전력 차와 정원 초과 안내
+  const renderPreviewNotice = (members: ArrangedMember[]) => {
+    const teamNos = [...new Set(members.map(m => m.team_no))];
+    const powers = teamNos
+      .map(no => teamPower(members.filter(m => m.team_no === no)))
+      .filter((p): p is number => p !== null);
+    const gap = powers.length > 1 ? Math.max(...powers) - Math.min(...powers) : null;
+    const overflow = getOverflowInfo(members.length, mercCount, teamCount, teamSize);
+    return (
+      <>
+        {gap !== null && <p className="arrange-gap">팀 전력 차 <b>{gap.toFixed(1)}점</b></p>}
+        {overflow && (
+          <div className="arrange-overflow">
+            <p>
+              {overflow.overMax
+                ? `최대 ${MAX_TEAM_COUNT}팀으로 늘려도 정원을 넘습니다 (정원 +${overflow.excess}명). 전원 배정했습니다.`
+                : `정원 +${overflow.excess}명: 전원 배정했습니다.`}
+              {overflow.mercsToRemove && ` 용병 ${overflow.mercsToRemove}명을 줄이면 정원에 맞습니다.`}
+            </p>
+            {overflow.suggestedTeamCount && (
+              <button className="arrange-btn ghost" onClick={() => applySuggestedTeamCount(overflow.suggestedTeamCount!)}>
+                {overflow.suggestedTeamCount}팀으로 다시 배정
+              </button>
+            )}
+          </div>
+        )}
+      </>
     );
   };
 
@@ -393,7 +445,8 @@ export default function HomeMatchCard() {
       {preview ? (
         <>
           <div className="arrange-preview-badge">미리보기 · 저장 전</div>
-          {renderTeams(preview)}
+          {renderPreviewNotice(preview)}
+          {renderTeams(preview, true)}
           <div className="arrange-actions">
             <button className="arrange-btn ghost" onClick={() => setPreview(null)}>취소</button>
             <button className="arrange-btn green" onClick={saveArrange}>저장</button>

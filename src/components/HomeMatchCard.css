@@ -213,6 +213,47 @@
   font-weight: 700;
 }
 
+/* 미리보기: 팀 전력 / 정원 초과 안내 */
+.arrange-gap {
+  margin: 0 0 0.5rem;
+  text-align: center;
+  font-size: calc(12px * var(--scale-factor, 1));
+  color: #4e5968;
+}
+
+.arrange-team-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.15rem 0.4rem;
+  margin-bottom: 0.4rem;
+  font-size: calc(11px * var(--scale-factor, 1));
+  color: #6b7684;
+}
+
+.arrange-team-stats b {
+  color: #191f28;
+}
+
+.arrange-overflow {
+  margin-bottom: 0.6rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: 10px;
+  background: #fff4e5;
+  color: #b25e00;
+  font-size: calc(12px * var(--scale-factor, 1));
+}
+
+.arrange-overflow p {
+  margin: 0;
+  word-break: keep-all;
+}
+
+.arrange-overflow .arrange-btn {
+  width: 100%;
+  margin-top: 0.45rem;
+  background: #fff;
+}
+
 /* 배정 모달 */
 .arrange-modal-overlay {
   position: fixed;
