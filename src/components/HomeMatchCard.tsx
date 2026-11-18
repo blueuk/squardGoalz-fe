@@ -28,6 +28,7 @@ const TEAM_STYLES = [
 
 const DEFAULT_LOCATION = { name: '월문3리 풋살구장', lat: 37.58, lon: 127.24 };
 const WEATHER_HOURS = 3; // 종료시간이 없으므로 시작시간부터 3개(2시간) 표시
+const WEATHER_TIMEOUT_MS = 5000; // 날씨 응답 대기 최대 시간
 const WEATHER_MIN_SCALE = 0.7; // 날씨 라벨 최소 축소 비율 (12px -> 8.4px)
 
 interface Schedule {
@@ -144,27 +145,16 @@ export default function HomeMatchCard() {
     let mounted = true;
     const load = async () => {
       try {
-        const schedRes = await api.get('/schedule/search', { params: { team_uid: TEAM_UID } });
-        const schedules: Schedule[] = schedRes.data || [];
-        // 오늘을 포함한 미래 일정 중 가장 가까운 일정 (같은 날이면 시작시간이 이른 일정)
+        // 오늘을 포함한 미래 일정 중 가장 가까운 일정과 그 배정을 한 번에 조회
         const now = new Date();
         const today = `${now.getFullYear()}${pad2(now.getMonth() + 1)}${pad2(now.getDate())}`;
-        const latest = schedules
-          .filter(s => s.play_date >= today)
-          .sort((a, b) =>
-            a.play_date.localeCompare(b.play_date)
-            || (a.play_start_time || '').localeCompare(b.play_start_time || '')
-            || a.vote_seq - b.vote_seq
-          )[0];
+        const res = await api.get('/teamArrange/next', { params: { team_uid: TEAM_UID, today } });
+        const next: Schedule | null = res.data?.schedule ?? null;
         if (!mounted) return;
-        setSchedule(latest ?? null);
-        if (!latest) return;
-
-        const [arrRes] = await Promise.all([
-          api.get('/teamArrange/search', { params: { team_uid: TEAM_UID, vote_seq: latest.vote_seq } }),
-          loadWeather(latest),
-        ]);
-        if (mounted) setArrangement(arrRes.data || []);
+        setSchedule(next);
+        setArrangement(res.data?.arrangement || []);
+        // 날씨는 배정 표시를 막지 않도록 따로 불러옴
+        if (next) loadWeather(next);
       } catch (err) {
         console.error('경기 정보를 불러오지 못했습니다.', err);
       } finally {
@@ -173,12 +163,15 @@ export default function HomeMatchCard() {
     };
 
     const loadWeather = async (s: Schedule) => {
+      // 날씨 서버가 응답하지 않으면 수십 초 걸리므로 시간 제한 후 '날씨 예보 없음'으로 표시
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), WEATHER_TIMEOUT_MS);
       try {
         const { lat, lon } = getCoords(s.play_location);
         const dateStr = `${s.play_date.slice(0, 4)}-${s.play_date.slice(4, 6)}-${s.play_date.slice(6, 8)}`;
         const startHour = parseInt((s.play_start_time || '07:00').split(':')[0], 10) || 7;
         const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,precipitation,weathercode&timezone=Asia%2FSeoul&start_date=${dateStr}&end_date=${dateStr}`;
-        const res = await fetch(url);
+        const res = await fetch(url, { signal: controller.signal });
         const data = await res.json();
         if (!res.ok || !data.hourly) throw new Error(data.reason || 'no forecast');
         const hours: WeatherHour[] = [];
@@ -195,6 +188,8 @@ export default function HomeMatchCard() {
       } catch (err) {
         console.error('날씨 정보를 불러오지 못했습니다.', err);
         if (mounted) setWeatherError(true);
+      } finally {
+        clearTimeout(timer);
       }
     };
 
