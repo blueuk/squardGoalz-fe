@@ -95,6 +95,17 @@ const buildShareText = (playDate: string, members: ArrangedMember[]) => {
 const MANUAL_HINT = 'Ctrl+클릭: 특정 선수를 미리 팀에 지정';
 const RECENT_PREVIEW_COUNT = 3; // 리롤 시 비교할 최근 미리보기 수
 
+// 팀원용 배정 방식 안내 (teamArrangeUtils.arrangeTeams 규칙을 쉽게 풀어 씀)
+const ARRANGE_RULES = [
+  '참석으로 투표한 선수를 나눠요. 용병은 인원이 적은 팀부터 채워요.',
+  '선수 능력치로 필드 포지션 실력을 계산해요. 골키퍼는 돌아가며 맡으니 빼요.',
+  '잘하는 선수는 팀마다 고르게 나누고, 팀 평균 실력이 최대한 비슷해지게 맞춰요.',
+  '팀마다 수비(픽소)와 공격(아라·피보)을 맡을 사람이 있게 해요.',
+  '지난번(다시 섞기 포함) 같은 팀이었던 선수들은 되도록 흩어지게 해요. 실력 최상위·최하위 선수는 두 번 연속 같은 팀이 되지 않아요.',
+  '팀 인원은 최대 1명 차이로 맞추고, 조건에 맞는 조합 중 하나를 무작위로 골라요.',
+  '유니폼 번호는 키퍼 순서이고, 팀 안에서 무작위로 정해요.',
+];
+
 // 팀 배정 모달 기본값
 const DEFAULT_TEAM_COUNT = 2;
 const DEFAULT_TEAM_SIZE = 6;
@@ -119,6 +130,22 @@ export default function HomeMatchCard() {
   const [teamCount, setTeamCount] = useState(DEFAULT_TEAM_COUNT);
   const [teamSize, setTeamSize] = useState(DEFAULT_TEAM_SIZE);
   const [preview, setPreview] = useState<ArrangedMember[] | null>(null);
+  const [showHelp, setShowHelp] = useState(false);
+  const helpRef = useRef<HTMLDivElement>(null);
+
+  // 배정 방식 안내: 바깥을 누르거나 Esc를 누르면 닫힘
+  useEffect(() => {
+    if (!showHelp) return;
+    const close = (e: Event) => {
+      if (e instanceof KeyboardEvent ? e.key === 'Escape' : !helpRef.current?.contains(e.target as Node)) setShowHelp(false);
+    };
+    document.addEventListener('pointerdown', close);
+    document.addEventListener('keydown', close);
+    return () => {
+      document.removeEventListener('pointerdown', close);
+      document.removeEventListener('keydown', close);
+    };
+  }, [showHelp]);
   const [recentPreviews, setRecentPreviews] = useState<ArrangedMember[][]>([]); // 최근 미리보기 (최근부터)
   const [busy, setBusy] = useState(false);
   const [busyMessage, setBusyMessage] = useState('');
@@ -435,13 +462,32 @@ export default function HomeMatchCard() {
           ↻
         </button>
       ) : arrangement.length > 0 && (
-        <button className="match-corner-btn" onClick={handleCopyShareText} title="카톡 공유용 텍스트 복사" aria-label="카톡 공유용 텍스트 복사">
-          📋
-        </button>
+        <>
+          <button className="match-corner-btn" onClick={handleCopyShareText} title="카톡 공유용 텍스트 복사" aria-label="카톡 공유용 텍스트 복사">
+            📋
+          </button>
+          <div className="match-help" ref={helpRef}>
+            <button
+              className="match-corner-btn help"
+              onClick={() => setShowHelp(v => !v)}
+              title="팀 배정 방식"
+              aria-label="팀 배정 방식 보기"
+              aria-expanded={showHelp}
+            >
+              ?
+            </button>
+            {showHelp && (
+              <div className="match-help-pop" role="tooltip">
+                <b>⚽ 팀은 이렇게 나눠요</b>
+                <ol>{ARRANGE_RULES.map(rule => <li key={rule}>{rule}</li>)}</ol>
+              </div>
+            )}
+          </div>
+        </>
       )}
 
       {/* 구장명 / 날짜 요일 라벨 */}
-      <div className={`match-label${preview || arrangement.length > 0 ? ' with-corner-btn' : ''}`}>
+      <div className={`match-label${preview ? ' with-corner-btn' : arrangement.length > 0 ? ' with-corner-btns' : ''}`}>
         <span className="match-chip">📍 {schedule.play_location || DEFAULT_LOCATION.name}</span>
         <span className="match-chip">📅 {formatPlayDate(schedule.play_date)}</span>
       </div>

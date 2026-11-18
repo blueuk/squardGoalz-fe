@@ -54,6 +54,51 @@
   padding: 0 2.25rem;
 }
 
+.match-label.with-corner-btns {
+  padding: 0 4.75rem;
+}
+
+/* 배정 방식 안내 (? 버튼, 복사 버튼 왼쪽) */
+.match-corner-btn.help {
+  right: 3.25rem;
+  background: #f2f4f6;
+  color: #4e5968;
+}
+
+.match-help-pop {
+  position: absolute;
+  top: 3.25rem;
+  right: 0.75rem;
+  z-index: 5;
+  width: min(22rem, calc(100% - 1.5rem));
+  box-sizing: border-box;
+  padding: 0.85rem 1rem;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  color: #333d4b;
+  font-size: calc(12px * var(--scale-factor, 1));
+  line-height: 1.55;
+  text-align: left;
+  word-break: keep-all;
+}
+
+.match-help-pop b {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: calc(13px * var(--scale-factor, 1));
+  color: #191f28;
+}
+
+.match-help-pop ol {
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
+.match-help-pop li + li {
+  margin-top: 0.25rem;
+}
+
 .match-chip {
   display: inline-flex;
   align-items: center;
