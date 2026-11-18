@@ -443,7 +443,7 @@ function App() {
                   </div>
                 </div>
                 
-                <HomeMatchCard />
+                <HomeMatchCard onGoSchedule={() => setActiveTab('SCHEDULE')} />
               </div>
             )}
 

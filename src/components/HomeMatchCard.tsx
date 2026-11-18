@@ -110,10 +110,12 @@ const ARRANGE_RULES = [
 const DEFAULT_TEAM_COUNT = 2;
 const DEFAULT_TEAM_SIZE = 6;
 
-export default function HomeMatchCard() {
+export default function HomeMatchCard({ onGoSchedule }: { onGoSchedule: () => void }) {
   const { can } = usePermission();
   const canArrange = can('arrange.manage');
+  const canSchedule = can('schedule.manage');
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [schedule, setSchedule] = useState<Schedule | null>(null);
   const [weather, setWeather] = useState<WeatherHour[] | null>(null);
   const [weatherError, setWeatherError] = useState(false);
@@ -184,6 +186,7 @@ export default function HomeMatchCard() {
         if (next) loadWeather(next);
       } catch (err) {
         console.error('경기 정보를 불러오지 못했습니다.', err);
+        if (mounted) setLoadError(true);
       } finally {
         if (mounted) setLoading(false);
       }
@@ -447,8 +450,18 @@ export default function HomeMatchCard() {
     return <div className="card match-card"><p className="match-empty">경기 정보를 불러오는 중...</p></div>;
   }
 
+  if (loadError) {
+    return <div className="card match-card"><p className="match-empty">경기 정보를 불러오지 못했습니다</p></div>;
+  }
+
   if (!schedule) {
-    return <div className="card match-card"><p className="match-empty">예정된 일정이 없습니다.</p></div>;
+    return (
+      <div className="card match-card">
+        <p className="match-empty">예정된 일정이 없습니다.</p>
+        {/* 일정 등록 권한이 있을 때만: 일정 탭으로 이동 */}
+        {canSchedule && <button className="arrange-btn big" onClick={onGoSchedule}>일정 등록하기</button>}
+      </div>
+    );
   }
 
   return (
