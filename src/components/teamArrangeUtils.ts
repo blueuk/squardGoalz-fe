@@ -1,4 +1,4 @@
-import { calculatePositionScores, calculateRadarScores } from './positionUtils';
+import { calculatePositionScores } from './positionUtils';
 
 export interface ArrangeParticipant {
   member_uid: string;
@@ -19,11 +19,15 @@ export interface ArrangedMember {
 // 미리 지정한 선수의 팀: member_uid -> team_no
 export type FixedTeams = Record<string, number>;
 
-// 지난 경기 배정 이력의 한 행
-export interface PastArrangeRow {
-  vote_seq: number;
+// 이전 배정 결과의 한 행 (미리보기 또는 저장된 경기)
+export interface HistoryRow {
   member_uid: string;
   team_no?: number | null;
+}
+
+// 지난 경기 배정 이력의 한 행
+export interface PastArrangeRow extends HistoryRow {
+  vote_seq: number;
   play_date?: string | null;
 }
 
@@ -31,8 +35,8 @@ export interface ArrangeOptions {
   mercCount: number; // 용병 수 (기본 0)
   teamCount: number; // 팀 수 (2~4)
   teamSize: number;  // 팀당 정원 (4~6)
-  previous?: ArrangedMember[]; // 다시 섞기 전 결과: 거의 같은 조합은 제외
-  pastMatches?: PastArrangeRow[][]; // 지난 경기 배정 (최근 경기부터): 최상위·최하위 연속 같은 팀 방지
+  recent?: HistoryRow[][];          // 방금 본 결과들 (최근부터): 리롤이면 직전 미리보기, 다시 배정이면 저장된 배정
+  pastMatches?: PastArrangeRow[][]; // 지난 경기 배정 (최근 경기부터)
   fixed?: FixedTeams; // 미리 지정한 선수는 그 팀에 고정하고 나머지만 배정
 }
 
@@ -40,13 +44,17 @@ export const MAX_TEAM_COUNT = 4;
 export const MIN_TEAM_SIZE = 4;
 export const MAX_TEAM_SIZE = 6;
 
-const CANDIDATE_COUNT = 300;  // 만들어 볼 후보 조합 수
+const CANDIDATE_COUNT = 500;  // 만들어 볼 후보 조합 수 (절반은 직전 팀원을 흩어 놓고 시작)
 const ACE_RATIO = 1 / 3;      // 상위 이 비율을 에이스로 보고 먼저 고르게 나눔
 const MAX_SWAP_STEPS = 10;    // 후보당 선수 맞교환 최대 횟수
-const MAX_POWER_GAP = 1.5; // 허용하는 팀 평균 전력 차 (100점 기준)
-const MIN_POOL_SIZE = 10;     // 조건을 만족한 조합이 이보다 적으면 가장 가까운 조합으로 채움
-const FINAL_POOL_RATIO = 0.5; // 세부 능력이 고른 상위 이 비율 안에서 랜덤 선택 (1등만 고르면 결과가 굳어짐)
-const MAX_PREVIOUS_OVERLAP = 0.8; // 직전 결과와 같은 팀 쌍 비율이 이 이상이면 제외
+const SWAP_TARGET_GAP = 1.5;  // 맞교환은 팀 평균 전력 차가 이 안에 들어오면 멈춤 (100점 기준)
+// 이번 참석자로 만들 수 있는 최선의 전력 차 + 이 값까지 허용
+// (2팀은 흩어 놓을 여지가 적어 여유를 더 줌)
+const balanceSlack = (teamCount: number) => (teamCount === 2 ? 1.0 : 0.5);
+const HISTORY_WEIGHTS = [1, 0.5, 0.25]; // 최근 결과일수록 같은 팀 재회에 큰 벌점 (최근 3개)
+const TOP_BOTTOM_WEIGHT = 5;  // 최상위·최하위 선수가 다시 같은 팀이면 일반 쌍의 이만큼 벌점
+const SCATTER_SLACK = 1;      // 재회 점수 최솟값 + 이 값 안의 조합 중에서 랜덤 선택
+const MIN_FINAL_POOL = 3;     // 최종 랜덤 선택 후보 최소 수 (결과가 한 조합으로 굳지 않도록)
 
 // 골레이로는 팀원이 돌아가며 맡으므로 전력·포지션 조건에서 제외
 const DEFENSE_POSITIONS = ['FIX'];
@@ -58,14 +66,12 @@ interface Player {
   member_name: string;
   power: number;
   positions: string[]; // 필드 포지션 점수 내림차순 상위
-  radar: Record<string, number>;
 }
 
 interface Candidate {
   teams: Player[][];
   gap: number;
   covered: boolean;
-  radarSpread: number;
 }
 
 const shuffle = <T,>(arr: T[], rand: () => number): T[] => {
@@ -90,7 +96,6 @@ const toPlayer = (p: ArrangeParticipant, weights: Record<string, Record<string, 
     member_name: p.member_name,
     power: fieldScores[0]?.score ?? 0,
     positions: fieldScores.slice(0, TOP_POSITION_COUNT).map(r => r.code),
-    radar: calculateRadarScores(p.scores),
   };
 };
 
@@ -101,13 +106,18 @@ const powerGap = (teams: Player[][]) => {
   return powers.length > 0 ? Math.max(...powers) - Math.min(...powers) : 0;
 };
 
-// 전력이 가장 높은 팀과 낮은 팀의 같은 그룹(에이스/나머지) 선수를 맞바꿔 허용 범위까지 전력 차를 줄임
+const smallestTeams = (teams: Player[][]) => {
+  const minSize = Math.min(...teams.map(t => t.length));
+  return teams.filter(t => t.length === minSize);
+};
+
+// 전력이 가장 높은 팀과 낮은 팀의 같은 그룹(에이스/나머지) 선수를 맞바꿔 목표 범위까지 전력 차를 줄임
 // (교환은 개선되는 것 중 랜덤: 최선만 고르면 전력 차가 큰 참석자 구성에서 모든 후보가 한 조합으로 수렴함)
 // 미리 지정한 선수는 교환하지 않음
 const balanceTeams = (teams: Player[][], aces: Set<string>, fixed: FixedTeams, rand: () => number) => {
   for (let step = 0; step < MAX_SWAP_STEPS; step++) {
     const gap = powerGap(teams);
-    if (gap <= MAX_POWER_GAP) return;
+    if (gap <= SWAP_TARGET_GAP) return;
     const filled = teams.filter(t => t.length > 0).sort((a, b) => teamAverage(b) - teamAverage(a));
     const high = filled[0];
     const low = filled[filled.length - 1];
@@ -123,103 +133,114 @@ const balanceTeams = (teams: Player[][], aces: Set<string>, fixed: FixedTeams, r
     const improving = swaps.filter(s => s.gap < gap);
     if (improving.length === 0) return;
 
-    const passing = improving.filter(s => s.gap <= MAX_POWER_GAP);
+    const passing = improving.filter(s => s.gap <= SWAP_TARGET_GAP);
     const swap = pickRandom(passing.length > 0 ? passing : improving, rand);
     [high[swap.a], low[swap.b]] = [low[swap.b], high[swap.a]];
   }
 };
 
-// 미리 지정한 선수를 먼저 넣고, 에이스는 에이스가 적은 팀부터, 나머지는 인원이 적은 팀부터 랜덤으로 나눔
-// (지정 선수가 한 팀에 몰린 경우가 아니면 팀 인원 차이는 1명 이내)
-const buildTeams = (players: Player[], teamCount: number, fixed: FixedTeams, rand: () => number) => {
-  const ranked = shuffle(players, rand).sort((a, b) => b.power - a.power);
-  const aceCount = Math.floor(ranked.length * ACE_RATIO);
-  const aces = new Set(ranked.slice(0, aceCount).map(p => p.member_uid));
+// 미리 지정한 선수를 먼저 넣고 남은 선수 목록을 돌려줌
+const startTeams = (players: Player[], teamCount: number, fixed: FixedTeams) => {
   const teams: Player[][] = Array.from({ length: teamCount }, () => []);
-  const free = ranked.filter(p => {
+  const free = players.filter(p => {
     const team = teams[fixed[p.member_uid] - 1];
     if (team) team.push(p);
     return !team;
   });
-
-  const acesIn = (team: Player[]) => team.filter(p => aces.has(p.member_uid)).length;
-  const smallest = (list: Player[][]) => {
-    const minSize = Math.min(...list.map(t => t.length));
-    return list.filter(t => t.length === minSize);
-  };
-  for (const player of shuffle(free.filter(p => aces.has(p.member_uid)), rand)) {
-    const minAces = Math.min(...teams.map(acesIn));
-    pickRandom(smallest(teams.filter(t => acesIn(t) === minAces)), rand).push(player);
-  }
-  for (const player of shuffle(free.filter(p => !aces.has(p.member_uid)), rand)) {
-    pickRandom(smallest(teams), rand).push(player);
-  }
-  return { teams, aces };
+  return { teams, free };
 };
 
-// 팀 수·정원이 바뀌면 그 안에 들어가지 않는 미리 지정을 해제
-export function trimFixedTeams(fixed: FixedTeams, teamCount: number, teamSize: number): FixedTeams {
-  const counts: Record<number, number> = {};
-  return Object.fromEntries(Object.entries(fixed).filter(([, teamNo]) => {
-    counts[teamNo] = (counts[teamNo] ?? 0) + 1;
-    return teamNo <= teamCount && counts[teamNo] <= teamSize;
-  }));
-}
+const acesOf = (players: Player[]) => {
+  const ranked = [...players].sort((a, b) => b.power - a.power);
+  return new Set(ranked.slice(0, Math.floor(ranked.length * ACE_RATIO)).map(p => p.member_uid));
+};
+
+// 에이스는 에이스가 적은 팀부터, 나머지는 인원이 적은 팀부터 랜덤으로 나눔
+// (지정 선수가 한 팀에 몰린 경우가 아니면 팀 인원 차이는 1명 이내)
+const buildTeams = (players: Player[], teamCount: number, fixed: FixedTeams, aces: Set<string>, rand: () => number) => {
+  const { teams, free } = startTeams(shuffle(players, rand), teamCount, fixed);
+  const acesIn = (team: Player[]) => team.filter(p => aces.has(p.member_uid)).length;
+  for (const player of free.filter(p => aces.has(p.member_uid))) {
+    const minAces = Math.min(...teams.map(acesIn));
+    pickRandom(smallestTeams(teams.filter(t => acesIn(t) === minAces)), rand).push(player);
+  }
+  for (const player of free.filter(p => !aces.has(p.member_uid))) {
+    pickRandom(smallestTeams(teams), rand).push(player);
+  }
+  return teams;
+};
+
+// 직전 결과의 같은 팀 선수들을 새 팀에 골고루 흩어 놓고 시작 (같은 출신이 적은 팀 > 인원이 적은 팀 순)
+const buildScatteredTeams = (players: Player[], teamCount: number, fixed: FixedTeams, lastTeamOf: Map<string, number | undefined>, rand: () => number) => {
+  const { teams, free } = startTeams(shuffle(players, rand), teamCount, fixed);
+  const fromSameTeam = (team: Player[], prevTeam: number | undefined) =>
+    prevTeam === undefined ? 0 : team.filter(p => lastTeamOf.get(p.member_uid) === prevTeam).length;
+  // 팀 인원 차이 1명 이내: 기본 인원(base)까지는 자유롭게, base+1은 나머지 인원(extra)만큼의 팀만
+  const base = Math.floor(players.length / teamCount);
+  const extra = players.length % teamCount;
+  // 전력이 높은 선수부터 놓아 에이스도 함께 흩어지게 함
+  for (const player of [...free].sort((a, b) => b.power - a.power)) {
+    const prevTeam = lastTeamOf.get(player.member_uid);
+    const bigTeams = teams.filter(t => t.length > base).length;
+    const allowed = teams.filter(t => t.length < base || (t.length === base && bigTeams < extra));
+    const open = allowed.length > 0 ? allowed : smallestTeams(teams);
+    const minSame = Math.min(...open.map(t => fromSameTeam(t, prevTeam)));
+    pickRandom(smallestTeams(open.filter(t => fromSameTeam(t, prevTeam) === minSame)), rand).push(player);
+  }
+  return teams;
+};
 
 // 팀 순서·팀 내 순서와 무관한 조합 식별값 (같은 조합 중복 제거용)
 const teamsSignature = (teams: Player[][]) =>
   teams.map(t => t.map(p => p.member_uid).sort().join(',')).sort().join('|');
 
 const evaluate = (teams: Player[][]): Candidate => {
-  const filled = teams.filter(t => t.length > 0);
   const hasPosition = (team: Player[], codes: string[]) => team.some(p => p.positions.some(c => codes.includes(c)));
-  const radarKeys = Object.keys(filled[0]?.[0]?.radar ?? {});
-  const radarSpread = radarKeys.reduce((sum, key) => {
-    const values = filled.map(t => average(t.map(p => p.radar[key])));
-    return sum + Math.max(...values) - Math.min(...values);
-  }, 0);
   return {
     teams,
     gap: powerGap(teams),
     covered: teams.every(t => hasPosition(t, DEFENSE_POSITIONS) && hasPosition(t, ATTACK_POSITIONS)),
-    radarSpread,
   };
 };
 
-// 후보의 같은 팀 쌍 중 직전 결과에서도 같은 팀이었던 비율
-const overlapWithPrevious = (teams: Player[][], previous: ArrangedMember[]) => {
-  const prevTeam = new Map(previous.map(m => [m.member_uid, m.team_no]));
-  let pairs = 0;
-  let same = 0;
-  for (const team of teams) {
-    for (let i = 0; i < team.length; i++) {
-      for (let j = i + 1; j < team.length; j++) {
-        pairs++;
-        const a = prevTeam.get(team[i].member_uid);
-        if (a !== undefined && a === prevTeam.get(team[j].member_uid)) same++;
-      }
-    }
-  }
-  return pairs > 0 ? same / pairs : 0;
-};
+const teamMap = (rows: HistoryRow[]) => new Map(rows.map(r => [r.member_uid, r.team_no ?? undefined]));
 
-// 평균을 맞추다 보면 최하위 선수의 팀에 최상위 선수가 반복해서 묶임.
-// 두 선수가 함께 뛴 가장 최근 경기에서 같은 팀이었으면 이번에는 분리할 쌍으로 반환
-const pairToSeparate = (players: Player[], pastMatches: PastArrangeRow[][] = []): [string, string] | null => {
+// 최상위·최하위 선수 (전력이 모두 같으면 null)
+const topAndBottom = (players: Player[]): [string, string] | null => {
   if (players.length < 2) return null;
   const ranked = [...players].sort((a, b) => b.power - a.power);
   const top = ranked[0];
   const bottom = ranked[ranked.length - 1];
-  if (top.power === bottom.power) return null;
+  return top.power === bottom.power ? null : [top.member_uid, bottom.member_uid];
+};
 
-  for (const match of pastMatches) {
-    const topRow = match.find(r => r.member_uid === top.member_uid);
-    const bottomRow = match.find(r => r.member_uid === bottom.member_uid);
-    if (topRow && bottomRow) {
-      return topRow.team_no === bottomRow.team_no ? [top.member_uid, bottom.member_uid] : null;
+// 두 선수가 함께 있던 가장 최근 결과에서 같은 팀이었는지
+const wereTogetherLastTime = ([a, b]: [string, string], history: HistoryRow[][]) => {
+  for (const rows of history) {
+    const teams = teamMap(rows);
+    if (teams.get(a) !== undefined && teams.get(b) !== undefined) return teams.get(a) === teams.get(b);
+  }
+  return false;
+};
+
+// 이력에서 같은 팀이었던 쌍이 다시 같은 팀이 된 정도 (최근 결과일수록 크게, 최상위·최하위 쌍은 더 크게)
+const reunionScore = (teams: Player[][], history: HistoryRow[][], topBottom: [string, string] | null) => {
+  const maps = history.map(teamMap);
+  let score = 0;
+  for (const team of teams) {
+    for (let i = 0; i < team.length; i++) {
+      for (let j = i + 1; j < team.length; j++) {
+        const a = team[i].member_uid;
+        const b = team[j].member_uid;
+        const pairWeight = topBottom && topBottom.includes(a) && topBottom.includes(b) ? TOP_BOTTOM_WEIGHT : 1;
+        maps.forEach((m, h) => {
+          const ta = m.get(a);
+          if (ta !== undefined && ta === m.get(b)) score += HISTORY_WEIGHTS[h] * pairWeight;
+        });
+      }
     }
   }
-  return null;
+  return score;
 };
 
 // 배정 이력을 현재 일정 이전 경기만 경기별로 묶어 최근 경기부터 정렬
@@ -233,17 +254,26 @@ export function groupPastMatches(rows: PastArrangeRow[], playDate: string, voteS
   );
 }
 
+// 팀 수·정원이 바뀌면 그 안에 들어가지 않는 미리 지정을 해제
+export function trimFixedTeams(fixed: FixedTeams, teamCount: number, teamSize: number): FixedTeams {
+  const counts: Record<number, number> = {};
+  return Object.fromEntries(Object.entries(fixed).filter(([, teamNo]) => {
+    counts[teamNo] = (counts[teamNo] ?? 0) + 1;
+    return teamNo <= teamCount && counts[teamNo] <= teamSize;
+  }));
+}
+
 /**
- * 팀 배정: 전력 균형은 필수 조건, 다양성은 그 안에서 선택
- * 0. 미리 지정한 선수(fixed)는 그 팀에 고정하고 나머지 선수만 아래 과정으로 배정
- * 1. 에이스를 먼저 고르게 나누고 같은 그룹끼리 맞바꿔 전력 차를 줄인 후보 조합을 여러 개 생성 (중복 제거)
- * 2. 다시 섞기면 직전 결과와 거의 같은 조합을 제외
- * 3. 팀 평균 전력 차가 허용 범위 안이고 팀마다 수비·공격 포지션이 있는 조합만 남김
- *    (최상위·최하위 선수가 지난번 같은 팀이었으면 이번에는 분리)
- *    (조건을 만족하는 조합이 부족하면 가장 가까운 조합으로 채움)
- * 4. 세부 능력(레이더 항목)이 고른 상위 조합 중 랜덤 선택
- * 5. 용병은 전력 계산 없이 인원이 적은 팀에 배정 (팀 간 용병 수 차이 1명 이내)
- * 6. 팀별 키퍼 순서를 1..팀인원으로 랜덤 부여
+ * 팀 배정: 우선순위 = 고정 선수 > 포지션 구성 > 그날 가능한 최선의 밸런스 > 최대한 흩어짐 > 무작위
+ * 1. 비교 기준: 방금 본 결과(리롤이면 직전 미리보기 최근 3개, 다시 배정이면 저장된 배정)와 지난 경기
+ * 2. 후보 생성: 절반은 에이스를 고르게 나눠서, 절반은 직전 팀원을 흩어 놓고 시작해
+ *    같은 그룹끼리 맞바꿔 전력 차를 줄임 (미리 지정한 선수는 고정, 중복 제거)
+ * 3. 팀마다 수비·공격 포지션이 있는 조합만 남김
+ *    최상위·최하위 선수가 지난번 같은 팀이었으면 이번에는 분리
+ * 4. 이번 참석자로 만든 최선의 전력 차 + 여유(2팀 1.0점, 3팀 이상 0.5점) 이내 조합만 남김
+ * 5. 이력에서 같은 팀이었던 쌍이 가장 적게 다시 만나는 조합들 중 랜덤 선택
+ *    (조건을 만족하는 조합이 없으면 그 조건만 풀고 진행)
+ * 6. 용병은 전력 계산 없이 인원이 적은 팀에 배정 (팀 간 용병 수 차이 1명 이내), 키퍼 순서 랜덤
  */
 export function arrangeTeams(
   participants: ArrangeParticipant[],
@@ -251,39 +281,50 @@ export function arrangeTeams(
   options: ArrangeOptions,
   rand: () => number = Math.random
 ): ArrangedMember[] {
-  const { mercCount, teamCount, previous, pastMatches, fixed = {} } = options;
+  const { mercCount, teamCount, recent = [], pastMatches = [], fixed = {} } = options;
   const players = participants.map(p => toPlayer(p, weights, rand));
+  const history = [...recent, ...pastMatches].filter(rows => rows.length > 0).slice(0, HISTORY_WEIGHTS.length);
+  const lastTeamOf = new Map(history[0]?.map(r => [r.member_uid, r.team_no ?? undefined]) ?? []);
+  const aces = acesOf(players);
 
+  // 2. 후보 생성
   const unique = new Map<string, Candidate>();
   for (let i = 0; i < CANDIDATE_COUNT; i++) {
-    const { teams, aces } = buildTeams(players, teamCount, fixed, rand);
-    // 맞교환 전 조합도 후보로 남김: 전력 차를 못 줄이는 참석자 구성에서도 다시 섞기 결과가 달라지도록
+    const scatter = lastTeamOf.size > 0 && i % 2 === 1;
+    const teams = scatter
+      ? buildScatteredTeams(players, teamCount, fixed, lastTeamOf, rand)
+      : buildTeams(players, teamCount, fixed, aces, rand);
+    // 맞교환 전 조합도 후보로 남김: 맞교환은 흩어 놓은 선수를 다시 모을 수 있음
     const unbalanced = teams.map(t => [...t]);
     unique.set(teamsSignature(unbalanced), evaluate(unbalanced));
     balanceTeams(teams, aces, fixed, rand);
     unique.set(teamsSignature(teams), evaluate(teams));
   }
   const candidates = [...unique.values()];
+  const keep = (list: Candidate[], test: (c: Candidate) => boolean) => {
+    const kept = list.filter(test);
+    return kept.length > 0 ? kept : list;
+  };
 
-  // 맞는 조합이 없으면 전력 차 > 최상위·최하위 분리 > 포지션 구성 > 직전 결과와 다름 순으로 조건을 완화
-  const different = previous && previous.length > 0
-    ? candidates.filter(c => overlapWithPrevious(c.teams, previous) < MAX_PREVIOUS_OVERLAP)
-    : candidates;
-  const usable = different.length > 0 ? different : candidates;
-  const covered = usable.filter(c => c.covered);
-  const positioned = covered.length > 0 ? covered : usable;
-  const pair = pairToSeparate(players, pastMatches);
-  const separated = pair
-    ? positioned.filter(c => !c.teams.some(t => pair.every(uid => t.some(p => p.member_uid === uid))))
+  // 3. 포지션 구성, 최상위·최하위 분리
+  const topBottom = topAndBottom(players);
+  const positioned = keep(candidates, c => c.covered);
+  const separated = topBottom && wereTogetherLastTime(topBottom, [...recent, ...pastMatches])
+    ? keep(positioned, c => !c.teams.some(t => topBottom.every(uid => t.some(p => p.member_uid === uid))))
     : positioned;
-  const eligible = separated.length > 0 ? separated : positioned;
 
-  const passed = eligible.filter(c => c.gap <= MAX_POWER_GAP);
-  const pool = passed.length >= MIN_POOL_SIZE
-    ? passed
-    : [...eligible].sort((a, b) => a.gap - b.gap).slice(0, MIN_POOL_SIZE);
-  const finalCount = Math.max(MIN_POOL_SIZE, Math.ceil(pool.length * FINAL_POOL_RATIO));
-  const chosen = pickRandom([...pool].sort((a, b) => a.radarSpread - b.radarSpread).slice(0, finalCount), rand);
+  // 4. 그날 가능한 최선의 밸런스
+  const bestGap = Math.min(...separated.map(c => c.gap));
+  const balanced = separated.filter(c => c.gap <= bestGap + balanceSlack(teamCount));
+
+  // 5. 가장 많이 흩어진 조합들 중 랜덤
+  const scored = balanced
+    .map(c => ({ c, score: reunionScore(c.teams, history, topBottom) }))
+    .sort((a, b) => a.score - b.score);
+  const minScore = scored[0].score;
+  const withinSlack = scored.filter(s => s.score <= minScore + SCATTER_SLACK);
+  const finalPool = withinSlack.length >= MIN_FINAL_POOL ? withinSlack : scored.slice(0, MIN_FINAL_POOL);
+  const chosen = pickRandom(finalPool, rand).c;
 
   const teams: ArrangedMember[][] = chosen.teams.map((team, idx) => team.map(p => ({
     member_uid: p.member_uid,
@@ -295,7 +336,7 @@ export function arrangeTeams(
     fixed: fixed[p.member_uid] !== undefined,
   })));
 
-  // 용병: 인원이 적은 팀 우선, 동률이면 용병이 적은 팀, 그래도 같으면 랜덤
+  // 6. 용병: 인원이 적은 팀 우선, 동률이면 용병이 적은 팀, 그래도 같으면 랜덤
   const mercsIn = (team: ArrangedMember[]) => team.filter(m => m.merc_yn === 'Y').length;
   for (let i = 1; i <= mercCount; i++) {
     const minSize = Math.min(...teams.map(t => t.length));

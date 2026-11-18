@@ -92,6 +92,7 @@ const buildShareText = (playDate: string, members: ArrangedMember[]) => {
 };
 
 const MANUAL_HINT = 'Ctrl+클릭: 특정 선수를 미리 팀에 지정';
+const RECENT_PREVIEW_COUNT = 3; // 리롤 시 비교할 최근 미리보기 수
 
 // 팀 배정 모달 기본값
 const DEFAULT_TEAM_COUNT = 2;
@@ -117,6 +118,7 @@ export default function HomeMatchCard() {
   const [teamCount, setTeamCount] = useState(DEFAULT_TEAM_COUNT);
   const [teamSize, setTeamSize] = useState(DEFAULT_TEAM_SIZE);
   const [preview, setPreview] = useState<ArrangedMember[] | null>(null);
+  const [recentPreviews, setRecentPreviews] = useState<ArrangedMember[][]>([]); // 최근 미리보기 (최근부터)
   const [busy, setBusy] = useState(false);
   const [busyMessage, setBusyMessage] = useState('');
   const { toast, showToast } = useToast();
@@ -250,19 +252,26 @@ export default function HomeMatchCard() {
       alert('참석자가 없습니다. 투표 현황 또는 용병 수를 확인해주세요.');
       return;
     }
-    setPreview(arrangeTeams(participants, weights, { mercCount, teamCount, teamSize, previous: arrangement, pastMatches, fixed }));
+    // 다시 배정이면 저장된 배정과 비교해 흩어지게 함
+    showPreview(arrangeTeams(participants, weights, { mercCount, teamCount, teamSize, recent: arrangement.length > 0 ? [arrangement] : [], pastMatches, fixed }), []);
     setShowModal(false);
   };
 
-  // 현재 설정(용병 수, 팀 수, 팀당 인원) 그대로 다시 섞기
+  // 새 미리보기를 보여주고 리롤 비교용으로 최근 결과를 기억
+  const showPreview = (result: ArrangedMember[], earlier: ArrangedMember[][]) => {
+    setPreview(result);
+    setRecentPreviews([result, ...earlier].slice(0, RECENT_PREVIEW_COUNT));
+  };
+
+  // 현재 설정(용병 수, 팀 수, 팀당 인원) 그대로 다시 섞기: 최근 미리보기와 최대한 다르게
   const rerollArrange = () => {
-    setPreview(arrangeTeams(participants, weights, { mercCount, teamCount, teamSize, previous: preview ?? undefined, pastMatches, fixed }));
+    showPreview(arrangeTeams(participants, weights, { mercCount, teamCount, teamSize, recent: recentPreviews, pastMatches, fixed }), recentPreviews);
   };
 
   // 정원 초과 안내의 팀 수로 다시 배정
   const applySuggestedTeamCount = (count: number) => {
     setTeamCount(count);
-    setPreview(arrangeTeams(participants, weights, { mercCount, teamCount: count, teamSize, pastMatches, fixed }));
+    showPreview(arrangeTeams(participants, weights, { mercCount, teamCount: count, teamSize, recent: recentPreviews, pastMatches, fixed }), recentPreviews);
   };
 
   const handleCopyShareText = async () => {
