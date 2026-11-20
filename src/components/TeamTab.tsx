@@ -7,6 +7,7 @@ import { useToast } from './Toast';
 import SettingsTab from './SettingsTab';
 import PendingMembersCard from './PendingMembersCard';
 import { usePermission } from '../permissions';
+import { TYPES, type SavedMbti } from './mbtiData';
 import './TeamTab.css';
 import {
   POSITIONS,
@@ -488,6 +489,21 @@ export default function TeamTab() {
 
   // Terminated members (탈퇴자 관리 권한)
   const [terminatedMembers, setTerminatedMembers] = useState<TeamMember[]>([]);
+
+  // 풋살 MBTI: member_uid -> 대표 유형 (필드 결과 우선, 없으면 골레이)
+  const [mbtiByMember, setMbtiByMember] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    api.get('/mbti/search', { params: { team_uid: TEAM_UID } })
+      .then(res => {
+        const map: Record<string, string> = {};
+        (res.data || []).forEach((m: SavedMbti) => {
+          if (m.test_type === 'field' || !map[m.member_uid]) map[m.member_uid] = m.mbti_cd;
+        });
+        setMbtiByMember(map);
+      })
+      .catch(err => console.error('풋살 MBTI 조회 실패:', err));
+  }, []);
 
   // ── 탈퇴자 목록 로드 (탈퇴자 관리 권한) ─────────────────────────────────────
   useEffect(() => {
@@ -1260,6 +1276,12 @@ export default function TeamTab() {
                             <span style={{ backgroundColor: bgColor, color: statusColor, padding: '3px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold' }}>
                               {getCodeName('status_cd', member.status_cd) || '상태 없음'}
                             </span>
+                            {mbtiByMember[member.member_uid] && (
+                              <span title={`풋살 MBTI · ${TYPES[mbtiByMember[member.member_uid]]?.name ?? ''}`}
+                                style={{ backgroundColor: '#e8f3ff', color: 'var(--toss-blue)', padding: '3px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold', letterSpacing: '0.5px' }}>
+                                {mbtiByMember[member.member_uid]}
+                              </span>
+                            )}
                           </div>
                           {/* Position score pills: FIX, CEN, ALA, PIV, GOL with white text on position color */}
                           <PositionLabels memberScoreList={memberScoreList} positionWeights={positionWeights} />
