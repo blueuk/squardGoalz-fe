@@ -337,6 +337,11 @@ function App() {
                                     <span className="rank-num" style={{ fontSize: 'calc(min(15px, 3.8vw) * var(--scale-factor, 1))' }}>{rate.rank_num}위</span>
                                     <span className="rank-name" style={{ fontSize: 'calc(min(15px, 3.8vw) * var(--scale-factor, 1))', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                         {rate.member_name}
+                                        {streak && (
+                                            <span title={streak.label} aria-label={streak.label} style={{ fontSize: 'calc(min(14px, 3.5vw) * var(--scale-factor, 1))', marginLeft: '4px' }}>
+                                                {streak.icon}
+                                            </span>
+                                        )}
                                         {rate.status_cd && rate.status_cd !== '01' && rate.code_name && (
                                             STATUS_ICONS[rate.code_name] ? (
                                                 <span title={rate.code_name} aria-label={rate.code_name} style={{ fontSize: 'calc(min(14px, 3.5vw) * var(--scale-factor, 1))', marginLeft: '4px' }}>
@@ -347,11 +352,6 @@ function App() {
                                                     [{rate.code_name}]
                                                 </span>
                                             )
-                                        )}
-                                        {streak && (
-                                            <span title={streak.label} aria-label={streak.label} style={{ fontSize: 'calc(min(14px, 3.5vw) * var(--scale-factor, 1))', marginLeft: '4px' }}>
-                                                {streak.icon}
-                                            </span>
                                         )}
                                         {crown}
                                     </span>
