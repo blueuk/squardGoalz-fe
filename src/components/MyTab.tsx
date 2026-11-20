@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import api from '../api';
 import RadarChart from './RadarChart';
 import { PositionLabels } from './TeamTab';
@@ -9,6 +9,7 @@ import {
   getCachedPositionWeights, setCachedPositionWeights,
 } from './positionUtils';
 import { useToast } from './Toast';
+import { profileImageUrl, resizeProfileImage } from './profileImage';
 import './MyTab.css';
 
 const TEAM_UID = 'df743e05-9440-4c1e-bfdb-fa07159ef0c9';
@@ -70,7 +71,56 @@ export default function MyTab({ user, myInfo, onStatusChanged, onLogout }: Props
   const [statusCd, setStatusCd] = useState(myInfo?.status_cd);
   const [statusSaving, setStatusSaving] = useState(false);
 
+  // 프로필 사진: 버전이 있으면 사진 있음 (주소에 붙여 바뀔 때만 다시 받음)
+  const [photoVersion, setPhotoVersion] = useState<string | null>(null);
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const fileInput = useRef<HTMLInputElement>(null);
+
   useEffect(() => { setStatusCd(myInfo?.status_cd); }, [myInfo?.status_cd]);
+
+  useEffect(() => {
+    if (!memberUid) return;
+    api.get('/profile/search', { params: { team_uid: TEAM_UID, member_uid: memberUid } })
+      .then(res => setPhotoVersion(res.data?.[0]?.version ?? null))
+      .catch(err => console.error('프로필 사진 조회 실패:', err));
+  }, [memberUid]);
+
+  const uploadPhoto = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // 같은 사진을 다시 골라도 동작하도록
+    if (!file || !memberUid) return;
+    setPhotoBusy(true);
+    try {
+      const blob = await resizeProfileImage(file);
+      const form = new FormData();
+      form.append('team_uid', TEAM_UID);
+      form.append('member_uid', memberUid);
+      form.append('file', blob, blob.type === 'image/webp' ? 'profile.webp' : 'profile.jpg');
+      const res = await api.post('/profile/upload', form);
+      setPhotoVersion(res.data.version);
+      showToast(`✅ 프로필 사진을 바꿨어요 (${Math.round(blob.size / 1024)}KB)`);
+    } catch (err: any) {
+      console.error(err);
+      showToast(err.response?.data?.detail || err.message || '프로필 사진을 저장하지 못했습니다');
+    } finally {
+      setPhotoBusy(false);
+    }
+  };
+
+  const deletePhoto = async () => {
+    if (!memberUid || !window.confirm('프로필 사진을 삭제할까요?')) return;
+    setPhotoBusy(true);
+    try {
+      await api.post('/profile/delete', { team_uid: TEAM_UID, member_uid: memberUid });
+      setPhotoVersion(null);
+      showToast('프로필 사진을 삭제했어요');
+    } catch (err: any) {
+      console.error(err);
+      showToast(err.response?.data?.detail || '프로필 사진을 삭제하지 못했습니다');
+    } finally {
+      setPhotoBusy(false);
+    }
+  };
 
   useEffect(() => {
     api.get('/common_cd/search', { params: { group_cd: 'status_cd' } })
@@ -177,10 +227,27 @@ export default function MyTab({ user, myInfo, onStatusChanged, onLogout }: Props
 
       {/* 프로필 */}
       <section className="my-card my-profile">
-        <div className="my-avatar">👤</div>
+        {memberUid ? (
+          <button
+            className="my-avatar editable"
+            onClick={() => fileInput.current?.click()}
+            disabled={photoBusy}
+            aria-label="프로필 사진 바꾸기"
+            title="프로필 사진 바꾸기"
+          >
+            {photoVersion ? <img src={profileImageUrl(TEAM_UID, memberUid, photoVersion)} alt="" /> : '👤'}
+            <span className="my-avatar-cam">{photoBusy ? '…' : '📷'}</span>
+          </button>
+        ) : (
+          <div className="my-avatar">👤</div>
+        )}
+        <input ref={fileInput} type="file" accept="image/*" hidden onChange={uploadPhoto} />
         <div className="my-profile-text">
           <div className="my-name">{user.username || '이름 없음'}</div>
           <div className="my-nick">{user.nickname}</div>
+          {photoVersion && memberUid && (
+            <button className="my-photo-delete" onClick={deletePhoto} disabled={photoBusy}>사진 삭제</button>
+          )}
         </div>
         <div className="my-badges">
           {statusName && <span className={`my-badge status-${statusCd}`}>{statusName}</span>}

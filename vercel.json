@@ -19,6 +19,7 @@
     { "source": "/youtube/:path*", "destination": "http://8.235.113.192:8000/youtube/:path*" },
     { "source": "/permission/:path*", "destination": "http://8.235.113.192:8000/permission/:path*" },
     { "source": "/mbti/:path*", "destination": "http://8.235.113.192:8000/mbti/:path*" },
+    { "source": "/profile/:path*", "destination": "http://8.235.113.192:8000/profile/:path*" },
     {
       "source": "/(.*)",
       "destination": "/index.html"
