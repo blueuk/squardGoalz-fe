@@ -1,0 +1,312 @@
+/* ── MY 탭 (토스 스타일 카드) ───────────────────────────────────────────── */
+
+.my {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  text-align: left;
+}
+
+.my-card {
+  padding: 22px 20px;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+}
+
+.my-title {
+  margin: 0 0 14px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #191f28;
+}
+
+.my-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.my-title-row .my-title {
+  margin-bottom: 14px;
+}
+
+.my-subtitle {
+  margin: 14px 0 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #8b95a1;
+}
+
+.my-empty {
+  margin: 0;
+  padding: 12px 0;
+  font-size: 14px;
+  text-align: center;
+  color: #8b95a1;
+}
+
+.my-muted {
+  font-size: 13px;
+  color: #b0b8c1;
+}
+
+/* 프로필 */
+.my-profile {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+}
+
+.my-avatar {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #f2f4f6;
+  font-size: 26px;
+}
+
+.my-profile-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.my-name {
+  font-size: 20px;
+  font-weight: 800;
+  color: #191f28;
+  overflow-wrap: anywhere;
+}
+
+.my-nick {
+  margin-top: 2px;
+  font-size: 14px;
+  color: #8b95a1;
+  overflow-wrap: anywhere;
+}
+
+.my-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.my-badge {
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: #e6f4ea;
+  color: #137333;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.my-badge.status-02 {
+  background: #fce8e6;
+  color: #c5221f;
+}
+
+.my-badge.status-03 {
+  background: #fff4e5;
+  color: #b25e00;
+}
+
+.my-badge.mbti {
+  background: #e8f3ff;
+  color: var(--toss-blue, #3182f6);
+  letter-spacing: 1px;
+}
+
+/* 능력치 */
+.my-radar {
+  text-align: center;
+}
+
+/* 풋살 MBTI */
+.my-mbti-empty {
+  text-align: center;
+}
+
+.my-mbti-empty p {
+  margin: 0 0 16px;
+  font-size: 15px;
+  line-height: 1.6;
+  color: #4e5968;
+  word-break: keep-all;
+}
+
+.my-mbti-meters {
+  margin-top: 20px;
+}
+
+.my-mbti-extra {
+  margin-top: 14px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #fff8ed;
+  font-size: 13px;
+  color: #8a5300;
+}
+
+.my-matches {
+  display: grid;
+  gap: 10px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.my-matches li {
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #f9fafb;
+}
+
+.my-match-type {
+  font-size: 14px;
+  color: #4e5968;
+}
+
+.my-match-type b {
+  margin-right: 4px;
+  color: var(--toss-blue, #3182f6);
+  letter-spacing: 1px;
+}
+
+.my-match-names {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.my-chip {
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid #e5e8eb;
+  font-size: 13px;
+  font-weight: 600;
+  color: #333d4b;
+}
+
+/* 내 정보 */
+.my-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 44px;
+  border-bottom: 1px solid #f2f4f6;
+}
+
+.my-row:last-child {
+  border-bottom: none;
+}
+
+.my-row.status {
+  flex-wrap: wrap;
+  padding: 6px 0;
+}
+
+.my-label {
+  flex-shrink: 0;
+  font-size: 15px;
+  color: #8b95a1;
+}
+
+.my-value {
+  min-width: 0;
+  font-size: 15px;
+  font-weight: 600;
+  text-align: right;
+  color: #333d4b;
+  overflow-wrap: anywhere;
+}
+
+.my-value.accent {
+  color: var(--toss-blue, #3182f6);
+}
+
+.my-value.ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 60%;
+}
+
+/* 상태 토글 (세그먼트) */
+.my-segment {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 12px;
+  background: #f2f4f6;
+}
+
+.my-segment button {
+  min-width: 52px;
+  margin: 0;
+  padding: 7px 12px;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  color: #8b95a1;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.my-segment button.active {
+  background: #fff;
+  color: #191f28;
+  font-weight: 700;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.my-segment button:disabled {
+  cursor: wait;
+}
+
+/* 버튼 */
+.my-btn {
+  width: 100%;
+  margin: 16px 0 0;
+  padding: 14px;
+  border: none;
+  border-radius: 14px;
+  background: #f2f4f6;
+  color: #333d4b;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.my-btn.primary {
+  margin-top: 0;
+  background: var(--toss-blue, #3182f6);
+  color: #fff;
+}
+
+.my-btn.logout {
+  margin-top: 4px;
+  background: #fff;
+  color: #f04452;
+}
+
+.my-text-btn {
+  margin: 0 0 14px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--toss-blue, #3182f6);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}

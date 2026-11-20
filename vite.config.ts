@@ -23,7 +23,8 @@ export default defineConfig({
       '/teamAccount': { target: 'http://8.235.113.192:8000', changeOrigin: true },
       '/payment': { target: 'http://8.235.113.192:8000', changeOrigin: true },
       '/youtube': { target: 'http://8.235.113.192:8000', changeOrigin: true },
-      '/permission': { target: 'http://8.235.113.192:8000', changeOrigin: true }
+      '/permission': { target: 'http://8.235.113.192:8000', changeOrigin: true },
+      '/mbti': { target: 'http://8.235.113.192:8000', changeOrigin: true }
     }
   }
 })

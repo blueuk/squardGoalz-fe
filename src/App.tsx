@@ -9,13 +9,12 @@ import footerTeam from './img/footerTeam.png';
 import footerMy from './img/footerMy.png';
 import './App.css';
 import CalendarTab from './components/CalendarTab';
-import TeamTab, { PositionLabels } from './components/TeamTab';
+import TeamTab from './components/TeamTab';
 import SoccerBallLoader from './components/SoccerBallLoader';
-import RadarChart from './components/RadarChart';
 import HomeMatchCard from './components/HomeMatchCard';
+import MyTab from './components/MyTab';
 import { PermissionProvider } from './permissions';
 import PendingGate from './components/PendingGate';
-import { calculateRadarScores, DEFAULT_POSITION_WEIGHTS, buildWeightsFromRows, getCachedPositionWeights, setCachedPositionWeights } from './components/positionUtils';
 
 interface User {
   userid: string;
@@ -50,7 +49,6 @@ function App() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [rates, setRates] = useState<Rate[]>([]);
-  const [myAttendCount, setMyAttendCount] = useState<number>(0);
   const [activeTab, setActiveTab] = useState<'HOME' | 'VIDEO' | 'SCHEDULE' | 'TEAM' | 'MY'>('HOME');
   const ITEMS_PER_PAGE = 5;
 
@@ -58,13 +56,6 @@ function App() {
   const [isRollingPlaying, setIsRollingPlaying] = useState(true);
   const [currentRollingIdx, setCurrentRollingIdx] = useState(0);
   const [isFading, setIsFading] = useState(false);
-
-  // MY 탭 스탯 및 가중치 상태
-  const [myMemberScores, setMyMemberScores] = useState<any[]>([]);
-  const [myPositionWeights, setMyPositionWeights] = useState<Record<string, Record<string, number>>>(
-    () => getCachedPositionWeights() || DEFAULT_POSITION_WEIGHTS
-  );
-  const [myScoresLoading, setMyScoresLoading] = useState(false);
 
   useEffect(() => {
     let interval: any = null;
@@ -147,13 +138,6 @@ function App() {
     }
   }, [user]);
 
-  // MY 탭 진입 시 현재 로그인한 유저의 올해 참석 횟수 및 스탯 조회
-  useEffect(() => {
-    if (activeTab === 'MY' && user && rates.length > 0) {
-      fetchMyRate();
-    }
-  }, [activeTab, user, rates]);
-
   const fetchRates = async () => {
     try {
       const res = await api.get('/rate/search', {
@@ -165,56 +149,6 @@ function App() {
       setRates(res.data);
     } catch (error) {
       console.error("참석률 조회 실패:", error);
-    }
-  };
-
-  const fetchMyRate = async () => {
-    const myInfo = rates.find(r => 
-      (r.user_id && r.user_id === user?.userid) || 
-      (r.member_name === user?.username)
-    );
-    if (!myInfo?.member_uid) return;
-
-    try {
-      setMyScoresLoading(true);
-      const currentYear = new Date().getFullYear().toString();
-      const cachedWeights = getCachedPositionWeights();
-
-      // 병렬 요청으로 불필요한 직렬 대기 방지
-      const [rateRes, scoreRes, weightRes] = await Promise.all([
-        api.get('/rate/search', {
-          params: {
-            team_uid: 'df743e05-9440-4c1e-bfdb-fa07159ef0c9',
-            member_uid: myInfo.member_uid,
-            year: currentYear
-          }
-        }),
-        api.get('/memberScore/search', {
-          params: {
-            team_uid: 'df743e05-9440-4c1e-bfdb-fa07159ef0c9',
-            member_uid: myInfo.member_uid
-          }
-        }),
-        cachedWeights ? Promise.resolve(null) : api.get('/position_point/search')
-      ]);
-
-      if (rateRes?.data && rateRes.data.length > 0) {
-        setMyAttendCount(rateRes.data[0].attend_count);
-      }
-
-      setMyMemberScores(scoreRes?.data || []);
-
-      if (cachedWeights) {
-        setMyPositionWeights(cachedWeights);
-      } else if (weightRes?.data && weightRes.data.length > 0) {
-        const loaded = buildWeightsFromRows(weightRes.data);
-        setCachedPositionWeights(loaded);
-        setMyPositionWeights(loaded);
-      }
-    } catch (error) {
-      console.error("내 데이터 조회 실패:", error);
-    } finally {
-      setMyScoresLoading(false);
     }
   };
 
@@ -232,10 +166,6 @@ function App() {
   const isRegister = window.location.pathname === '/register';
   const registerNickname = queryParams.get('nickname');
 
-  // 내 상태 변경 관리를 위한 상태
-  const [editingStatus, setEditingStatus] = useState(false);
-  const [selectedStatusCd, setSelectedStatusCd] = useState<string>('01');
-  const [statusUpdating, setStatusUpdating] = useState(false);
   const myInfo = rates.find(r => (r.user_id && r.user_id === user?.userid) || (r.member_name === user?.username));
 
   // 유튜브 관련 상태
@@ -261,25 +191,6 @@ function App() {
     };
     fetchVideos();
   }, []);
-
-  const handleStatusChange = async () => {
-    if (!myInfo?.member_uid) return;
-    setStatusUpdating(true);
-    try {
-      await api.post('/team_member/update', {
-        team_uid: myInfo.team_uid,
-        member_uid: myInfo.member_uid,
-        status_cd: selectedStatusCd
-      });
-      alert('상태가 성공적으로 변경되었습니다.');
-      setEditingStatus(false);
-      fetchRates();
-    } catch (error) {
-      alert('상태 변경 중 오류가 발생했습니다.');
-    } finally {
-      setStatusUpdating(false);
-    }
-  };
 
   const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -335,7 +246,6 @@ function App() {
     <PermissionProvider userid={user?.userid}>
     <PendingGate onLogout={handleLogout}>
     <div className="app-container">
-      {statusUpdating && <SoccerBallLoader message="상태를 변경하는 중입니다..." />}
 
       {!user ? (
         <div style={{ textAlign: 'center', marginTop: '100px', padding: '20px' }}>
@@ -486,149 +396,7 @@ function App() {
             {activeTab === 'TEAM' && <TeamTab />}
 
             {activeTab === 'MY' && user && (
-              <div className="card" style={{ textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                {/* 1. 프로필 요약 */}
-                <div style={{ textAlign: 'center', marginBottom: '5px' }}>
-                  <div style={{ 
-                    width: '80px', height: '80px', borderRadius: '50%', backgroundColor: '#eee', 
-                    margin: '0 auto 10px auto', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: '32px'
-                  }}>
-                    👤
-                  </div>
-                  <h3 style={{ margin: 0 }}>{user.username || '이름 없음'}</h3>
-                  <p style={{ margin: '5px 0 0 0', color: '#888' }}>{user.nickname}</p>
-                </div>
-
-                {/* 2. 두 번째: 내 능력치 분석 (6각형 레이더 그래프 & 포지션별 라벨+점수) */}
-                <div style={{ borderTop: '1px solid #eee', paddingTop: '15px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                    <span style={{ fontSize: '15px', fontWeight: 'bold', color: '#191f28' }}>📊 내 능력치 분석</span>
-                  </div>
-
-                  {myScoresLoading ? (
-                    <div style={{ textAlign: 'center', padding: '20px 0', color: '#8b95a1', fontSize: '13px' }}>
-                      능력치를 분석하는 중입니다...
-                    </div>
-                  ) : myMemberScores.length > 0 ? (
-                    <div style={{ backgroundColor: '#f9fafb', borderRadius: '14px', padding: '16px', border: '1px solid #f2f4f6' }}>
-                      {/* 6각형 레이더 그래프 */}
-                      <div style={{ textAlign: 'center', marginBottom: '10px' }}>
-                        <RadarChart scores={calculateRadarScores(myMemberScores)} size={220} showValues={true} />
-                      </div>
-
-                      {/* 포지션별 라벨 + 점수 */}
-                      <div style={{ marginTop: '14px', borderTop: '1px solid #eef0f2', paddingTop: '12px' }}>
-                        <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#4e5968', marginBottom: '6px' }}>
-                          포지션별 환산 점수 (100점 만점)
-                        </div>
-                        <PositionLabels memberScoreList={myMemberScores} positionWeights={myPositionWeights} />
-                      </div>
-                    </div>
-                  ) : (
-                    <div style={{ textAlign: 'center', padding: '15px 0', color: '#8b95a1', fontSize: '13px' }}>
-                      등록된 능력치 정보가 없습니다.
-                    </div>
-                  )}
-                </div>
-
-                {/* 3. 세 번째: 회원 상세 정보 */}
-                <div style={{ borderTop: '1px solid #eee', paddingTop: '15px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: '#888' }}>ID (카카오)</span>
-                    <span style={{ fontWeight: 'bold', color: '#333' }}>{user.userid}</span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: '#888' }}>권한</span>
-                    <span style={{ fontWeight: 'bold', color: '#333' }}>{user.auth_cd === '01' ? '관리자' : '일반'}</span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ color: '#888' }}>내 상태</span>
-                    {editingStatus ? (
-                      <div style={{ display: 'flex', gap: '5px' }}>
-                        <select 
-                          value={selectedStatusCd} 
-                          onChange={(e) => setSelectedStatusCd(e.target.value)}
-                          style={{ padding: '2px 5px', borderRadius: '4px', border: '1px solid #ddd' }}
-                          disabled={statusUpdating}
-                        >
-                          <option value="01">활동</option>
-                          <option value="02">부상</option>
-                          <option value="03">휴식</option>
-                        </select>
-                        <button 
-                          onClick={handleStatusChange} 
-                          style={{ padding: '2px 8px', borderRadius: '4px', backgroundColor: '#3182f6', color: '#fff', border: 'none', cursor: 'pointer' }}
-                          disabled={statusUpdating}
-                        >
-                          저장
-                        </button>
-                        <button 
-                          onClick={() => setEditingStatus(false)} 
-                          style={{ padding: '2px 8px', borderRadius: '4px', backgroundColor: '#f4f4f4', color: '#000', border: '1px solid #ddd', cursor: 'pointer' }}
-                          disabled={statusUpdating}
-                        >
-                          취소
-                        </button>
-                      </div>
-                    ) : (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ fontWeight: 'bold', color: '#333' }}>
-                          {myInfo?.code_name || '상태 없음'}
-                        </span>
-                        <button 
-                          onClick={() => {
-                            setSelectedStatusCd(myInfo?.status_cd || '01');
-                            setEditingStatus(true);
-                          }}
-                          style={{ padding: '2px 8px', fontSize: 'calc(12px * var(--scale-factor, 1))', borderRadius: '4px', backgroundColor: '#f4f4f4', color: '#000', border: '1px solid #ddd', cursor: 'pointer' }}
-                        >
-                          수정
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: '#888' }}>MemberID</span>
-                    {(() => {
-                      const uid = myInfo?.member_uid || '-';
-                      const displayUid = uid.length > 10 ? uid.substring(0, 10) + '...' : uid;
-                      return (
-                        <span 
-                          style={{ fontWeight: 'bold', color: '#333', cursor: uid.length > 10 ? 'help' : 'default' }}
-                          title={uid}
-                        >
-                          {displayUid}
-                        </span>
-                      );
-                    })()}
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: '#888' }}>전화번호</span>
-                    <span style={{ fontWeight: 'bold', color: '#333' }}>{user.phone || '-'}</span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: '#888' }}>소속팀</span>
-                    <span style={{ fontWeight: 'bold', color: '#333' }}>풋고추FC</span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: '#888' }}>올해 참가경기수</span>
-                    <span style={{ fontWeight: 'bold', color: '#3182f6' }}>
-                      {myAttendCount}회
-                    </span>
-                  </div>
-                </div>
-
-                {/* 4. 네 번째: 로그아웃 버튼 */}
-                <button onClick={handleLogout} className="btn" style={{ 
-                  marginTop: '15px', 
-                  backgroundColor: '#f8f9fa', 
-                  color: '#dc3545',
-                  border: '1px solid #ddd'
-                }}>
-                  로그아웃
-                </button>
-              </div>
+              <MyTab user={user} myInfo={myInfo} onStatusChanged={fetchRates} onLogout={handleLogout} />
             )}
           </main>
 
