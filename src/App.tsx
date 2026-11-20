@@ -13,6 +13,7 @@ import TeamTab from './components/TeamTab';
 import SoccerBallLoader from './components/SoccerBallLoader';
 import HomeMatchCard from './components/HomeMatchCard';
 import MyTab from './components/MyTab';
+import HelpTip from './components/HelpTip';
 import { PermissionProvider } from './permissions';
 import PendingGate from './components/PendingGate';
 
@@ -312,9 +313,31 @@ function App() {
           <main style={{ paddingTop: '60px', paddingBottom: '70px', paddingLeft: '20px', paddingRight: '20px', backgroundColor: '#f9f9f9', minHeight: '100vh' }}>
             {activeTab === 'HOME' && (
               <div id="home" className="section" style={{ display: 'block' }}>
-                <div id="rate-card" className="card">
+                <div id="rate-card" className="card" style={{ position: 'relative' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                    <div className="card-title" style={{ margin: 0 }}>멤버 참석 현황</div>
+                    <div className="card-title" style={{ margin: 0, display: 'flex', alignItems: 'center' }}>
+                      멤버 참석 현황
+                      <HelpTip label="순위 계산 방식과 아이콘 설명">
+                        <section>
+                          <b>📊 순위는 이렇게 매겨요 (올해 일정 기준)</b>
+                          <ol>
+                            <li>점수 = 참석 3점 + 불참 1점 − 미투표 2점</li>
+                            <li>점수가 같으면 참석률 → 참석 수 → 경기 수가 많은 순</li>
+                            <li>참석률 = 참석 ÷ (참석 + 불참 + 미투표). 미진행 경기는 빼요.</li>
+                          </ol>
+                        </section>
+                        <section>
+                          <b>아이콘 뜻</b>
+                          <ul className="help-tip-icons">
+                            <li><span>🔥</span>{FIRE_STREAK}경기 이상 연속 참석</li>
+                            <li><span>😢</span>{TEAR_STREAK}경기 이상 연속 불참·미투표</li>
+                            {Object.entries(STATUS_ICONS).map(([name, icon]) => <li key={name}><span>{icon}</span>{name} 중</li>)}
+                            <li><span>👑</span>1위</li>
+                          </ul>
+                          <p style={{ margin: '0.4rem 0 0', color: '#8b95a1' }}>연속 기록은 지난 경기만 세고, 미진행 경기는 건너뛰어요.</p>
+                        </section>
+                      </HelpTip>
+                    </div>
                     <div style={{ display: 'flex', gap: '4px', alignItems: 'center', background: '#f2f4f6', padding: '2px 8px', borderRadius: '12px' }}>
                       <button onClick={prevRollingPage} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 'calc(12px * var(--scale-factor, 1))', color: '#191f28', padding: '4px 6px', fontWeight: 'bold', outline: 'none' }}>&lt;</button>
                       <button id="rolling-toggle-btn" onClick={toggleRolling} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 'calc(12px * var(--scale-factor, 1))', color: '#191f28', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px 4px', fontWeight: 'bold', outline: 'none' }}>
