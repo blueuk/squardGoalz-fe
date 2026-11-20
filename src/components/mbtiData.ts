@@ -176,9 +176,3 @@ export const savedPct = (s: SavedMbti): Partial<Record<AxisKey, number>> => {
   if (s.sl_pct != null) pct.SL = s.sl_pct;
   return pct;
 };
-
-export const shareText = (code: string, pct: Partial<Record<AxisKey, number>>, testType: TestType) => {
-  const type = TYPES[code];
-  const lines = AXIS_ORDER[testType].map(axis => `${AXES[axis].an} ${pct[axis]}% / ${AXES[axis].bn} ${100 - (pct[axis] ?? 0)}%`);
-  return `⚽ 풋살 포지션 유형 테스트 결과\n[${type.pos}] ${code} · ${type.name}\n${lines.join('\n')}\n강점: ${type.str.join(', ')}`;
-};

@@ -2,10 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import api from '../api';
 import {
   AXES, AXIS_ORDER, QUESTIONS, QUESTION_VER, SCALE_FREQ, TYPES,
-  interleave, scoreTest, shareText,
+  interleave, scoreTest,
   type AxisKey, type MbtiResult, type TestType,
 } from './mbtiData';
-import { copyText } from './clipboard';
 import './FutsalMbti.css';
 
 const ANSWER_DELAY_MS = 180; // 선택 표시 후 다음 문항으로 넘어가기까지
@@ -67,7 +66,6 @@ export default function FutsalMbtiTest({ teamUid, memberUid, onClose, onSaved }:
   const [idx, setIdx] = useState(0);
   const [result, setResult] = useState<MbtiResult | null>(null);
   const [saveState, setSaveState] = useState<'saving' | 'saved' | 'error'>('saving');
-  const [copied, setCopied] = useState(false);
   // 답을 고른 뒤 다음 문항으로 넘어가는 동안 추가 입력을 막음 (빠른 두 번 탭으로 문항이 건너뛰어지던 버그)
   const advancing = useRef(false);
 
@@ -141,12 +139,6 @@ export default function FutsalMbtiTest({ teamUid, memberUid, onClose, onSaved }:
     else onClose();
   };
 
-  const copy = async () => {
-    if (!result) return;
-    setCopied(await copyText(shareText(result.code, result.pct, result.testType)));
-    setTimeout(() => setCopied(false), 1600);
-  };
-
   const current = order[idx];
 
   return (
@@ -217,9 +209,8 @@ export default function FutsalMbtiTest({ teamUid, memberUid, onClose, onSaved }:
               <p className="mbti-note">🧤 골레이도 필드에서 뛸 때가 있죠? 필드 테스트도 하면 필드 유형까지 알 수 있어요.</p>
             )}
             <div className="mbti-actions">
-              <button className="mbti-btn" onClick={copy}>{copied ? '복사됐어요!' : '결과 복사해서 단톡방에 공유'}</button>
               {result.testType === 'gk' && <button className="mbti-btn gk" onClick={() => start('field')}>필드 테스트도 해보기</button>}
-              <button className="mbti-btn ghost" onClick={onClose}>MY로 돌아가기</button>
+              <button className={`mbti-btn${result.testType === 'gk' ? ' ghost' : ''}`} onClick={onClose}>MY로 돌아가기</button>
             </div>
           </>
         )}

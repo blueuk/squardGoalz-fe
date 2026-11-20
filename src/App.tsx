@@ -37,7 +37,19 @@ interface Rate {
   rank_num: number;
   status_cd?: string;
   code_name?: string;
+  attend_streak?: number; // 최근 경기부터 연속 참석 수 (미진행 제외)
+  miss_streak?: number;   // 최근 경기부터 연속 불참·미투표 수 (미진행 제외)
 }
+
+// 연속 기록 표시 기준
+const FIRE_STREAK = 2; // 연속 참석
+const TEAR_STREAK = 4; // 연속 불참·미투표
+
+const streakIcon = (rate: Rate) => {
+  if ((rate.attend_streak ?? 0) >= FIRE_STREAK) return { icon: '🔥', label: `${rate.attend_streak}회 연속 참석` };
+  if ((rate.miss_streak ?? 0) >= TEAR_STREAK) return { icon: '😢', label: `${rate.miss_streak}회 연속 불참·미투표` };
+  return null;
+};
 
 // 참석 현황에서 텍스트 대신 아이콘으로 보여줄 선수 상태 (없는 상태는 [상태명] 텍스트로 표시)
 const STATUS_ICONS: Record<string, ReactNode> = {
@@ -144,6 +156,8 @@ function App() {
         params: {
           team_uid: 'df743e05-9440-4c1e-bfdb-fa07159ef0c9',
           year: '2026',
+          // 연속 기록은 오늘 이전 경기만 (휴대폰 날짜 기준)
+          today: (() => { const d = new Date(); return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`; })(),
         }
       });
       setRates(res.data);
@@ -316,6 +330,7 @@ function App() {
                         .slice(currentRollingIdx * ITEMS_PER_PAGE, (currentRollingIdx + 1) * ITEMS_PER_PAGE)
                         .map((rate, index) => {
                           const crown = rate.rank_num === 1 ? <span className="crown">👑</span> : null;
+                          const streak = streakIcon(rate);
                           return (
                             <div key={index} className="rank-item">
                                 <div className="rank-info" style={{ flexShrink: 1, minWidth: 0, overflow: 'hidden', marginRight: '4px' }}>
@@ -332,6 +347,11 @@ function App() {
                                                     [{rate.code_name}]
                                                 </span>
                                             )
+                                        )}
+                                        {streak && (
+                                            <span title={streak.label} aria-label={streak.label} style={{ fontSize: 'calc(min(14px, 3.5vw) * var(--scale-factor, 1))', marginLeft: '4px' }}>
+                                                {streak.icon}
+                                            </span>
                                         )}
                                         {crown}
                                     </span>
