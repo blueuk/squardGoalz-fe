@@ -16,6 +16,7 @@ import MyTab from './components/MyTab';
 import HelpTip from './components/HelpTip';
 import { PermissionProvider } from './permissions';
 import PendingGate from './components/PendingGate';
+import { rememberDeepLink, takeDeepLinkFromUrl, takeRememberedDeepLink, type DeepLink } from './deepLink';
 
 interface User {
   userid: string;
@@ -62,7 +63,9 @@ function App() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [rates, setRates] = useState<Rate[]>([]);
-  const [activeTab, setActiveTab] = useState<'HOME' | 'VIDEO' | 'SCHEDULE' | 'TEAM' | 'MY'>('HOME');
+  // 공유 링크(/?go=payment)로 들어오면 해당 화면으로. 로그인 전이면 로그인 후 이어서 엶
+  const [deepLink, setDeepLink] = useState<DeepLink | null>(() => takeDeepLinkFromUrl() ?? takeRememberedDeepLink());
+  const [activeTab, setActiveTab] = useState<'HOME' | 'VIDEO' | 'SCHEDULE' | 'TEAM' | 'MY'>(() => (deepLink === 'payment' ? 'TEAM' : 'HOME'));
   const ITEMS_PER_PAGE = 5;
 
   // 롤링(슬라이드) 상태 관리
@@ -168,6 +171,7 @@ function App() {
   };
 
   const handleKakaoLogin = () => {
+    rememberDeepLink(deepLink);
     window.location.href = '/kakao/login';
   };
 
@@ -436,7 +440,7 @@ function App() {
               <CalendarTab teamUid="df743e05-9440-4c1e-bfdb-fa07159ef0c9" members={rates} />
             )}
 
-            {activeTab === 'TEAM' && <TeamTab />}
+            {activeTab === 'TEAM' && <TeamTab focusPayment={deepLink === 'payment'} onFocused={() => setDeepLink(null)} />}
 
             {activeTab === 'MY' && user && (
               <MyTab user={user} myInfo={myInfo} onStatusChanged={fetchRates} onLogout={handleLogout} />

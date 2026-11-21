@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import api from '../api';
 import RadarChart from './RadarChart';
 import SoccerBallLoader from './SoccerBallLoader';
 import { copyText } from './clipboard';
+import { KAKAO_TEXT_LIMIT, shareKakaoText } from './kakaoShare';
+import { deepLinkPath } from '../deepLink';
 import { useToast } from './Toast';
 import SettingsTab from './SettingsTab';
 import PendingMembersCard from './PendingMembersCard';
@@ -432,7 +434,7 @@ const formatDt = (dt?: string) =>
 const sortTerminated = (list: TeamMember[]) =>
   [...list].sort((a, b) => (b.terminate_dt || '').localeCompare(a.terminate_dt || ''));
 
-export default function TeamTab() {
+export default function TeamTab({ focusPayment = false, onFocused }: { focusPayment?: boolean; onFocused?: () => void }) {
   const { can } = usePermission();
   const canTeamEdit = can('team.edit');
   const canPaymentEdit = can('payment.edit');
@@ -599,6 +601,15 @@ export default function TeamTab() {
     loadInitialData();
   }, [teamInfo]);
 
+  // ── 공유 링크로 들어오면 입금 안내로 이동 (팀 정보를 다 불러온 뒤) ──────────────
+  const paymentCardRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!focusPayment || !teamInfo || isGlobalLoading) return;
+    setSubTab('INFO');
+    requestAnimationFrame(() => paymentCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+    onFocused?.();
+  }, [focusPayment, teamInfo, isGlobalLoading, onFocused]);
+
   // ── 능력치(가중치) 항목: 공통코드 score_cd 기준 (없으면 기본 28개) ─────────────
   const scoreItems: ScoreItem[] = codeLists.score_cd?.length
     ? codeLists.score_cd.map(c => ({ code: c.code, name: c.code_name, category: c.reference_2 }))
@@ -627,7 +638,7 @@ export default function TeamTab() {
   };
 
   // 카톡 공유용 입금 안내 문구
-  const handleCopyPaymentText = async () => {
+  const buildPaymentText = () => {
     const lines = ['💸 풋고추 FC 입금 안내'];
     payments.forEach(payment => {
       const account = teamAccounts.find(a => a.team_account_seq === payment.team_account_seq);
@@ -639,7 +650,25 @@ export default function TeamTab() {
         lines.push(`👤 예금주: ${getAccountHolder(payment.payment_cd)}`);
       }
     });
-    showToast(await copyText(lines.join('\n')) ? '✅ 복사되었습니다. 카톡에 붙여넣어 주세요' : '복사에 실패했습니다');
+    return lines.join('\n');
+  };
+
+  const handleCopyPaymentText = async () => {
+    showToast(await copyText(buildPaymentText()) ? '✅ 복사되었습니다. 카톡에 붙여넣어 주세요' : '복사에 실패했습니다');
+  };
+
+  // 카카오톡 공유: 메시지 버튼을 누르면 입금 안내로 바로 이동. 안 되면 복사로 대신함
+  const handleKakaoSharePayment = async () => {
+    const text = buildPaymentText();
+    if (text.length <= KAKAO_TEXT_LIMIT) {
+      try {
+        await shareKakaoText(text, '입금 안내 보기', deepLinkPath('payment'));
+        return;
+      } catch (err) {
+        console.error('카카오톡 공유 실패', err);
+      }
+    }
+    showToast(await copyText(text) ? '카톡 공유를 열 수 없어 복사했어요. 카톡에 붙여넣어 주세요' : '공유에 실패했습니다');
   };
 
   const formatTime = (timeStr?: string) => {
@@ -1036,11 +1065,17 @@ export default function TeamTab() {
             </div>
 
             {/* Payment Card */}
-            <div className="card" style={{ padding: '20px', backgroundColor: '#fff', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
+            <div ref={paymentCardRef} className="card" style={{ padding: '20px', backgroundColor: '#fff', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', scrollMarginTop: '70px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
                 <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#333', margin: 0 }}>💸 입금 안내</h3>
                 {!isPaymentEditing && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    {payments.length > 0 && (
+                      <button onClick={handleKakaoSharePayment} title="카카오톡으로 입금 안내 공유" aria-label="카카오톡으로 입금 안내 공유"
+                        style={{ width: '32px', height: '32px', padding: 0, fontSize: '16px', backgroundColor: '#fee500', border: 'none', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        💬
+                      </button>
+                    )}
                     {payments.length > 0 && (
                       <button onClick={handleCopyPaymentText} title="카톡 공유용 입금 안내 복사" aria-label="카톡 공유용 입금 안내 복사"
                         style={{ width: '32px', height: '32px', padding: 0, fontSize: '16px', backgroundColor: '#e6f4ea', border: 'none', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
