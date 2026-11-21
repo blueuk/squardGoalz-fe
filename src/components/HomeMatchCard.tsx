@@ -12,6 +12,7 @@ import blueTeam from '../img/blueTeam.png';
 import pinkTeam from '../img/pinkTeam.png';
 import ArrangeFixBoard from './ArrangeFixBoard';
 import { copyText } from './clipboard';
+import { KAKAO_TEXT_LIMIT, shareKakaoText } from './kakaoShare';
 import { useToast } from './Toast';
 import { usePermission } from '../permissions';
 import './HomeMatchCard.css';
@@ -71,26 +72,39 @@ const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(mi
 
 const pad2 = (n: number) => String(n).padStart(2, '0');
 
-// 카톡 공유용 배정 텍스트
-const buildShareText = (playDate: string, members: ArrangedMember[]) => {
-  const now = new Date();
-  const lookup = `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())} ${pad2(now.getHours())}:${pad2(now.getMinutes())}`;
+const shareTeamLines = (members: ArrangedMember[]) => {
   const teamNos = [...new Set(members.map(m => m.team_no))].sort((a, b) => a - b);
-  const teamLines = teamNos.map(no => {
+  return teamNos.map(no => {
     const names = members
       .filter(m => m.team_no === no)
       .sort((a, b) => a.keeper_order - b.keeper_order)
       .map(m => m.member_name);
     return `[${(TEAM_STYLES[no - 1] ?? TEAM_STYLES[0]).name}팀] ${names.join(', ')}`;
   });
+};
+
+const sharePlayDate = (playDate: string) => `${playDate.slice(0, 4)}-${playDate.slice(4, 6)}-${playDate.slice(6, 8)}`;
+
+// 카톡 공유용 배정 텍스트 (복사)
+const buildShareText = (playDate: string, members: ArrangedMember[]) => {
+  const now = new Date();
+  const lookup = `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())} ${pad2(now.getHours())}:${pad2(now.getMinutes())}`;
   return [
     '⚽ 풋고추 FC 팀 배정',
-    `📅 경기일: ${playDate.slice(0, 4)}-${playDate.slice(4, 6)}-${playDate.slice(6, 8)}`,
+    `📅 경기일: ${sharePlayDate(playDate)}`,
     `🕒 조회일시: ${lookup}`,
     '',
-    ...teamLines,
+    ...shareTeamLines(members),
   ].join('\n');
 };
+
+// 카카오톡 공유 메시지 (글자 수 제한이 있어 조회일시는 뺌)
+const buildKakaoText = (playDate: string, members: ArrangedMember[]) => [
+  '⚽ 풋고추 FC 팀 배정',
+  `📅 경기일: ${sharePlayDate(playDate)}`,
+  '',
+  ...shareTeamLines(members),
+].join('\n');
 
 const MANUAL_HINT = 'Ctrl+클릭: 특정 선수를 미리 팀에 지정';
 const RECENT_PREVIEW_COUNT = 3; // 리롤 시 비교할 최근 미리보기 수
@@ -303,6 +317,22 @@ export default function HomeMatchCard({ onGoSchedule }: { onGoSchedule: () => vo
     if (!schedule || arrangement.length === 0) return;
     const ok = await copyText(buildShareText(schedule.play_date, arrangement));
     showToast(ok ? '✅ 복사되었습니다. 카톡에 붙여넣어 주세요' : '복사에 실패했습니다');
+  };
+
+  // 카카오톡 공유: 안 되면(글자 수 초과, SDK 실패) 복사로 대신함
+  const handleKakaoShare = async () => {
+    if (!schedule || arrangement.length === 0) return;
+    const text = buildKakaoText(schedule.play_date, arrangement);
+    if (text.length <= KAKAO_TEXT_LIMIT) {
+      try {
+        await shareKakaoText(text, '풋고추FC에서 보기');
+        return;
+      } catch (err) {
+        console.error('카카오톡 공유 실패', err);
+      }
+    }
+    const ok = await copyText(buildShareText(schedule.play_date, arrangement));
+    showToast(ok ? '카톡 공유를 열 수 없어 복사했어요. 카톡에 붙여넣어 주세요' : '공유에 실패했습니다');
   };
 
 
@@ -537,6 +567,9 @@ export default function HomeMatchCard({ onGoSchedule }: { onGoSchedule: () => vo
       ) : arrangement.length > 0 ? (
         <>
           {renderTeams(arrangement)}
+          <button className="arrange-btn kakao" onClick={handleKakaoShare}>
+            <span aria-hidden="true">💬</span> 카카오톡으로 공유
+          </button>
           {canArrange && (
             <div className="arrange-actions">
               <button className="arrange-btn ghost" onClick={openForm} title={MANUAL_HINT}>다시 배정</button>

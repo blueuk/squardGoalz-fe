@@ -471,6 +471,14 @@
 .arrange-btn.ghost { background: #f2f4f6; color: #4e5968; }
 .arrange-btn.green { background: #22b35e; color: #fff; }
 
+/* 저장된 배정 아래 카카오톡 공유 (카카오 노란색) */
+.arrange-btn.kakao {
+  width: 100%;
+  margin-top: 0.75rem;
+  background: #fee500;
+  color: #191919;
+}
+
 .arrange-btn.big {
   width: 100%;
   padding: 1.1rem;
