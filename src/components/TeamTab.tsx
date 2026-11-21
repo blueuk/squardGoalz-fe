@@ -1282,6 +1282,11 @@ export default function TeamTab() {
                                 {mbtiByMember[member.member_uid]}
                               </span>
                             )}
+                            {TYPES[mbtiByMember[member.member_uid]] && (
+                              <span style={{ backgroundColor: '#f2f4f6', color: '#4e5968', padding: '3px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold' }}>
+                                {TYPES[mbtiByMember[member.member_uid]].name}
+                              </span>
+                            )}
                           </div>
                           {/* Position score pills: FIX, CEN, ALA, PIV, GOL with white text on position color */}
                           <PositionLabels memberScoreList={memberScoreList} positionWeights={positionWeights} />
