@@ -10,6 +10,9 @@ import SettingsTab from './SettingsTab';
 import PendingMembersCard from './PendingMembersCard';
 import { usePermission } from '../permissions';
 import { TYPES, type SavedMbti } from './mbtiData';
+import MemberIdSlider from './MemberIdSlider';
+import { profileImageUrl } from './profileImage';
+import teamLogoImg from '../img/teamlogo.png';
 import './TeamTab.css';
 import {
   POSITIONS,
@@ -112,6 +115,13 @@ const NEW_SCORE_ITEM_DEFAULT = 10;
 
 type SubTab = 'INFO' | 'SQUAD' | 'SETTINGS';
 const SUB_TAB_LABELS: Record<SubTab, string> = { INFO: '팀관리', SQUAD: '선수단', SETTINGS: '설정' };
+
+const formatPhone = (p: string) => {
+  const d = p.replace(/\D/g, '');
+  if (d.length === 11) return `${d.slice(0, 3)}-${d.slice(3, 7)}-${d.slice(7)}`;
+  if (d.length === 10) return `${d.slice(0, 3)}-${d.slice(3, 6)}-${d.slice(6)}`;
+  return p;
+};
 
 // 입금 안내 예금주 (공개 화면·공유 문구용으로 가운데 글자 마스킹)
 const getAccountHolder = (paymentCd: string) => (paymentCd === '01' ? '이*범' : '강*지');
@@ -491,6 +501,36 @@ export default function TeamTab({ focusPayment = false, onFocused }: { focusPaym
 
   // Terminated members (탈퇴자 관리 권한)
   const [terminatedMembers, setTerminatedMembers] = useState<TeamMember[]>([]);
+
+  // 전화번호: 카카오 계정(user_id) -> 전화번호 (계정이 연결된 선수만)
+  const [phoneByUser, setPhoneByUser] = useState<Record<string, string>>({});
+  useEffect(() => {
+    api.get('/user/get')
+      .then(res => setPhoneByUser(Object.fromEntries(
+        (res.data || []).filter((u: { phone?: string }) => u.phone).map((u: { userid: string; phone: string }) => [u.userid, u.phone])
+      )))
+      .catch(err => console.error('전화번호 조회 실패:', err));
+  }, []);
+
+  // 프로필 사진: member_uid -> 버전 (사진이 있는 선수만)
+  const [photoVersions, setPhotoVersions] = useState<Record<string, string>>({});
+  useEffect(() => {
+    api.get('/profile/search', { params: { team_uid: TEAM_UID } })
+      .then(res => setPhotoVersions(Object.fromEntries((res.data || []).map((p: { member_uid: string; version: string }) => [p.member_uid, p.version]))))
+      .catch(err => console.error('프로필 사진 조회 실패:', err));
+  }, []);
+
+  // 선수 카드에서 상태를 고르는 중인 선수 (관리자)
+  const [statusPickerUid, setStatusPickerUid] = useState<string | null>(null);
+
+  // 선수 카드 펼치기 (능력치 수정 중이면 확인)
+  const toggleExpanded = (memberUid: string) => {
+    if (editingMemberUid && editingMemberUid !== memberUid) {
+      if (!window.confirm('편집 중인 내용이 저장되지 않았습니다. 다른 선수로 이동하시겠습니까?')) return;
+      handleCancelEditScores();
+    }
+    setExpandedMemberUid(prev => (prev === memberUid ? null : memberUid));
+  };
 
   // 풋살 MBTI: member_uid -> 대표 유형 (필드 결과 우선, 없으면 골레이)
   const [mbtiByMember, setMbtiByMember] = useState<Record<string, string>>({});
@@ -1225,7 +1265,7 @@ export default function TeamTab({ focusPayment = false, onFocused }: { focusPaym
                 <div className="squad-header-title">
                   <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#191f28', margin: '0 0 4px 0' }}>🏃 선수단 명단</h3>
                   <p style={{ fontSize: '13px', color: '#8b95a1', margin: 0 }}>
-                    {canScoreEdit ? '선수를 탭하면 능력치를 확인하고 수정할 수 있습니다.' : '선수를 탭하면 6각형 능력치 레이더를 확인할 수 있습니다.'}
+                    좌우로 넘겨 선수 카드를 볼 수 있습니다.{(canMember || canScoreEdit) ? ' 펼치기를 누르면 능력치를 확인하고 수정할 수 있습니다.' : ''}
                   </p>
                 </div>
                 <div className="squad-header-actions">
@@ -1266,97 +1306,130 @@ export default function TeamTab({ focusPayment = false, onFocused }: { focusPaym
                 </div>
               )}
 
-              {/* Member List */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {teamMembers.map(member => {
-                  const isExpanded = expandedMemberUid === member.member_uid;
-                  const isEditingThisMember = editingMemberUid === member.member_uid;
+              {/* Member List: 신분증 모양 카드 슬라이더 */}
+              <MemberIdSlider
+                members={teamMembers}
+                renderCard={member => {
                   const memberScoreList = memberScores.filter(s => s.member_uid === member.member_uid);
-
-                  const avgScore = (() => {
-                    if (memberScoreList.length === 0) return '13.0';
-                    const sum = memberScoreList.reduce((acc, curr) => acc + (parseFloat(curr.score_val) || 0), 0);
-                    return (sum / memberScoreList.length).toFixed(1);
-                  })();
-
-                  let bgColor = '#e6f4ea'; let statusColor = '#137333';
-                  if (member.status_cd === '02') { bgColor = '#fce8e6'; statusColor = '#c5221f'; }
-                  else if (member.status_cd === '03') { bgColor = '#f1f3f4'; statusColor = '#5f6368'; }
-
-                  const radarScores = calculateRadarScores(memberScoreList);
-
+                  // 점수가 가장 높은 포지션 2개
+                  const positions = calculatePositionScores(memberScoreList, positionWeights)
+                    .sort((a, b) => b.score - a.score)
+                    .slice(0, 2);
+                  const statusCd = member.status_cd || '01';
+                  const mbti = mbtiByMember[member.member_uid];
+                  const photo = photoVersions[member.member_uid];
+                  const phone = member.user_id ? phoneByUser[member.user_id] : undefined;
+                  const isExpanded = expandedMemberUid === member.member_uid;
                   return (
-                    <div key={member.member_uid} style={{
-                      border: isExpanded ? '1.5px solid var(--toss-blue)' : '1px solid #f2f4f6',
-                      borderRadius: '16px', backgroundColor: '#fff',
-                      boxShadow: isExpanded ? '0 4px 16px rgba(49,130,246,0.08)' : '0 2px 6px rgba(0,0,0,0.02)',
-                      overflow: 'hidden', transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
-                    }}>
-                      {/* Card Header */}
-                      <div onClick={() => {
-                        if (editingMemberUid && editingMemberUid !== member.member_uid) {
-                          if (!window.confirm('편집 중인 내용이 저장되지 않았습니다. 다른 선수로 이동하시겠습니까?')) return;
-                          handleCancelEditScores();
-                        }
-                        setExpandedMemberUid(isExpanded ? null : member.member_uid);
-                      }} className={`member-card-header${canMember ? ' member-card-header--admin' : ''}`} style={{
-                        padding: '14px 16px', backgroundColor: isExpanded ? '#fbfcfe' : '#fff', cursor: 'pointer'
-                      }}>
-                        <div className="member-card-info">
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', marginBottom: '2px' }}>
-                            <span className="member-card-name" style={{ fontWeight: 'bold', fontSize: '16px', color: '#191f28' }}>{member.member_name}</span>
-                            {member.user_id && (
-                              <span style={{ backgroundColor: '#FEE500', color: '#000', padding: '2px 6px', borderRadius: '4px', fontSize: '10px', fontWeight: 'bold' }}>K</span>
-                            )}
-                            <span style={{ backgroundColor: bgColor, color: statusColor, padding: '3px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold' }}>
-                              {getCodeName('status_cd', member.status_cd) || '상태 없음'}
-                            </span>
-                            {mbtiByMember[member.member_uid] && (
-                              <span title={`풋살 MBTI · ${TYPES[mbtiByMember[member.member_uid]]?.name ?? ''}`}
-                                style={{ backgroundColor: '#e8f3ff', color: 'var(--toss-blue)', padding: '3px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold', letterSpacing: '0.5px' }}>
-                                {mbtiByMember[member.member_uid]}
-                              </span>
-                            )}
-                            {TYPES[mbtiByMember[member.member_uid]] && (
-                              <span style={{ backgroundColor: '#f2f4f6', color: '#4e5968', padding: '3px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold' }}>
-                                {TYPES[mbtiByMember[member.member_uid]].name}
-                              </span>
-                            )}
-                          </div>
-                          {/* Position score pills: FIX, CEN, ALA, PIV, GOL with white text on position color */}
-                          <PositionLabels memberScoreList={memberScoreList} positionWeights={positionWeights} />
-                        </div>
-
-                        <div className="member-card-actions">
-                          {canMember && (
-                            <>
-                              <select onClick={e => e.stopPropagation()} value={member.status_cd || '01'}
-                                onChange={e => updateMemberStatus(member.member_uid, e.target.value)}
-                                style={{ fontSize: '12px', padding: '4px 6px', borderRadius: '6px', border: '1px solid #ddd', backgroundColor: '#fff', margin: 0 }}>
-                                {codeLists.status_cd?.map(c => <option key={c.code} value={c.code}>{c.code_name}</option>)}
-                              </select>
-                              <button onClick={e => { e.stopPropagation(); handleDeleteMember(member); }}
-                                style={{ fontSize: '12px', padding: '4px 8px', borderRadius: '6px', border: 'none', backgroundColor: '#fce8e6', color: '#f04452', cursor: 'pointer', fontWeight: 'bold' }}>
-                                🗑️
-                              </button>
-                            </>
-                          )}
-                          {/* 화살표 전용 토글 버튼 (스탯보기/스탯접기 문구 제거) */}
-                          <span style={{
-                            fontSize: '14px', fontWeight: 'bold',
-                            color: isExpanded ? 'var(--toss-blue, #3182f6)' : '#8b95a1',
-                            backgroundColor: isExpanded ? 'var(--toss-light-blue, #e8f3ff)' : '#f2f4f6',
-                            width: '32px', height: '32px', borderRadius: '50%',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            transition: 'all 0.2s'
-                          }}>
-                            {isExpanded ? '▴' : '▾'}
-                          </span>
-                        </div>
+                    <div className={`id-card${isExpanded ? ' expanded' : ''}`}>
+                      <div className="id-card-band">
+                        <img src={teamLogoImg} alt="" />
+                        <span>풋고추FC</span>
+                        <em>PLAYER</em>
                       </div>
+                      <div className="id-card-body">
+                        <div className="id-card-main">
+                          {/* 왼쪽: 프로필 / 이름 */}
+                          <div className="id-card-profile">
+                            <div className="id-card-photo">
+                              {photo ? <img src={profileImageUrl(TEAM_UID, member.member_uid, photo)} alt="" loading="lazy" /> : <span>👤</span>}
+                            </div>
+                            <div className="id-card-name">{member.member_name}</div>
+                          </div>
+                          {/* 오른쪽: 능력치 6각형 그래프 (수치는 능력치 보기 권한자만) */}
+                          <div className="id-card-radar">
+                            <RadarChart scores={calculateRadarScores(memberScoreList)} size={200} showValues={canScoreView} />
+                          </div>
+                        </div>
+                        <dl className="id-card-info">
+                          <div>
+                            <dt>주 포지션</dt>
+                            <dd className="id-card-positions">
+                              {/* 점수는 능력치 보기 권한자만 */}
+                              {positions.map((pos, i) => (
+                                <span key={pos.code} style={{ backgroundColor: pos.bgColor }}>
+                                  {i === 0 && '★ '}{pos.name}{canScoreView && ` ${pos.score.toFixed(1)}`}
+                                </span>
+                              ))}
+                            </dd>
+                          </div>
+                          <div>
+                            <dt>풋살 MBTI</dt>
+                            <dd>{mbti ? <><b>{mbti}</b> {TYPES[mbti]?.name}</> : <span className="muted">미등록</span>}</dd>
+                          </div>
+                          <div>
+                            <dt>전화번호</dt>
+                            <dd>{phone ? <a href={`tel:${phone.replace(/\D/g, '')}`}>{formatPhone(phone)}</a> : <span className="muted">-</span>}</dd>
+                          </div>
+                          <div>
+                            <dt>상태</dt>
+                            <dd>
+                              {/* 일반: 라벨만 / 관리자: 같은 모양의 라벨을 누르면 상태를 고를 수 있음 */}
+                              {canMember && statusPickerUid === member.member_uid ? (
+                                <span className="id-card-status-pick" role="radiogroup" aria-label={`${member.member_name} 상태`}>
+                                  {codeLists.status_cd?.map(c => (
+                                    <button
+                                      key={c.code}
+                                      role="radio"
+                                      aria-checked={statusCd === c.code}
+                                      className={`id-card-status-label status-${c.code}${statusCd === c.code ? ' current' : ''}`}
+                                      onClick={() => {
+                                        setStatusPickerUid(null);
+                                        if (c.code !== statusCd) updateMemberStatus(member.member_uid, c.code);
+                                      }}
+                                    >
+                                      {c.code_name}
+                                    </button>
+                                  ))}
+                                </span>
+                              ) : canMember ? (
+                                <button
+                                  className={`id-card-status-label status-${statusCd} editable`}
+                                  onClick={() => setStatusPickerUid(member.member_uid)}
+                                  title="눌러서 상태 변경"
+                                >
+                                  {getCodeName('status_cd', statusCd) || '-'} ▾
+                                </button>
+                              ) : (
+                                <span className={`id-card-status-label status-${statusCd}`}>{getCodeName('status_cd', statusCd) || '-'}</span>
+                              )}
+                            </dd>
+                          </div>
+                        </dl>
+                      </div>
+                      {(canMember || canScoreEdit) && (
+                        <div className="id-card-actions">
+                          {canMember && (
+                            <button className="danger" onClick={() => handleDeleteMember(member)}>탈퇴</button>
+                          )}
+                          <button className={isExpanded ? 'on' : ''} onClick={() => toggleExpanded(member.member_uid)}>
+                            {isExpanded ? '접기 ▴' : '펼치기 ▾'}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                }}
+              />
 
-                      {/* Expanded Section */}
-                      {isExpanded && (
+              {/* 펼친 선수의 능력치 (관리자) */}
+              {(() => {
+                const member = teamMembers.find(m => m.member_uid === expandedMemberUid);
+                if (!member) return null;
+                const isEditingThisMember = editingMemberUid === member.member_uid;
+                const memberScoreList = memberScores.filter(s => s.member_uid === member.member_uid);
+                const avgScore = (() => {
+                  if (memberScoreList.length === 0) return '13.0';
+                  const sum = memberScoreList.reduce((acc, curr) => acc + (parseFloat(curr.score_val) || 0), 0);
+                  return (sum / memberScoreList.length).toFixed(1);
+                })();
+                const radarScores = calculateRadarScores(memberScoreList);
+                return (
+                  <div className="id-card-detail">
+                    <div className="id-card-detail-title">
+                      <b>{member.member_name}</b> 능력치
+                      <button onClick={() => toggleExpanded(member.member_uid)} aria-label="접기">✕</button>
+                    </div>
                         <div className="member-expanded" style={{ backgroundColor: '#ffffff', borderTop: '1px solid #f2f4f6' }}>
                           {/* 6각형 그래프 영역 (모든 사용자에게 노출) */}
                           <div className="radar-box" style={{ marginBottom: '18px', padding: '14px', backgroundColor: '#f9fafb', borderRadius: '12px', border: '1px solid #f2f4f6', textAlign: 'center' }}>
@@ -1471,11 +1544,9 @@ export default function TeamTab({ focusPayment = false, onFocused }: { focusPaym
                             })}
                           </div>
                         </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Terminated Members (관리자 전용) */}
