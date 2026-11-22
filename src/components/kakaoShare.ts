@@ -41,6 +41,18 @@ const loadKakao = (): Promise<KakaoSdk> => {
   return loading;
 };
 
+// 이미지 카드 공유: imageUrl 은 카카오 서버가 직접 가져가므로 누구나 열 수 있는 주소여야 함
+export async function shareKakaoFeed(opts: { title: string; description: string; imageUrl: string; buttonTitle: string; path?: string }) {
+  const kakao = await loadKakao();
+  const url = window.location.origin + (opts.path ?? '/');
+  const link = { mobileWebUrl: url, webUrl: url };
+  kakao.Share.sendDefault({
+    objectType: 'feed',
+    content: { title: opts.title, description: opts.description, imageUrl: opts.imageUrl, link },
+    buttons: [{ title: opts.buttonTitle, link }],
+  });
+}
+
 // 텍스트 메시지 공유: 카카오톡 공유 창이 열림. 메시지 버튼을 누르면 앱의 path 로 이동
 export async function shareKakaoText(text: string, buttonTitle = '앱에서 보기', path = '/') {
   if (text.length > KAKAO_TEXT_LIMIT) throw new Error(`공유 문구가 ${KAKAO_TEXT_LIMIT}자를 넘습니다.`);

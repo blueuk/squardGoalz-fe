@@ -14,6 +14,7 @@ import SoccerBallLoader from './components/SoccerBallLoader';
 import HomeMatchCard from './components/HomeMatchCard';
 import MyTab from './components/MyTab';
 import HelpTip from './components/HelpTip';
+import VideoShareButton from './components/VideoShareButton';
 import { PermissionProvider } from './permissions';
 import PendingGate from './components/PendingGate';
 import { rememberDeepLink, takeDeepLinkFromUrl, takeRememberedDeepLink, type DeepLink } from './deepLink';
@@ -65,7 +66,7 @@ function App() {
   const [rates, setRates] = useState<Rate[]>([]);
   // 공유 링크(/?go=payment)로 들어오면 해당 화면으로. 로그인 전이면 로그인 후 이어서 엶
   const [deepLink, setDeepLink] = useState<DeepLink | null>(() => takeDeepLinkFromUrl() ?? takeRememberedDeepLink());
-  const [activeTab, setActiveTab] = useState<'HOME' | 'VIDEO' | 'SCHEDULE' | 'TEAM' | 'MY'>(() => (deepLink === 'payment' ? 'TEAM' : 'HOME'));
+  const [activeTab, setActiveTab] = useState<'HOME' | 'VIDEO' | 'SCHEDULE' | 'TEAM' | 'MY'>(() => (deepLink === 'payment' ? 'TEAM' : deepLink === 'video' ? 'VIDEO' : 'HOME'));
   const ITEMS_PER_PAGE = 5;
 
   // 롤링(슬라이드) 상태 관리
@@ -409,9 +410,12 @@ function App() {
                 <div className="card">
                   <div className="card-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                     <span>최신 경기 영상</span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <VideoShareButton videos={videos} />
                     <a href="https://www.youtube.com/@FC_GreeN_PeppeR" target="_blank" rel="noopener noreferrer" style={{ fontSize: 'calc(13px * var(--scale-factor, 1))', color: 'var(--toss-blue)', textDecoration: 'none', fontWeight: 500 }}>
                       채널 가기 &gt;
                     </a>
+                    </span>
                   </div>
                   
                   <div className="youtube-slider">

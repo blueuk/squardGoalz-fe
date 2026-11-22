@@ -1,11 +1,11 @@
 // 공유 링크로 들어왔을 때 열 화면 (예: /?go=payment → 팀 탭 입금 안내)
 // 로그인이 필요하면 카카오 로그인을 다녀오는 동안 sessionStorage 에 보관했다가 이어서 엶
 
-export type DeepLink = 'payment';
+export type DeepLink = 'payment' | 'video';
 
 const PARAM = 'go';
 const STORAGE_KEY = 'pendingDeepLink';
-const VALID: DeepLink[] = ['payment'];
+const VALID: DeepLink[] = ['payment', 'video'];
 
 export const deepLinkPath = (target: DeepLink) => `/?${PARAM}=${target}`;
 
