@@ -7,7 +7,17 @@ const PARAM = 'go';
 const STORAGE_KEY = 'pendingDeepLink';
 const VALID: DeepLink[] = ['payment', 'video'];
 
-export const deepLinkPath = (target: DeepLink) => `/?${PARAM}=${target}`;
+export const deepLinkPath = (target: DeepLink | 'youtube') => `/?${PARAM}=${target}`;
+
+export const YOUTUBE_CHANNEL_URL = 'https://www.youtube.com/@FC_GreeN_PeppeR';
+
+// 카카오 공유 링크는 등록한 도메인만 쓸 수 있어 앱 주소(/?go=youtube)로 받은 뒤 바로 유튜브 채널로 넘김
+// (화면을 그리기 전, 로그인 확인 없이 실행). 넘겼으면 true
+export function redirectExternalDeepLink(): boolean {
+  if (new URLSearchParams(window.location.search).get(PARAM) !== 'youtube') return false;
+  window.location.replace(YOUTUBE_CHANNEL_URL);
+  return true;
+}
 
 const isDeepLink = (v: string | null): v is DeepLink => !!v && (VALID as string[]).includes(v);
 

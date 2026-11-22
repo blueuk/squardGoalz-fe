@@ -17,7 +17,7 @@ import HelpTip from './components/HelpTip';
 import VideoShareButton from './components/VideoShareButton';
 import { PermissionProvider } from './permissions';
 import PendingGate from './components/PendingGate';
-import { rememberDeepLink, takeDeepLinkFromUrl, takeRememberedDeepLink, type DeepLink } from './deepLink';
+import { rememberDeepLink, takeDeepLinkFromUrl, takeRememberedDeepLink, YOUTUBE_CHANNEL_URL, type DeepLink } from './deepLink';
 
 interface User {
   userid: string;
@@ -412,7 +412,7 @@ function App() {
                     <span>최신 경기 영상</span>
                     <span style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <VideoShareButton videos={videos} />
-                    <a href="https://www.youtube.com/@FC_GreeN_PeppeR" target="_blank" rel="noopener noreferrer" style={{ fontSize: 'calc(13px * var(--scale-factor, 1))', color: 'var(--toss-blue)', textDecoration: 'none', fontWeight: 500 }}>
+                    <a href={YOUTUBE_CHANNEL_URL} target="_blank" rel="noopener noreferrer" style={{ fontSize: 'calc(13px * var(--scale-factor, 1))', color: 'var(--toss-blue)', textDecoration: 'none', fontWeight: 500 }}>
                       채널 가기 &gt;
                     </a>
                     </span>

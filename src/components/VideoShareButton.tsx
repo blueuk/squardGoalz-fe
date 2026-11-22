@@ -1,7 +1,7 @@
 import { copyText } from './clipboard';
 import { shareKakaoFeed } from './kakaoShare';
 import { useToast } from './Toast';
-import { deepLinkPath } from '../deepLink';
+import { deepLinkPath, YOUTUBE_CHANNEL_URL } from '../deepLink';
 
 interface Video {
   title: string;
@@ -12,7 +12,7 @@ interface Video {
 // 영상 제목 앞의 경기일 (예: "2026년 11월 21일 5세트" → "2026년 11월 21일")
 const matchDateOf = (title: string) => title.match(/^\d{4}년\s*\d{1,2}월\s*\d{1,2}일/)?.[0] ?? null;
 
-// "이번 주 영상 업로드" 카카오톡 공유: 최신 경기일의 영상 수와 첫 썸네일로 카드를 보내고, 버튼은 앱 영상 목록으로
+// "이번 주 영상 업로드" 카카오톡 공유: 최신 경기일의 영상 수와 첫 썸네일로 카드를 보내고, 버튼은 유튜브 채널로
 export default function VideoShareButton({ videos }: { videos: Video[] }) {
   const { toast, showToast } = useToast();
   if (videos.length === 0) return null;
@@ -25,10 +25,10 @@ export default function VideoShareButton({ videos }: { videos: Video[] }) {
     const description = date ? `${date} 경기 · 영상 ${count}개` : latest.title;
     try {
       if (!latest.thumbnail) throw new Error('썸네일 없음');
-      await shareKakaoFeed({ title, description, imageUrl: latest.thumbnail, buttonTitle: '영상 보러가기', path: deepLinkPath('video') });
+      await shareKakaoFeed({ title, description, imageUrl: latest.thumbnail, buttonTitle: '유튜브에서 보기', path: deepLinkPath('youtube') });
     } catch (err) {
       console.error('카카오톡 공유 실패', err);
-      const ok = await copyText(`${title}\n${description}\n${window.location.origin}${deepLinkPath('video')}`);
+      const ok = await copyText(`${title}\n${description}\n${YOUTUBE_CHANNEL_URL}`);
       showToast(ok ? '카톡 공유를 열 수 없어 복사했어요. 카톡에 붙여넣어 주세요' : '공유에 실패했습니다');
     }
   };
