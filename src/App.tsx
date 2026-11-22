@@ -412,7 +412,7 @@ function App() {
                     <span>최신 경기 영상</span>
                     <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <VideoShareButton videos={videos} />
-                    <a href={YOUTUBE_CHANNEL_URL} target="_blank" rel="noopener noreferrer" style={{ padding: '4px 10px', borderRadius: '999px', background: '#ffe9e9', color: '#e5221f', fontSize: 'calc(12px * var(--scale-factor, 1))', fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap' }}>
+                    <a href={YOUTUBE_CHANNEL_URL} target="_blank" rel="noopener noreferrer" style={{ padding: '4px 10px', borderRadius: '999px', background: '#ff0000', color: '#fff', fontSize: 'calc(12px * var(--scale-factor, 1))', fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap' }}>
                       ▶ 채널 바로가기
                     </a>
                     </span>
