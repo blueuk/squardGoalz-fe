@@ -410,10 +410,10 @@ function App() {
                 <div className="card">
                   <div className="card-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                     <span>최신 경기 영상</span>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <VideoShareButton videos={videos} />
-                    <a href={YOUTUBE_CHANNEL_URL} target="_blank" rel="noopener noreferrer" style={{ padding: '4px 10px', borderRadius: '999px', background: '#ff0000', color: '#fff', fontSize: 'calc(12px * var(--scale-factor, 1))', fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap' }}>
-                      ▶ 채널 바로가기
+                    <a href={YOUTUBE_CHANNEL_URL} target="_blank" rel="noopener noreferrer" style={{ fontSize: 'calc(13px * var(--scale-factor, 1))', color: 'var(--toss-blue)', textDecoration: 'none', fontWeight: 500, whiteSpace: 'nowrap' }}>
+                      채널 바로가기 &gt;
                     </a>
                     </span>
                   </div>

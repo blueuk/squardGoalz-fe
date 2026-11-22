@@ -40,9 +40,18 @@ export default function VideoShareButton({ videos }: { videos: Video[] }) {
         onClick={share}
         title="카카오톡으로 영상 업로드 소식 공유"
         aria-label="카카오톡으로 영상 업로드 소식 공유"
-        style={{ padding: '4px 10px', border: 'none', borderRadius: '999px', background: '#fee500', color: '#191919', fontSize: 'calc(12px * var(--scale-factor, 1))', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}
+        style={{ margin: 0, padding: 0, border: 'none', background: 'none', color: 'var(--toss-blue)', fontSize: 'calc(13px * var(--scale-factor, 1))', fontWeight: 500, cursor: 'pointer', whiteSpace: 'nowrap' }}
       >
-        💬 공유
+        {/* 공유 아이콘: 점 세 개가 이어진 < 모양 */}
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"
+          aria-hidden="true" style={{ verticalAlign: '-2px', marginRight: '3px' }}>
+          <circle cx="18" cy="5" r="3" />
+          <circle cx="6" cy="12" r="3" />
+          <circle cx="18" cy="19" r="3" />
+          <line x1="8.6" y1="10.5" x2="15.4" y2="6.5" />
+          <line x1="8.6" y1="13.5" x2="15.4" y2="17.5" />
+        </svg>
+        공유
       </button>
     </>
   );
