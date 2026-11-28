@@ -242,3 +242,306 @@ button.ui-chip {
 
 .ui-btn-row > .ui-btn { flex: 1; }
 .ui-btn-row > .ui-btn.is-main { flex: 2; }
+
+/* 입력칸 · 셀렉트박스 --------------------------------------------------
+   <input class="ui-input">  <Select> (Select.tsx, 펼친 목록까지 앱 디자인)
+   높이 44 · 모서리 12 · 글자 16 (아이폰 확대 방지) · 누르면 초록 테두리.  -sm: 빽빽한 수정 화면 (높이 40) */
+.ui-input.ui-input,
+.ui-select.ui-select {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+  height: 44px;
+  margin: 0;
+  padding: 0 12px;
+  box-sizing: border-box;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--r-12);
+  background: #fff;
+  color: var(--gray-900);
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.2;
+  text-align: left;
+  box-shadow: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.ui-input.ui-input::placeholder {
+  color: var(--gray-400);
+  font-weight: 400;
+}
+
+.ui-input.ui-input:focus,
+.ui-select.ui-select:focus-visible,
+.ui-select.ui-select.is-open {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-soft);
+}
+
+.ui-input.ui-input:disabled,
+.ui-input.ui-input[readonly],
+.ui-select.ui-select:disabled {
+  background: var(--gray-50);
+  color: var(--gray-500);
+  cursor: default;
+}
+
+.ui-input.ui-input.ui-input-sm,
+.ui-select.ui-select.ui-select-sm {
+  height: 40px;
+  border-radius: 10px;
+}
+
+/* 숫자(금액·계좌)는 자릿수가 줄 맞게 */
+.ui-input.ui-input.is-number {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.2px;
+}
+
+textarea.ui-input.ui-input {
+  height: auto;
+  min-height: 88px;
+  padding: 10px 12px;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+/* 셀렉트 버튼 */
+.ui-select.ui-select {
+  justify-content: space-between;
+  gap: 8px;
+  padding-right: 10px;
+  cursor: pointer;
+}
+
+.ui-select-value {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ui-select-caret {
+  color: var(--gray-500);
+  transition: transform 0.15s ease;
+}
+
+.ui-select.is-open .ui-select-caret {
+  transform: rotate(180deg);
+  color: var(--color-primary);
+}
+
+/* 펼친 목록 */
+.ui-select-list {
+  position: fixed;
+  z-index: 10001; /* 알림창·확인 창 위 */
+  margin: 0;
+  padding: 6px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  list-style: none;
+  box-sizing: border-box;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--r-12);
+  background: #fff;
+  box-shadow: var(--shadow-float);
+  outline: none;
+  animation: ui-fade-in 0.12s ease;
+}
+
+.ui-select-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 10px 0 12px;
+  border-radius: 8px;
+  color: var(--gray-800);
+  font-size: calc(var(--fs-15) * var(--scale-factor, 1));
+  font-weight: 500;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ui-select-option.is-active {
+  background: var(--gray-50);
+}
+
+.ui-select-option[aria-selected='true'] {
+  color: var(--color-primary);
+  font-weight: 700;
+}
+
+.ui-select-option[aria-selected='true'].is-active {
+  background: var(--color-primary-soft);
+}
+
+.ui-select-option[aria-disabled='true'] {
+  color: var(--gray-400);
+  cursor: default;
+}
+
+.ui-select-check {
+  flex: 0 0 auto;
+  color: var(--color-primary);
+}
+
+/* 알림창 · 확인 창 (Dialog.tsx, 일정 확인 창, 팀 배정 창) -------------------- */
+.ui-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px max(16px, env(safe-area-inset-right, 0px)) 20px max(16px, env(safe-area-inset-left, 0px));
+  background: rgba(25, 31, 40, 0.5);
+  animation: ui-fade-in 0.15s ease;
+}
+
+.ui-modal {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: 340px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-sizing: border-box;
+  padding: 24px 20px 20px;
+  border-radius: var(--r-20);
+  background: #fff;
+  box-shadow: var(--shadow-float);
+  animation: ui-pop-in 0.18s ease;
+}
+
+.ui-modal.is-center {
+  align-items: stretch;
+  text-align: center;
+}
+
+.ui-modal-icon {
+  font-size: 36px;
+  line-height: 1;
+  text-align: center;
+}
+
+.ui-modal-title {
+  margin: 0;
+  font-size: calc(var(--fs-17) * var(--scale-factor, 1));
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--gray-900);
+  text-wrap: balance;
+}
+
+.ui-modal-title.is-danger {
+  color: var(--red-500);
+}
+
+.ui-modal-body {
+  margin: 0;
+  font-size: calc(var(--fs-15) * var(--scale-factor, 1));
+  line-height: 1.55;
+  color: var(--gray-700);
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.ui-modal-title + .ui-modal-body {
+  font-size: calc(var(--fs-14) * var(--scale-factor, 1));
+  color: var(--gray-600);
+}
+
+.ui-modal-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.ui-modal-actions > .ui-btn {
+  flex: 1;
+}
+
+@keyframes ui-fade-in {
+  from { opacity: 0; }
+}
+
+@keyframes ui-pop-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-modal-overlay,
+  .ui-modal {
+    animation: none;
+  }
+}
+
+/* 수정 화면: 라벨 + 입력칸 줄 ---------------------------------------------- */
+.ui-field-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ui-field-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.ui-field-col {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ui-field-label {
+  flex: 0 0 64px;
+  color: var(--gray-600);
+  font-size: calc(var(--fs-14) * var(--scale-factor, 1));
+  font-weight: 600;
+}
+
+.ui-field-row > .ui-input,
+.ui-field-row > .ui-select {
+  flex: 1;
+}
+
+/* 입금 안내 수정: 회비·지각비 한 묶음 */
+.ui-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  border-radius: var(--r-12);
+  background: var(--gray-50);
+}
+
+
+/* 좁은 숫자 칸 (능력치 점수 · 가중치): 여백 줄이고 가운데 */
+.ui-input.ui-input.is-compact {
+  padding: 0 6px;
+  text-align: center;
+  -moz-appearance: textfield;
+}
+
+.ui-input.is-compact::-webkit-inner-spin-button,
+.ui-input.is-compact::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* 나란히 놓는 버튼 묶음 (취소 · 저장 등): 사이 8 */
+.ui-btn-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}

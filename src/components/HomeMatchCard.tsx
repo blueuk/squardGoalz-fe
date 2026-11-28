@@ -17,6 +17,8 @@ import { useToast } from './Toast';
 import { usePermission } from '../permissions';
 import './HomeMatchCard.css';
 import Icon from './Icon';
+import { showAlert, showConfirm } from './Dialog';
+import Select from './Select';
 
 const TEAM_UID = 'df743e05-9440-4c1e-bfdb-fa07159ef0c9';
 
@@ -281,7 +283,7 @@ export default function HomeMatchCard({ onGoSchedule }: { onGoSchedule: () => vo
       setShowModal(true);
     } catch (err) {
       console.error(err);
-      alert('참석자 정보를 불러오지 못했습니다.');
+      showAlert('참석자 정보를 불러오지 못했습니다.');
     } finally {
       setBusy(false);
     }
@@ -289,7 +291,7 @@ export default function HomeMatchCard({ onGoSchedule }: { onGoSchedule: () => vo
 
   const runArrange = () => {
     if (participants.length + mercCount === 0) {
-      alert('참석자가 없습니다. 투표 현황 또는 용병 수를 확인해주세요.');
+      showAlert('참석자가 없습니다. 투표 현황 또는 용병 수를 확인해주세요.');
       return;
     }
     // 다시 배정이면 저장된 배정과 비교해 흩어지게 함
@@ -339,7 +341,7 @@ export default function HomeMatchCard({ onGoSchedule }: { onGoSchedule: () => vo
 
   const saveArrange = async () => {
     if (!schedule || !preview) return;
-    if (arrangement.length > 0 && !window.confirm('기존 팀 배정 이력을 새 배정으로 교체하시겠습니까?')) return;
+    if (arrangement.length > 0 && !(await showConfirm('기존 팀 배정 이력을 새 배정으로 교체하시겠습니까?', { confirmText: '교체' }))) return;
     setBusy(true);
     setBusyMessage('팀 배정을 저장하는 중...');
     try {
@@ -351,10 +353,10 @@ export default function HomeMatchCard({ onGoSchedule }: { onGoSchedule: () => vo
       });
       setArrangement(preview);
       setPreview(null);
-      alert('팀 배정이 저장되었습니다.');
+      showAlert('팀 배정이 저장되었습니다.');
     } catch (err: any) {
       console.error(err);
-      alert(err.response?.data?.detail || '팀 배정 저장에 실패했습니다.');
+      showAlert(err.response?.data?.detail || '팀 배정 저장에 실패했습니다.');
     } finally {
       setBusy(false);
     }
@@ -430,34 +432,34 @@ export default function HomeMatchCard({ onGoSchedule }: { onGoSchedule: () => vo
   };
 
   const renderModal = () => (
-    <div className="arrange-modal-overlay" onClick={() => setShowModal(false)}>
-      <div className={`arrange-modal${manualMode ? ' manual' : ''}`} onClick={e => e.stopPropagation()}>
-        <h3 className="arrange-modal-title">{manualMode ? '팀 배정 (선수 미리 지정)' : '팀 배정'}</h3>
+    <div className="ui-modal-overlay" onClick={() => setShowModal(false)}>
+      <div className={`ui-modal arrange-modal${manualMode ? ' manual' : ''}`} role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
+        <h3 className="ui-modal-title arrange-modal-title">{manualMode ? '팀 배정 (선수 미리 지정)' : '팀 배정'}</h3>
         <div className="arrange-form-fields">
           <label>
             용병 수
-            <input type="number" min={0} max={20} value={mercCount}
+            <input className="ui-input is-number" inputMode="numeric" type="number" min={0} max={20} value={mercCount}
               onChange={e => setMercCount(clamp(parseInt(e.target.value, 10) || 0, 0, 20))} />
           </label>
           <label>
             팀 수
-            <select value={teamCount} onChange={e => {
+            <Select className="ui-select" value={teamCount} onChange={e => {
               const count = Number(e.target.value);
               setTeamCount(count);
               setFixed(prev => trimFixedTeams(prev, count, teamSize));
             }}>
               {Array.from({ length: MAX_TEAM_COUNT - 1 }, (_, i) => i + 2).map(n => <option key={n} value={n}>{n}팀</option>)}
-            </select>
+            </Select>
           </label>
           <label>
             팀당 인원
-            <select value={teamSize} onChange={e => {
+            <Select className="ui-select" value={teamSize} onChange={e => {
               const size = Number(e.target.value);
               setTeamSize(size);
               setFixed(prev => trimFixedTeams(prev, teamCount, size));
             }}>
               {Array.from({ length: MAX_TEAM_SIZE - MIN_TEAM_SIZE + 1 }, (_, i) => i + MIN_TEAM_SIZE).map(n => <option key={n} value={n}>{n}명</option>)}
-            </select>
+            </Select>
           </label>
         </div>
         {manualMode && (

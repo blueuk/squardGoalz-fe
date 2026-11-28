@@ -14,6 +14,7 @@ import VideoShareButton from './components/VideoShareButton';
 import { PermissionProvider } from './permissions';
 import PendingGate from './components/PendingGate';
 import { rememberDeepLink, takeDeepLinkFromUrl, takeRememberedDeepLink, YOUTUBE_CHANNEL_URL, type DeepLink } from './deepLink';
+import { showAlert } from './components/Dialog';
 
 interface User {
   userid: string;
@@ -225,12 +226,12 @@ function App() {
       const res = await api.post('/login/register', formData, {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
       });
-      alert(res.data?.linked
+      await showAlert(res.data?.linked
         ? '회원가입이 완료되었습니다!'
         : '회원가입이 완료되었습니다.\n관리자가 가입을 승인하면 이용할 수 있습니다.');
       window.location.href = '/';
     } catch (error: any) {
-      alert(error.response?.data?.detail || '회원가입 중 오류가 발생했습니다.');
+      showAlert(error.response?.data?.detail || '회원가입 중 오류가 발생했습니다.');
     }
   };
 
@@ -246,16 +247,16 @@ function App() {
           <form className="register-form" onSubmit={handleRegister}>
             <label className="register-field">
               <span>이름(실명)</span>
-              <input type="text" name="username" autoComplete="name" required />
+              <input className="ui-input" type="text" name="username" autoComplete="name" required />
             </label>
             <label className="register-field">
               <span>닉네임</span>
-              <input type="text" name="nickname" autoComplete="nickname" defaultValue={registerNickname || ''} required />
+              <input className="ui-input" type="text" name="nickname" autoComplete="nickname" defaultValue={registerNickname || ''} required />
             </label>
             <label className="register-field">
               <span>전화번호</span>
               {/* 숫자만 입력: 붙여넣기/자동완성으로 들어온 하이픈·공백도 제거 */}
-              <input
+              <input className="ui-input is-number"
                 type="tel" name="phone" inputMode="numeric" autoComplete="tel"
                 placeholder="01012345678" pattern="[0-9]{10,11}" title="숫자 10~11자리를 입력해주세요" required
                 onInput={e => { e.currentTarget.value = e.currentTarget.value.replace(/\D/g, '').slice(0, 11); }}

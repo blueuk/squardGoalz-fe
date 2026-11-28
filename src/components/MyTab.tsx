@@ -13,6 +13,7 @@ import { statusLabelClass } from './ui';
 import { profileImageUrl, resizeProfileImage } from './profileImage';
 import './MyTab.css';
 import Icon from './Icon';
+import { showConfirm } from './Dialog';
 
 const TEAM_UID = 'df743e05-9440-4c1e-bfdb-fa07159ef0c9';
 
@@ -110,7 +111,7 @@ export default function MyTab({ user, myInfo, onStatusChanged, onLogout }: Props
   };
 
   const deletePhoto = async () => {
-    if (!memberUid || !window.confirm('프로필 사진을 삭제할까요?')) return;
+    if (!memberUid || !(await showConfirm('프로필 사진을 삭제할까요?', { tone: 'danger', confirmText: '삭제' }))) return;
     setPhotoBusy(true);
     try {
       await api.post('/profile/delete', { team_uid: TEAM_UID, member_uid: memberUid });
