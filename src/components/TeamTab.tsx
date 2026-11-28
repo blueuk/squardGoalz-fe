@@ -26,6 +26,7 @@ import {
 import Icon from './Icon';
 import { showAlert, showConfirm } from './Dialog';
 import Select from './Select';
+import Emoji from './Emoji';
 
 // ─── Interfaces ───────────────────────────────────────────────────────────────
 interface TeamInfo {
@@ -281,7 +282,7 @@ function WeightEditor({
               key={pos.code}
               onClick={() => setActivePos(pos.code)}
             >
-              {pos.name} ({pos.abbr}) {!valid && '⚠️'}
+              {pos.name} ({pos.abbr}) {!valid && <Emoji char="⚠️" />}
             </button>
           );
         })}
@@ -303,7 +304,7 @@ function WeightEditor({
         alignItems: 'center'
       }}>
         <span>선택 포지션: {POSITIONS.find(p => p.code === activePos)?.name} ({activePos})</span>
-        <span>가중치 총합: {currentTotal.toFixed(4)} / 1.0000 {isTotalValid ? '✅' : '⚠️'}</span>
+        <span>가중치 총합: {currentTotal.toFixed(4)} / 1.0000 {isTotalValid ? <Emoji char="✅" /> : <Emoji char="⚠️" />}</span>
       </div>
 
       <div style={{ maxHeight: '300px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '6px', paddingRight: '4px' }}>
@@ -340,7 +341,7 @@ function WeightEditor({
       {/* Add score item */}
       <div style={{ marginTop: '12px', padding: '12px', backgroundColor: '#fff', borderRadius: '10px', border: '1px dashed var(--color-primary-border)' }}>
         <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#191f28', marginBottom: '8px' }}>
-          ➕ 가중치 항목 추가
+          <Icon name="plus" size={16} /> 가중치 항목 추가
           <span style={{ marginLeft: '6px', fontSize: '11px', fontWeight: 500, color: '#8b95a1' }}>
             (모든 포지션 가중치 0, 선수단 전원 기본 {NEW_SCORE_ITEM_DEFAULT}점)
           </span>
@@ -1257,7 +1258,7 @@ export default function TeamTab({ focusPayment = false, onFocused }: { focusPaym
                           {/* 왼쪽: 프로필 / 이름 */}
                           <div className="id-card-profile">
                             <div className="id-card-photo">
-                              {photo ? <img src={profileImageUrl(TEAM_UID, member.member_uid, photo)} alt="" loading="lazy" /> : <span>👤</span>}
+                              {photo ? <img src={profileImageUrl(TEAM_UID, member.member_uid, photo)} alt="" loading="lazy" /> : <span><Emoji char="👤" /></span>}
                             </div>
                             <div className="id-card-name">{member.member_name}</div>
                           </div>
@@ -1370,7 +1371,7 @@ export default function TeamTab({ focusPayment = false, onFocused }: { focusPaym
                               <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#191f28' }}>능력치 리포트</span>
                               {canScoreView ? (
                                 <span style={{ fontSize: '12px', color: 'var(--toss-blue)', fontWeight: 'bold', backgroundColor: 'var(--toss-light-blue)', padding: '2px 8px', borderRadius: '8px' }}>
-                                  ⭐ 평균 {avgScore}점
+                                  <Emoji char="⭐" /> 평균 {avgScore}점
                                 </span>
                               ) : (
                                 <span style={{ fontSize: '11px', color: '#8b95a1', backgroundColor: '#f2f4f6', padding: '2px 8px', borderRadius: '8px' }}>
@@ -1385,7 +1386,7 @@ export default function TeamTab({ focusPayment = false, onFocused }: { focusPaym
                                     <Icon name="pencil-simple" size={16} /> 수정하기
                                   </button>
                                 ) : (
-                                  <span style={{ fontSize: '12px', color: 'var(--toss-blue)', fontWeight: 'bold' }}>✍️ 편집 중 (0~20점)</span>
+                                  <span style={{ fontSize: '12px', color: 'var(--toss-blue)', fontWeight: 'bold' }}><Emoji char="✍️" /> 편집 중 (0~20점)</span>
                                 )}
                               </div>
                             )}
@@ -1404,7 +1405,7 @@ export default function TeamTab({ focusPayment = false, onFocused }: { focusPaym
                                 <div key={category.id} style={{ backgroundColor: '#f9fafb', borderRadius: '12px', padding: '12px 14px', border: '1px solid #f2f4f6' }}>
                                   <div className="report-category-header" style={{ marginBottom: '10px' }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                      <span style={{ fontSize: '14px' }}>{category.icon}</span>
+                                      <Emoji char={category.icon} />
                                       <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#333d4b' }}>{category.title}</span>
                                     </div>
                                     {canScoreView && (
@@ -1451,7 +1452,7 @@ export default function TeamTab({ focusPayment = false, onFocused }: { focusPaym
                                               </div>
                                             )
                                           ) : (
-                                            <span style={{ fontSize: '12px', color: '#c5cdd7', fontWeight: 'bold' }}>🔒</span>
+                                            <span style={{ fontSize: '12px', color: '#c5cdd7', fontWeight: 'bold' }}><Icon name="lock-simple" size={16} /></span>
                                           )}
                                         </div>
                                       );

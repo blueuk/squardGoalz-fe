@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { emojify } from './Emoji';
 
 // 브라우저 기본 alert / confirm 대신 쓰는 앱 디자인 알림창
 //   showAlert('저장되었습니다.')                       → 확인 버튼 하나
@@ -86,7 +87,7 @@ export function DialogHost() {
         onClick={e => e.stopPropagation()}
       >
         {current.title && <h3 className="ui-modal-title" id={`ui-dialog-title-${current.id}`}>{current.title}</h3>}
-        <div className="ui-modal-body" id={`ui-dialog-msg-${current.id}`}>{current.message}</div>
+        <div className="ui-modal-body" id={`ui-dialog-msg-${current.id}`}>{emojify(current.message)}</div>
         <div className="ui-modal-actions">
           {isConfirm && (
             <button type="button" className="ui-btn ui-btn-md ui-btn-neutral" onClick={() => close(false)}>

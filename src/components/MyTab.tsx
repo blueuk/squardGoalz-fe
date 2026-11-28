@@ -14,6 +14,7 @@ import { profileImageUrl, resizeProfileImage } from './profileImage';
 import './MyTab.css';
 import Icon from './Icon';
 import { showConfirm } from './Dialog';
+import Emoji from './Emoji';
 
 const TEAM_UID = 'df743e05-9440-4c1e-bfdb-fa07159ef0c9';
 
@@ -238,11 +239,11 @@ export default function MyTab({ user, myInfo, onStatusChanged, onLogout }: Props
             aria-label="프로필 사진 바꾸기"
             title="프로필 사진 바꾸기"
           >
-            {photoVersion ? <img src={profileImageUrl(TEAM_UID, memberUid, photoVersion)} alt="" /> : '👤'}
+            {photoVersion ? <img src={profileImageUrl(TEAM_UID, memberUid, photoVersion)} alt="" /> : <Emoji char="👤" />}
             <span className="my-avatar-cam">{photoBusy ? '…' : <Icon name="camera" weight="fill" size={16} />}</span>
           </button>
         ) : (
-          <div className="my-avatar">👤</div>
+          <div className="my-avatar"><Emoji char="👤" /></div>
         )}
         <input ref={fileInput} type="file" accept="image/*" hidden onChange={uploadPhoto} />
         <div className="my-profile-text">

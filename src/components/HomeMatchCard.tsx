@@ -19,6 +19,7 @@ import './HomeMatchCard.css';
 import Icon from './Icon';
 import { showAlert, showConfirm } from './Dialog';
 import Select from './Select';
+import Emoji from './Emoji';
 
 const TEAM_UID = 'df743e05-9440-4c1e-bfdb-fa07159ef0c9';
 
@@ -549,7 +550,7 @@ export default function HomeMatchCard({ onGoSchedule }: { onGoSchedule: () => vo
           weather.map(w => (
             <span key={w.hour} className="match-weather-chip">
               <b>{String(w.hour).padStart(2, '0')}시</b>
-              <span>{getWeatherEmoji(w.code)}</span>
+              <Emoji char={getWeatherEmoji(w.code)} />
               <span>{w.temp}°</span>
               <span className="precip">{w.precip}mm</span>
             </span>
