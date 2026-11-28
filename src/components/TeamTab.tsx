@@ -991,9 +991,9 @@ export default function TeamTab({ focusPayment = false, onFocused }: { focusPaym
         {subTab === 'INFO' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
             {/* Team Info Card */}
-            <div className="card" style={{ padding: '20px', backgroundColor: '#fff', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
+            <div className="card">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-                <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#333', margin: 0 }}>⚽ 팀 정보</h3>
+                <h3 className="card-title">팀 정보</h3>
                 {canTeamEdit && !isEditing && (
                   <button className="ui-btn ui-btn-sm ui-btn-neutral" onClick={handleEditClick}>수정</button>
                 )}
@@ -1068,9 +1068,9 @@ export default function TeamTab({ focusPayment = false, onFocused }: { focusPaym
             </div>
 
             {/* Payment Card */}
-            <div ref={paymentCardRef} className="card" style={{ padding: '20px', backgroundColor: '#fff', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', scrollMarginTop: '70px' }}>
+            <div ref={paymentCardRef} className="card" style={{ scrollMarginTop: '70px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-                <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#333', margin: 0 }}>💸 입금 안내</h3>
+                <h3 className="card-title">입금 안내</h3>
                 {!isPaymentEditing && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     {payments.length > 0 && (
@@ -1171,10 +1171,10 @@ export default function TeamTab({ focusPayment = false, onFocused }: { focusPaym
 
             {/* Position Weight Section (Admin only) */}
             {canWeight && (
-              <div className="card" style={{ padding: '20px', backgroundColor: '#fff', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
+              <div className="card">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
-                    <h3 style={{ fontSize: '17px', fontWeight: 'bold', color: '#191f28', margin: 0 }}>⚖️ 포지션 가중치 관리</h3>
+                    <h3 className="card-title">포지션 가중치 관리</h3>
                     <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#8b95a1' }}>
                       포지션별 스탯 가중치를 설정합니다. (각 포지션별 총합: 1.0)
                     </p>
@@ -1207,13 +1207,13 @@ export default function TeamTab({ focusPayment = false, onFocused }: { focusPaym
               <PendingMembersCard teamUid={TEAM_UID} members={teamMembers} onApproved={reloadSquad} showToast={showToast} />
             )}
 
-            <div className="card squad-card" style={{ padding: '20px', backgroundColor: '#fff', borderRadius: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+            <div className="card squad-card">
 
               {/* Squad Header */}
               <div className="squad-header">
                 <div className="squad-header-title">
-                  <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#191f28', margin: '0 0 4px 0' }}>🏃 선수단 명단</h3>
-                  <p style={{ fontSize: '13px', color: '#8b95a1', margin: 0 }}>
+                  <h3 className="card-title">선수단 명단</h3>
+                  <p className="card-desc">
                     좌우로 넘겨 선수 카드를 볼 수 있습니다.{(canMember || canScoreEdit) ? ' 펼치기를 누르면 능력치를 확인하고 수정할 수 있습니다.' : ''}
                   </p>
                 </div>
@@ -1232,7 +1232,7 @@ export default function TeamTab({ focusPayment = false, onFocused }: { focusPaym
               {/* Add Member Form */}
               {showAddMember && (
                 <div style={{ marginBottom: '16px', padding: '16px', backgroundColor: 'var(--color-primary-tint)', borderRadius: '12px', border: '1px solid var(--color-primary-border)' }}>
-                  <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#191f28', marginBottom: '10px' }}>➕ 신규 선수 등록</div>
+                  <div style={{ fontSize: 'calc(var(--fs-14) * var(--scale-factor, 1))', fontWeight: 700, color: 'var(--gray-900)', marginBottom: '10px' }}>신규 선수 등록</div>
                   <input
                     type="text"
                     placeholder="선수 이름을 입력하세요"
@@ -1495,11 +1495,11 @@ export default function TeamTab({ focusPayment = false, onFocused }: { focusPaym
 
             {/* Terminated Members (관리자 전용) */}
             {canTerminated && (
-              <div className="card squad-card" style={{ padding: '20px', backgroundColor: '#fff', borderRadius: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+              <div className="card squad-card">
                 <div className="squad-header">
                   <div className="squad-header-title">
-                    <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#191f28', margin: '0 0 4px 0' }}>🚪 탈퇴자 목록</h3>
-                    <p style={{ fontSize: '13px', color: '#8b95a1', margin: 0 }}>
+                    <h3 className="card-title">탈퇴자 목록</h3>
+                    <p className="card-desc">
                       관리자만 볼 수 있습니다. 복구하거나 완전 삭제할 수 있습니다.
                     </p>
                   </div>

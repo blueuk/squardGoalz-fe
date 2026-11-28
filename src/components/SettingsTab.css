@@ -9,19 +9,9 @@
 .settings-card {
   max-width: 100%;
   box-sizing: border-box;
-  padding: 20px;
-  background: #fff;
-  border-radius: 16px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
   margin-bottom: 0;
 }
 
-.settings-title {
-  margin: 0 0 4px;
-  font-size: 18px;
-  font-weight: 700;
-  color: #191f28;
-}
 
 .settings-desc {
   margin: 0 0 14px;

@@ -522,7 +522,7 @@ export default function HomeMatchCard({ onGoSchedule }: { onGoSchedule: () => vo
             </button>
             {showHelp && (
               <div className="match-help-pop" role="tooltip">
-                <b>⚽ 팀은 이렇게 나눠요</b>
+                <b>팀은 이렇게 나눠요</b>
                 <ol>{ARRANGE_RULES.map(rule => <li key={rule}>{rule}</li>)}</ol>
               </div>
             )}

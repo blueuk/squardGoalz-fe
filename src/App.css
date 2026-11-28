@@ -40,6 +40,13 @@
     --r-6:6px; --r-12:12px; --r-20:20px; --r-full:999px;
     --tap-min:44px;
 
+    /* 카드: 흰 바탕 · 모서리 20 · 안쪽 20 · 카드 사이 16 */
+    --shadow-card:0 4px 12px rgba(0,0,0,0.05);
+    --shadow-float:0 8px 24px rgba(0,0,0,0.12);
+    /* 카드 제목: 크게 바꾸고 싶으면 이 두 줄만 (예: 17px, var(--gray-900)) */
+    --card-title-fs:14px;
+    --card-title-color:var(--gray-600);
+
     /* 하단 탭 + 아이폰 홈 막대 독 */
     --tabbar-h:56px;
     --dock-h:env(safe-area-inset-bottom, 0px);
@@ -143,19 +150,23 @@ main {
     }
 }
 .card {
-    background:var(--toss-card);
+    background: #fff;
     padding:20px;
-    border-radius:20px;
-    box-shadow:0 4px 12px rgba(0,0,0,0.05);
+    border-radius: var(--r-20);
+    box-shadow: var(--shadow-card);
     margin-bottom:16px;
 }
 .card-title {
-    font-size: calc(14px * var(--scale-factor, 1));
-    color:var(--toss-gray);
-    margin-bottom:12px;
+    font-size: calc(var(--card-title-fs) * var(--scale-factor, 1));
+    color: var(--card-title-color);
+    margin-bottom: 12px;
     display:flex;
     justify-content:space-between;
     align-items:center;
+  font-weight: 600;
+  margin-top: 0;
+  gap: 4px;
+  line-height: 1.4;
 }
 .card-value {
     font-size: calc(24px * var(--scale-factor, 1));
@@ -956,9 +967,9 @@ h2 {
   max-width: 400px;
   margin: 0 auto;
   padding: 28px 20px;
-  border-radius: 16px;
-  background: var(--toss-card);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  border-radius: var(--r-20);
+  background: #fff;
+  box-shadow: var(--shadow-card);
 }
 
 .register-title {
@@ -1152,4 +1163,30 @@ h2 {
     line-height: 1;
     text-decoration: none;
     white-space: nowrap;
+}
+
+/* ── 디자인 시스템 3단계: 카드 ─────────────────────────────────────── */
+/* 제목 밑 한 줄 설명 */
+.card-desc {
+    margin: 0;
+    font-size: calc(var(--fs-13) * var(--scale-factor, 1));
+    color: var(--gray-500);
+}
+
+/* 제목이 머리줄(제목 + 오른쪽 버튼) 안에 있을 때는 아래 여백 없음 */
+.squad-header .card-title,
+.vote-header .card-title,
+.pending-head .card-title,
+.my-title-row .card-title {
+    margin-bottom: 4px;
+}
+
+/* 참석 현황: 참석 · 불참 · 미투표 수 (글자 최소 12, 퍼센트 아래 줄) */
+.rank-counts {
+    display: block;
+    margin-top: 1px;
+    font-size: calc(var(--fs-12) * var(--scale-factor, 1));
+    color: var(--gray-500);
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
 }

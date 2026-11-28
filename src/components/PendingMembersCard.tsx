@@ -104,7 +104,7 @@ export default function PendingMembersCard({ teamUid, members, onApproved, showT
     <div className="card squad-card pending-card">
       <div className="pending-head">
         <div>
-          <h3 className="pending-title">🙋 가입 승인 대기</h3>
+          <h3 className="card-title">가입 승인 대기</h3>
           <p className="pending-desc">선수 명단에 없는 회원입니다. 기존 선수에 연결하거나 신규 선수로 등록해주세요.</p>
         </div>
         <span className="pending-count">{pending.length}명</span>
