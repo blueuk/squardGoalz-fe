@@ -1,3 +1,4 @@
+import Emoji from './Emoji';
 interface SoccerBallLoaderProps {
   visible?: boolean;
   message?: string;
@@ -9,7 +10,7 @@ export default function SoccerBallLoader({ visible = true, message = '잠시만 
   return (
     <div className="loading-overlay">
       <div style={{ position: 'relative', width: '120px', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <span className="soccer-ball-loader">⚽</span>
+        <span className="soccer-ball-loader"><Emoji char="⚽" /></span>
       </div>
       <div style={{ 
         marginTop: '12px', 

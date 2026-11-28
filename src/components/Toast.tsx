@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import './Toast.css';
+import { emojify } from './Emoji';
 
 const TOAST_DURATION = 2000;
 
@@ -17,6 +18,6 @@ export function useToast() {
 
   useEffect(() => () => window.clearTimeout(timer.current), []);
 
-  const toast = current ? <div key={current.id} className="app-toast" role="status">{current.text}</div> : null;
+  const toast = current ? <div key={current.id} className="app-toast" role="status">{emojify(current.text)}</div> : null;
   return { toast, showToast };
 }

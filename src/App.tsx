@@ -15,6 +15,7 @@ import { PermissionProvider } from './permissions';
 import PendingGate from './components/PendingGate';
 import { rememberDeepLink, takeDeepLinkFromUrl, takeRememberedDeepLink, YOUTUBE_CHANNEL_URL, type DeepLink } from './deepLink';
 import { showAlert } from './components/Dialog';
+import Emoji from './components/Emoji';
 
 interface User {
   userid: string;
@@ -53,8 +54,8 @@ const streakIcon = (rate: Rate) => {
 
 // 참석 현황에서 텍스트 대신 아이콘으로 보여줄 선수 상태 (없는 상태는 [상태명] 텍스트로 표시)
 const STATUS_ICONS: Record<string, ReactNode> = {
-  '육아': '🍼',
-  '부상': '🩹',
+  '육아': <Emoji char="🍼" />,
+  '부상': <Emoji char="🩹" />,
 };
 
 // 하단 탭: 선택된 탭은 fill 아이콘
@@ -315,10 +316,10 @@ function App() {
                         <section>
                           <b>아이콘 뜻</b>
                           <ul className="help-tip-icons">
-                            <li><span>🔥</span>{FIRE_STREAK}경기 이상 연속 참석</li>
-                            <li><span>😢</span>{TEAR_STREAK}경기 이상 연속 불참·미투표</li>
+                            <li><span><Emoji char="🔥" /></span>{FIRE_STREAK}경기 이상 연속 참석</li>
+                            <li><span><Emoji char="😢" /></span>{TEAR_STREAK}경기 이상 연속 불참·미투표</li>
                             {Object.entries(STATUS_ICONS).map(([name, icon]) => <li key={name}><span>{icon}</span>{name} 중</li>)}
-                            <li><span>👑</span>1위</li>
+                            <li><span><Emoji char="👑" /></span>1위</li>
                           </ul>
                           <p style={{ margin: '0.4rem 0 0', color: '#8b95a1' }}>연속 기록은 지난 경기만 세고, 미진행 경기는 건너뛰어요.</p>
                         </section>
@@ -338,7 +339,7 @@ function App() {
                         .sort((a, b) => a.rank_num - b.rank_num)
                         .slice(currentRollingIdx * ITEMS_PER_PAGE, (currentRollingIdx + 1) * ITEMS_PER_PAGE)
                         .map((rate, index) => {
-                          const crown = rate.rank_num === 1 ? <span className="crown">👑</span> : null;
+                          const crown = rate.rank_num === 1 ? <span className="crown"><Emoji char="👑" /></span> : null;
                           const streak = streakIcon(rate);
                           return (
                             <div key={index} className="rank-item">
@@ -348,7 +349,7 @@ function App() {
                                         {rate.member_name}
                                         {streak && (
                                             <span title={streak.label} aria-label={streak.label} style={{ fontSize: 'calc(min(14px, 3.5vw) * var(--scale-factor, 1))', marginLeft: '4px' }}>
-                                                {streak.icon}
+                                                <Emoji char={streak.icon} />
                                             </span>
                                         )}
                                         {rate.status_cd && rate.status_cd !== '01' && rate.code_name && (

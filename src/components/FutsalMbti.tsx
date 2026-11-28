@@ -7,6 +7,7 @@ import {
 } from './mbtiData';
 import './FutsalMbti.css';
 import Icon from './Icon';
+import Emoji from './Emoji';
 
 const ANSWER_DELAY_MS = 180; // 선택 표시 후 다음 문항으로 넘어가기까지
 
@@ -161,10 +162,10 @@ export default function FutsalMbtiTest({ teamUid, memberUid, onClose, onSaved }:
             <p className="mbti-q small">경기에서 주로 골레이를 보나요?</p>
             <div className="mbti-branch">
               <button className="mbti-opt big" onClick={() => start('field')}>
-                ⚽ 아니요, 필드에서 뛰어요<small>32문항 · 필드 유형 16가지 중 하나</small>
+                <Emoji char="⚽" /> 아니요, 필드에서 뛰어요<small>32문항 · 필드 유형 16가지 중 하나</small>
               </button>
               <button className="mbti-opt big" onClick={() => start('gk')}>
-                🧤 네, 주로 골레이를 봐요<small>16문항 · 골레이 유형 4가지 중 하나</small>
+                <Emoji char="🧤" /> 네, 주로 골레이를 봐요<small>16문항 · 골레이 유형 4가지 중 하나</small>
               </button>
             </div>
           </>
@@ -201,13 +202,13 @@ export default function FutsalMbtiTest({ teamUid, memberUid, onClose, onSaved }:
             <MbtiMeters testType={result.testType} pct={result.pct} />
             <p className={`mbti-save ${saveState}`}>
               {saveState === 'saving' && '결과를 저장하는 중...'}
-              {saveState === 'saved' && '✅ MY 화면에 저장되었어요'}
+              {saveState === 'saved' && <><Emoji char="✅" /> MY 화면에 저장되었어요</>}
               {saveState === 'error' && (
                 <>저장하지 못했어요. <button className="ui-btn ui-btn-text" onClick={() => save(result)}>다시 저장</button></>
               )}
             </p>
             {result.testType === 'gk' && (
-              <p className="mbti-note">🧤 골레이도 필드에서 뛸 때가 있죠? 필드 테스트도 하면 필드 유형까지 알 수 있어요.</p>
+              <p className="mbti-note"><Emoji char="🧤" /> 골레이도 필드에서 뛸 때가 있죠? 필드 테스트도 하면 필드 유형까지 알 수 있어요.</p>
             )}
             <div className="mbti-actions">
               {result.testType === 'gk' && <button className="ui-btn ui-btn-lg ui-btn-block ui-btn-primary" onClick={() => start('field')}>필드 테스트도 해보기</button>}

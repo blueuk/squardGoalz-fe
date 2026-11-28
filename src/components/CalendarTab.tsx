@@ -7,6 +7,7 @@ import { statusLabelClass } from './ui';
 import Icon from './Icon';
 import { showAlert } from './Dialog';
 import Select from './Select';
+import Emoji from './Emoji';
 
 // Module-level cache for common options
 let cachedLocationOptions: any[] | null = null;
@@ -788,7 +789,7 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members }) => {
       {showCancelModal && (
         <div className="ui-modal-overlay" onClick={() => !isCanceling && setShowCancelModal(false)}>
           <div className="ui-modal is-center" role="alertdialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
-            <div className="ui-modal-icon" aria-hidden="true">⚠️</div>
+            <div className="ui-modal-icon"><Emoji char="⚠️" size={40} /></div>
             <h3 className="ui-modal-title">
               경기를 취소하시겠습니까?
             </h3>
@@ -817,7 +818,7 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members }) => {
       {showResetVoteModal && (
         <div className="ui-modal-overlay" onClick={() => !isResettingVotes && setShowResetVoteModal(false)}>
           <div className="ui-modal is-center" role="alertdialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
-            <div className="ui-modal-icon" aria-hidden="true">🔄</div>
+            <div className="ui-modal-icon"><Emoji char="🔄" size={40} /></div>
             <h3 className="ui-modal-title">
               투표를 일괄 초기화하시겠습니까?
             </h3>
@@ -846,7 +847,7 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members }) => {
       {showDeleteScheduleModal && (
         <div className="ui-modal-overlay" onClick={() => !isDeletingSchedule && setShowDeleteScheduleModal(false)}>
           <div className="ui-modal is-center" role="alertdialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
-            <div className="ui-modal-icon" aria-hidden="true">🗑️</div>
+            <div className="ui-modal-icon"><Emoji char="🗑️" size={40} /></div>
             <h3 className="ui-modal-title is-danger">
               일정을 삭제하시겠습니까?
             </h3>
