@@ -11,7 +11,7 @@ export default function PendingGate({ onLogout, children }: { onLogout: () => vo
     <div className="register-page">
       <div className="register-card" style={{ textAlign: 'center' }}>
         <img src={teamLogo} alt="풋고추FC" style={{ width: '140px', height: 'auto', marginBottom: '12px' }} />
-        <h2 className="register-title">⏳ 가입 승인 대기 중</h2>
+        <h2 className="register-title">가입 승인 대기 중</h2>
         <p className="register-desc" style={{ marginBottom: '20px' }}>
           관리자가 선수 명단에 등록하면 이용할 수 있습니다.<br />승인 후 다시 접속해주세요.
         </p>

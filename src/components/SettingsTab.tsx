@@ -149,7 +149,7 @@ export default function SettingsTab() {
 
       {/* 역할별 권한 */}
       <div className="card settings-card">
-        <h3 className="settings-title">🔐 역할별 권한</h3>
+        <h3 className="card-title">역할별 권한</h3>
         <p className="settings-desc">역할마다 사용할 수 있는 기능을 선택합니다. 관리자는 항상 모든 권한을 가집니다.</p>
 
         <div className="perm-grid perm-head" style={gridStyle}>
@@ -192,7 +192,7 @@ export default function SettingsTab() {
 
       {/* 회원 역할 */}
       <div className="card settings-card">
-        <h3 className="settings-title">👥 회원 역할</h3>
+        <h3 className="card-title">회원 역할</h3>
         <p className="settings-desc">카카오 계정이 연결된 선수만 표시됩니다.</p>
         {memberRoles.length === 0 ? (
           <p className="settings-empty">카카오 계정이 연결된 선수가 없습니다.</p>

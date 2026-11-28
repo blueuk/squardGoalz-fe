@@ -241,7 +241,7 @@ function App() {
     return (
       <div className="register-page">
         <div className="register-card">
-          <h2 className="register-title">⚽ 풋고추FC 회원가입</h2>
+          <h2 className="register-title">풋고추FC 회원가입</h2>
           <p className="register-desc">서비스 이용을 위해 추가 정보를 입력해주세요.</p>
           <form className="register-form" onSubmit={handleRegister}>
             <label className="register-field">
@@ -304,7 +304,7 @@ function App() {
                       멤버 참석 현황
                       <HelpTip label="순위 계산 방식과 아이콘 설명">
                         <section>
-                          <b>📊 순위는 이렇게 매겨요 (올해 일정 기준)</b>
+                          <b>순위는 이렇게 매겨요 (올해 일정 기준)</b>
                           <ol>
                             <li>점수 = 참석 3점 + 불참 1점 − 미투표 2점</li>
                             <li>점수가 같으면 참석률 → 참석 수 → 경기 수가 많은 순</li>
@@ -366,8 +366,8 @@ function App() {
                                 </div>
                                 <div className="rank-stat" style={{ flexShrink: 1, minWidth: 0, textAlign: 'right' }}>
                                     <span style={{ color: 'var(--toss-blue)', fontWeight: 700, fontSize: 'calc(min(14px, 3.5vw) * var(--scale-factor, 1))' }}>{rate.attend_rate.toFixed(1)}%</span>
-                                    <span style={{ fontSize: 'calc(min(11px, 2.7vw) * var(--scale-factor, 1))', color: 'var(--toss-gray)', marginLeft: '4px', letterSpacing: '-0.5px' }}>
-                                        (참석:{rate.attend_count} 불참:{rate.absent_count} 미투표:{rate.no_vote_count})
+                                    <span className="rank-counts">
+                                        참석 {rate.attend_count} · 불참 {rate.absent_count} · 미투표 {rate.no_vote_count}
                                     </span>
                                 </div>
                             </div>

@@ -1,10 +1,6 @@
 /* ── 팀 > 선수단: 가입 승인 대기 ─────────────────────────────────────────── */
 
 .pending-card {
-  padding: 20px;
-  background: #fff;
-  border-radius: 16px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
   border: 1px solid #ffe08a;
 }
 
@@ -16,12 +12,6 @@
   margin-bottom: 14px;
 }
 
-.pending-title {
-  margin: 0 0 4px;
-  font-size: 18px;
-  font-weight: 700;
-  color: #191f28;
-}
 
 .pending-desc {
   margin: 0;

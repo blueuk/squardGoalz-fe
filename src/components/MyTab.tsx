@@ -228,7 +228,7 @@ export default function MyTab({ user, myInfo, onStatusChanged, onLogout }: Props
       )}
 
       {/* 프로필 */}
-      <section className="my-card my-profile">
+      <section className="card my-card my-profile">
         {memberUid ? (
           <button
             className="my-avatar editable"
@@ -258,8 +258,8 @@ export default function MyTab({ user, myInfo, onStatusChanged, onLogout }: Props
       </section>
 
       {/* 내 능력치 분석 */}
-      <section className="my-card">
-        <h3 className="my-title">내 능력치 분석</h3>
+      <section className="card my-card">
+        <h3 className="card-title">내 능력치 분석</h3>
         {scoresLoading ? (
           <p className="my-empty">능력치를 분석하는 중이에요...</p>
         ) : scores.length > 0 ? (
@@ -276,9 +276,9 @@ export default function MyTab({ user, myInfo, onStatusChanged, onLogout }: Props
       </section>
 
       {/* 풋살 MBTI */}
-      <section className="my-card">
+      <section className="card my-card">
         <div className="my-title-row">
-          <h3 className="my-title">풋살 MBTI</h3>
+          <h3 className="card-title">풋살 MBTI</h3>
           {myMain && memberUid && <button className="ui-btn ui-btn-text" onClick={() => setShowTest(true)}>다시 하기</button>}
         </div>
         {!memberUid ? (
@@ -321,8 +321,8 @@ export default function MyTab({ user, myInfo, onStatusChanged, onLogout }: Props
       </section>
 
       {/* 내 정보 */}
-      <section className="my-card">
-        <h3 className="my-title">내 정보</h3>
+      <section className="card my-card">
+        <h3 className="card-title">내 정보</h3>
         <div className="my-row status">
           <span className="my-label">내 상태</span>
           {statusOptions.length > 0 && myInfo?.member_uid ? (

@@ -537,7 +537,7 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members }) => {
         <div className="card vote-panel" style={{ marginTop: '15px' }}>
           <div className="vote-header">
             <div className="vote-header-title">
-              <h3 style={{ margin: '0 0 5px 0' }}>투표현황</h3>
+              <h3 className="card-title">투표 현황</h3>
               <p className="vote-header-info" style={{ color: '#191f28', fontSize: 'calc(15px * var(--scale-factor, 1))', fontWeight: 'bold' }}>
                 {formatScheduleHeader()}
               </p>
@@ -682,7 +682,7 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members }) => {
       return (
         <div className="card" style={{ marginTop: '15px' }}>
           <div style={{ marginBottom: '15px' }}>
-            <h3 style={{ margin: '0 0 5px 0' }}>일정 등록</h3>
+            <h3 className="card-title">일정 등록</h3>
             <p style={{ color: '#191f28', fontSize: 'calc(15px * var(--scale-factor, 1))', fontWeight: 'bold', margin: '0' }}>
               {formatDateOnly(selectedDate)}
             </p>
