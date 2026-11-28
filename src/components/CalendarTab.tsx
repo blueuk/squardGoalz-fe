@@ -3,6 +3,7 @@ import api from '../api';
 import SoccerBallLoader from './SoccerBallLoader';
 import './CalendarTab.css';
 import { usePermission } from '../permissions';
+import Icon from './Icon';
 
 // Module-level cache for common options
 let cachedLocationOptions: any[] | null = null;
@@ -794,9 +795,9 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members }) => {
       <SoccerBallLoader visible={isLoading} message={loadingMessage} />
       <div className="card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-          <button onClick={handlePrevMonth} style={{ background: 'none', border: 'none', fontSize: 'calc(18px * var(--scale-factor, 1))', cursor: 'pointer' }}>&lt;</button>
+          <button type="button" className="pager-btn" onClick={handlePrevMonth} aria-label="이전 달"><Icon name="caret-left" size={20} /></button>
           <span style={{ fontWeight: 'bold', fontSize: 'calc(16px * var(--scale-factor, 1))' }}>{year}년 {month + 1}월</span>
-          <button onClick={handleNextMonth} style={{ background: 'none', border: 'none', fontSize: 'calc(18px * var(--scale-factor, 1))', cursor: 'pointer' }}>&gt;</button>
+          <button type="button" className="pager-btn" onClick={handleNextMonth} aria-label="다음 달"><Icon name="caret-right" size={20} /></button>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '5px', textAlign: 'center' }}>

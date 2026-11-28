@@ -95,12 +95,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
+  width: 26px;
+  height: 26px;
   border: 2px solid #fff;
   border-radius: 50%;
-  background: #e5e8eb;
-  font-size: 11px;
+  background: var(--gray-800);
+  color: #fff;
+  font-size: 12px;
 }
 
 .my-photo-delete {
@@ -159,8 +160,8 @@
 }
 
 .my-badge.mbti {
-  background: #e8f3ff;
-  color: var(--toss-blue, #3182f6);
+  background: var(--color-primary-soft);
+  color: var(--toss-blue);
   letter-spacing: 1px;
 }
 
@@ -216,7 +217,7 @@
 
 .my-match-type b {
   margin-right: 4px;
-  color: var(--toss-blue, #3182f6);
+  color: var(--toss-blue);
   letter-spacing: 1px;
 }
 
@@ -272,7 +273,7 @@
 }
 
 .my-value.accent {
-  color: var(--toss-blue, #3182f6);
+  color: var(--toss-blue);
 }
 
 .my-value.ellipsis {
@@ -332,7 +333,7 @@
 
 .my-btn.primary {
   margin-top: 0;
-  background: var(--toss-blue, #3182f6);
+  background: var(--toss-blue);
   color: #fff;
 }
 
@@ -347,7 +348,7 @@
   padding: 0;
   border: none;
   background: none;
-  color: var(--toss-blue, #3182f6);
+  color: var(--toss-blue);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;

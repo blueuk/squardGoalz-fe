@@ -6,6 +6,7 @@ import {
   type AxisKey, type MbtiResult, type TestType,
 } from './mbtiData';
 import './FutsalMbti.css';
+import Icon from './Icon';
 
 const ANSWER_DELAY_MS = 180; // 선택 표시 후 다음 문항으로 넘어가기까지
 
@@ -146,7 +147,7 @@ export default function FutsalMbtiTest({ teamUid, memberUid, onClose, onSaved }:
       <div className="mbti-wrap">
         {step === 'branch' && (
           <>
-            <div className="mbti-top"><button className="mbti-back" onClick={onClose} aria-label="닫기">✕</button></div>
+            <div className="mbti-top"><button className="mbti-back" onClick={onClose} aria-label="닫기"><Icon name="x" size={20} /></button></div>
             <h2 className="mbti-title">나는 어떤<br /><em>풋살 선수</em>일까?</h2>
             <p className="mbti-sub">4가지 축으로 알아보는 풋살 포지션 유형 테스트예요. 최근 경기들을 떠올리며 답해 주세요.</p>
             <div className="mbti-axes">
@@ -194,7 +195,7 @@ export default function FutsalMbtiTest({ teamUid, memberUid, onClose, onSaved }:
 
         {step === 'result' && result && (
           <>
-            <div className="mbti-top"><button className="mbti-back" onClick={onClose} aria-label="닫기">✕</button></div>
+            <div className="mbti-top"><button className="mbti-back" onClick={onClose} aria-label="닫기"><Icon name="x" size={20} /></button></div>
             <MbtiSummary code={result.code} />
             <h3 className="mbti-sec">나의 성향</h3>
             <MbtiMeters testType={result.testType} pct={result.pct} />

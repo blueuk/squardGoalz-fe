@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { usePermission } from '../permissions';
-import teamLogo from '../img/teamlogo.png';
+import teamLogo from '../img/teamlogo.webp';
 
 // 가입했지만 아직 선수 명단에 연결되지 않은 회원은 관리자 승인 전까지 앱을 사용할 수 없음
 export default function PendingGate({ onLogout, children }: { onLogout: () => void; children: ReactNode }) {

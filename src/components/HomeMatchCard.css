@@ -12,13 +12,13 @@
   position: absolute;
   top: 0.75rem;
   right: 0.75rem;
-  width: 2rem;
-  height: 2rem;
+  width: 2.25rem;
+  height: 2.25rem;
   padding: 0;
   border: none;
   border-radius: 50%;
-  background: #e6f4ea;
-  color: #1f9d55;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
   font-size: calc(17px * var(--scale-factor, 1));
   font-weight: 700;
   line-height: 1;
@@ -106,8 +106,8 @@
   max-width: 100%;
   padding: 0.35rem 0.75rem;
   border-radius: 999px;
-  background: #e8f3ff;
-  color: var(--toss-blue, #3182f6);
+  background: var(--color-primary-soft);
+  color: var(--toss-blue);
   font-size: calc(14px * var(--scale-factor, 1));
   font-weight: 700;
   overflow-wrap: anywhere;
@@ -150,7 +150,7 @@
 }
 
 .match-weather-chip .precip {
-  color: var(--toss-blue, #3182f6);
+  color: var(--toss-blue);
 }
 
 .match-weather-empty {
@@ -487,4 +487,12 @@
   color: #fff;
   border-radius: 14px;
   box-shadow: 0 4px 12px rgba(34, 179, 94, 0.3);
+}
+
+/* 미리 지정한 선수 핀 아이콘 */
+.fixed-pin {
+  display: inline-flex;
+  vertical-align: -3px;
+  margin-right: 2px;
+  color: var(--color-primary);
 }

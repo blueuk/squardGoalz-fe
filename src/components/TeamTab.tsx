@@ -12,7 +12,7 @@ import { usePermission } from '../permissions';
 import { TYPES, type SavedMbti } from './mbtiData';
 import MemberIdSlider from './MemberIdSlider';
 import { profileImageUrl } from './profileImage';
-import teamLogoImg from '../img/teamlogo.png';
+import teamLogoImg from '../img/teamlogo.webp';
 import './TeamTab.css';
 import {
   POSITIONS,
@@ -23,6 +23,7 @@ import {
   getCachedPositionWeights,
   setCachedPositionWeights,
 } from './positionUtils';
+import Icon from './Icon';
 
 // ─── Interfaces ───────────────────────────────────────────────────────────────
 interface TeamInfo {
@@ -335,8 +336,8 @@ function WeightEditor({
           const draftKey = `${activePos}:${item.code}`;
           return (
             <div key={item.code} style={{
-              display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: changed ? '#f8faff' : '#fff',
-              padding: '6px 10px', borderRadius: '8px', border: changed ? '1px solid var(--toss-blue, #3182f6)' : '1px solid #f2f4f6'
+              display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: changed ? 'var(--color-primary-tint)' : '#fff',
+              padding: '6px 10px', borderRadius: '8px', border: changed ? '1px solid var(--toss-blue)' : '1px solid #f2f4f6'
             }}>
               <span style={{ fontSize: '12px', color: '#8b95a1', width: '28px', flexShrink: 0 }}>{item.code}</span>
               <span style={{ fontSize: '13px', color: '#191f28', fontWeight: 500, flex: 1, minWidth: 0, overflowWrap: 'anywhere' }}>{item.name}</span>
@@ -368,7 +369,7 @@ function WeightEditor({
                 title="항목 삭제"
                 style={{ flexShrink: 0, fontSize: '12px', padding: '4px 7px', borderRadius: '6px', border: 'none', backgroundColor: '#fce8e6', color: '#f04452', cursor: 'pointer', fontWeight: 'bold' }}
               >
-                ✕
+                <Icon name="x" size={16} />
               </button>
             </div>
           );
@@ -376,7 +377,7 @@ function WeightEditor({
       </div>
 
       {/* Add score item */}
-      <div style={{ marginTop: '12px', padding: '12px', backgroundColor: '#fff', borderRadius: '10px', border: '1px dashed #c0d8ff' }}>
+      <div style={{ marginTop: '12px', padding: '12px', backgroundColor: '#fff', borderRadius: '10px', border: '1px dashed var(--color-primary-border)' }}>
         <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#191f28', marginBottom: '8px' }}>
           ➕ 가중치 항목 추가
           <span style={{ marginLeft: '6px', fontSize: '11px', fontWeight: 500, color: '#8b95a1' }}>
@@ -402,7 +403,7 @@ function WeightEditor({
           <button
             onClick={handleAddItemClick}
             disabled={isItemBusy || !newItemName.trim()}
-            style={{ flex: '0 0 auto', whiteSpace: 'nowrap', padding: '8px 14px', borderRadius: '8px', border: 'none', backgroundColor: 'var(--toss-blue, #3182f6)', color: '#fff', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}
+            style={{ flex: '0 0 auto', whiteSpace: 'nowrap', padding: '8px 14px', borderRadius: '8px', border: 'none', backgroundColor: 'var(--toss-blue)', color: '#fff', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}
           >
             {isItemBusy ? '처리 중...' : '추가'}
           </button>
@@ -419,7 +420,7 @@ function WeightEditor({
         <button
           onClick={handleSaveClick}
           disabled={isSaving}
-          style={{ flex: 2, padding: '11px', borderRadius: '10px', border: 'none', backgroundColor: 'var(--toss-blue, #3182f6)', color: '#fff', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}
+          style={{ flex: 2, padding: '11px', borderRadius: '10px', border: 'none', backgroundColor: 'var(--toss-blue)', color: '#fff', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}
         >
           {isSaving ? '저장 중...' : `가중치 저장하기${changes.length > 0 ? ` (${changes.length}개 변경)` : ''}`}
         </button>
@@ -1037,7 +1038,7 @@ export default function TeamTab({ focusPayment = false, onFocused }: { focusPaym
                 {canTeamEdit && isEditing && (
                   <div>
                     <button onClick={handleCancelClick} style={{ padding: '6px 12px', fontSize: '13px', backgroundColor: '#fff', color: '#888', border: '1px solid #ddd', borderRadius: '6px', cursor: 'pointer', marginRight: '5px' }}>취소</button>
-                    <button onClick={handleSaveClick} style={{ padding: '6px 12px', fontSize: '13px', backgroundColor: '#3182f6', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>저장</button>
+                    <button onClick={handleSaveClick} style={{ padding: '6px 12px', fontSize: '13px', backgroundColor: 'var(--color-primary)', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>저장</button>
                   </div>
                 )}
               </div>
@@ -1112,14 +1113,14 @@ export default function TeamTab({ focusPayment = false, onFocused }: { focusPaym
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     {payments.length > 0 && (
                       <button onClick={handleKakaoSharePayment} title="카카오톡으로 입금 안내 공유" aria-label="카카오톡으로 입금 안내 공유"
-                        style={{ width: '32px', height: '32px', padding: 0, fontSize: '16px', backgroundColor: '#fee500', border: 'none', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        💬
+                        style={{ width: '32px', height: '32px', padding: 0, backgroundColor: 'var(--kakao)', color: '#191919', border: 'none', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Icon name="chat-circle-dots" weight="fill" size={18} />
                       </button>
                     )}
                     {payments.length > 0 && (
                       <button onClick={handleCopyPaymentText} title="카톡 공유용 입금 안내 복사" aria-label="카톡 공유용 입금 안내 복사"
-                        style={{ width: '32px', height: '32px', padding: 0, fontSize: '16px', backgroundColor: '#e6f4ea', border: 'none', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        📋
+                        style={{ width: '32px', height: '32px', padding: 0, backgroundColor: 'var(--gray-100)', color: 'var(--gray-800)', border: 'none', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Icon name="copy" size={18} />
                       </button>
                     )}
                     {canPaymentEdit && (
@@ -1130,7 +1131,7 @@ export default function TeamTab({ focusPayment = false, onFocused }: { focusPaym
                 {canPaymentEdit && isPaymentEditing && (
                   <div>
                     <button onClick={handlePaymentCancelClick} style={{ padding: '6px 12px', fontSize: '13px', backgroundColor: '#fff', color: '#888', border: '1px solid #ddd', borderRadius: '6px', cursor: 'pointer', marginRight: '5px' }}>취소</button>
-                    <button onClick={handlePaymentSaveClick} style={{ padding: '6px 12px', fontSize: '13px', backgroundColor: '#3182f6', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>저장</button>
+                    <button onClick={handlePaymentSaveClick} style={{ padding: '6px 12px', fontSize: '13px', backgroundColor: 'var(--color-primary)', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>저장</button>
                   </div>
                 )}
               </div>
@@ -1142,7 +1143,7 @@ export default function TeamTab({ focusPayment = false, onFocused }: { focusPaym
                     const bankName = getCodeName('bank_cd', account?.bank_cd) || '알 수 없음';
                     const paymentName = getCodeName('payment_cd', payment.payment_cd) || (payment.payment_cd === '01' ? '월회비' : '지각비');
                     const isMonthly = payment.payment_cd === '01';
-                    const primaryColor = isMonthly ? '#3182f6' : '#f04452';
+                    const primaryColor = isMonthly ? 'var(--color-primary)' : '#f04452';
                     return (
                       <div key={payment.payment_cd} style={{ marginBottom: '20px' }}>
                         <div style={{ fontWeight: 'bold', color: primaryColor, marginBottom: '5px' }}>{paymentName} 안내</div>
@@ -1223,8 +1224,8 @@ export default function TeamTab({ focusPayment = false, onFocused }: { focusPaym
                     style={{
                       padding: '8px 14px',
                       fontSize: '13px',
-                      backgroundColor: showWeightEditor ? '#e8f3ff' : '#f2f4f6',
-                      color: showWeightEditor ? 'var(--toss-blue, #3182f6)' : '#4e5968',
+                      backgroundColor: showWeightEditor ? 'var(--color-primary-soft)' : '#f2f4f6',
+                      color: showWeightEditor ? 'var(--toss-blue)' : '#4e5968',
                       border: 'none',
                       borderRadius: '8px',
                       cursor: 'pointer',
@@ -1274,7 +1275,7 @@ export default function TeamTab({ focusPayment = false, onFocused }: { focusPaym
                   </span>
                   {canMember && (
                     <button onClick={() => setShowAddMember(true)}
-                      style={{ padding: '6px 14px', fontSize: '13px', backgroundColor: '#e8f3ff', color: 'var(--toss-blue, #3182f6)', border: '1px solid var(--toss-blue, #3182f6)', borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold' }}>
+                      style={{ padding: '6px 14px', fontSize: '13px', backgroundColor: 'var(--color-primary-soft)', color: 'var(--toss-blue)', border: '1px solid var(--toss-blue)', borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold' }}>
                       + 선수 추가
                     </button>
                   )}
@@ -1283,7 +1284,7 @@ export default function TeamTab({ focusPayment = false, onFocused }: { focusPaym
 
               {/* Add Member Form */}
               {showAddMember && (
-                <div style={{ marginBottom: '16px', padding: '16px', backgroundColor: '#f8faff', borderRadius: '12px', border: '1px solid #c0d8ff' }}>
+                <div style={{ marginBottom: '16px', padding: '16px', backgroundColor: 'var(--color-primary-tint)', borderRadius: '12px', border: '1px solid var(--color-primary-border)' }}>
                   <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#191f28', marginBottom: '10px' }}>➕ 신규 선수 등록</div>
                   <input
                     type="text"
@@ -1299,7 +1300,7 @@ export default function TeamTab({ focusPayment = false, onFocused }: { focusPaym
                       취소
                     </button>
                     <button onClick={handleAddMember} disabled={isAddingMember || !newMemberName.trim()}
-                      style={{ flex: 2, padding: '10px', borderRadius: '8px', border: 'none', backgroundColor: 'var(--toss-blue, #3182f6)', color: '#fff', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}>
+                      style={{ flex: 2, padding: '10px', borderRadius: '8px', border: 'none', backgroundColor: 'var(--toss-blue)', color: '#fff', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}>
                       {isAddingMember ? '추가 중...' : '등록하기 (기본 13점)'}
                     </button>
                   </div>
@@ -1428,13 +1429,13 @@ export default function TeamTab({ focusPayment = false, onFocused }: { focusPaym
                   <div className="id-card-detail">
                     <div className="id-card-detail-title">
                       <b>{member.member_name}</b> 능력치
-                      <button onClick={() => toggleExpanded(member.member_uid)} aria-label="접기">✕</button>
+                      <button onClick={() => toggleExpanded(member.member_uid)} aria-label="접기"><Icon name="x" size={20} /></button>
                     </div>
                         <div className="member-expanded" style={{ backgroundColor: '#ffffff', borderTop: '1px solid #f2f4f6' }}>
                           {/* 6각형 그래프 영역 (모든 사용자에게 노출) */}
                           <div className="radar-box" style={{ marginBottom: '18px', padding: '14px', backgroundColor: '#f9fafb', borderRadius: '12px', border: '1px solid #f2f4f6', textAlign: 'center' }}>
                             <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#4e5968', marginBottom: '8px' }}>
-                              📊 능력치 6각형 레이더
+                              <Icon name="chart-polar" size={16} /> 능력치 6각형 레이더
                             </div>
                             <RadarChart scores={radarScores} size={220} showValues={canScoreView} />
                           </div>
@@ -1449,7 +1450,7 @@ export default function TeamTab({ focusPayment = false, onFocused }: { focusPaym
                                 </span>
                               ) : (
                                 <span style={{ fontSize: '11px', color: '#8b95a1', backgroundColor: '#f2f4f6', padding: '2px 8px', borderRadius: '8px' }}>
-                                  🔒 상세 수치 비공개
+                                  <Icon name="lock-simple" size={16} /> 상세 수치 비공개
                                 </span>
                               )}
                             </div>
@@ -1459,7 +1460,7 @@ export default function TeamTab({ focusPayment = false, onFocused }: { focusPaym
                                   <button onClick={e => { e.stopPropagation(); handleStartEditScores(member.member_uid); }}
                                     className="vote-action-btn"
                                     style={{ padding: '6px 14px', backgroundColor: 'var(--toss-light-blue)', color: 'var(--toss-blue)', borderRadius: '8px', fontSize: '12px' }}>
-                                    수정하기 ✏️
+                                    <Icon name="pencil-simple" size={16} /> 수정하기
                                   </button>
                                 ) : (
                                   <span style={{ fontSize: '12px', color: 'var(--toss-blue)', fontWeight: 'bold' }}>✍️ 편집 중 (0~20점)</span>
@@ -1515,7 +1516,7 @@ export default function TeamTab({ focusPayment = false, onFocused }: { focusPaym
                                                 style={{
                                                   width: '46px', textAlign: 'center', padding: '4px', borderRadius: '6px',
                                                   border: '1px solid var(--toss-blue)', fontSize: '13px', fontWeight: 'bold',
-                                                  color: '#191f28', backgroundColor: '#f8faff', outline: 'none', margin: 0
+                                                  color: '#191f28', backgroundColor: 'var(--color-primary-tint)', outline: 'none', margin: 0
                                                 }} />
                                             ) : (
                                               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -1589,7 +1590,7 @@ export default function TeamTab({ focusPayment = false, onFocused }: { focusPaym
                         </div>
                         <div className="member-card-actions">
                           <button onClick={() => handleRestoreMember(member)}
-                            style={{ fontSize: '12px', padding: '6px 10px', borderRadius: '8px', border: 'none', backgroundColor: '#e8f3ff', color: '#3182f6', cursor: 'pointer', fontWeight: 'bold' }}>
+                            style={{ fontSize: '12px', padding: '6px 10px', borderRadius: '8px', border: 'none', backgroundColor: 'var(--color-primary-soft)', color: 'var(--color-primary)', cursor: 'pointer', fontWeight: 'bold' }}>
                             복구
                           </button>
                           <button onClick={() => handlePurgeMember(member)}

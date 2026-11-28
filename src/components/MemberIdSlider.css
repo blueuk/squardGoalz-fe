@@ -44,8 +44,11 @@
 }
 
 .id-slider-nav button {
-  width: 30px;
-  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
   margin: 0;
   padding: 0;
   border: none;
@@ -83,7 +86,7 @@
 }
 
 .id-card.expanded {
-  border-color: var(--toss-blue, #3182f6);
+  border-color: var(--toss-blue);
 }
 
 .id-card-band {
@@ -190,7 +193,7 @@
 }
 
 .id-card-info dd b {
-  color: var(--toss-blue, #3182f6);
+  color: var(--toss-blue);
   letter-spacing: 1px;
 }
 
@@ -211,7 +214,7 @@
   width: 84px;
   height: 84px;
   overflow: hidden;
-  border: 3px solid #e8f3ff;
+  border: 3px solid var(--color-primary-soft);
   border-radius: 50%;
   background: #f2f4f6;
   font-size: 42px;
@@ -260,14 +263,14 @@
 }
 
 .id-card-actions button.on {
-  color: var(--toss-blue, #3182f6);
+  color: var(--toss-blue);
 }
 
 /* 펼친 선수 능력치 */
 .id-card-detail {
   margin-top: 16px;
   padding: 16px;
-  border: 1.5px solid var(--toss-blue, #3182f6);
+  border: 1.5px solid var(--toss-blue);
   border-radius: 16px;
   background: #fff;
 }

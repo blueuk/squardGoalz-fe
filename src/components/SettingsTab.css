@@ -65,7 +65,7 @@
   margin-bottom: 0.25rem;
   font-size: 12px;
   font-weight: 700;
-  color: var(--toss-blue, #3182f6);
+  color: var(--toss-blue);
 }
 
 .perm-row {
@@ -102,7 +102,7 @@
   width: 1.15rem;
   height: 1.15rem;
   margin: 0;
-  accent-color: var(--toss-blue, #3182f6);
+  accent-color: var(--toss-blue);
   cursor: pointer;
 }
 
@@ -139,7 +139,7 @@
 }
 
 .settings-btn.ghost { background: #f2f4f6; color: #4e5968; }
-.settings-btn.primary { flex-grow: 2; background: var(--toss-blue, #3182f6); color: #fff; }
+.settings-btn.primary { flex-grow: 2; background: var(--toss-blue); color: #fff; }
 
 /* 회원 역할 */
 .member-role-list {
@@ -174,8 +174,8 @@
   flex-shrink: 0;
   padding: 1px 6px;
   border-radius: 6px;
-  background: #e8f3ff;
-  color: var(--toss-blue, #3182f6);
+  background: var(--color-primary-soft);
+  color: var(--toss-blue);
   font-size: 11px;
   font-weight: 700;
 }
@@ -208,8 +208,8 @@
 }
 
 .member-role-chip.active {
-  border-color: var(--toss-blue, #3182f6);
-  background: var(--toss-blue, #3182f6);
+  border-color: var(--toss-blue);
+  background: var(--toss-blue);
   color: #fff;
   font-weight: 700;
   cursor: default;

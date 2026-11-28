@@ -24,7 +24,12 @@
 }
 
 .mbti-back {
-  padding: 4px 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
   border: none;
   background: none;
   color: #4e5968;
@@ -43,7 +48,7 @@
 .mbti-bar i {
   display: block;
   height: 100%;
-  background: var(--toss-blue, #3182f6);
+  background: var(--toss-blue);
   transition: width 0.3s;
 }
 
@@ -64,7 +69,7 @@
 
 .mbti-title em {
   font-style: normal;
-  color: var(--toss-blue, #3182f6);
+  color: var(--toss-blue);
 }
 
 .mbti-sub {
@@ -92,7 +97,7 @@
 }
 
 .mbti-axis-row b {
-  color: var(--toss-blue, #3182f6);
+  color: var(--toss-blue);
 }
 
 .mbti-tag {
@@ -100,8 +105,8 @@
   margin-bottom: 14px;
   padding: 5px 10px;
   border-radius: 20px;
-  background: #e8f3ff;
-  color: var(--toss-blue, #3182f6);
+  background: var(--color-primary-soft);
+  color: var(--toss-blue);
   font-size: 12px;
   font-weight: 700;
 }
@@ -160,12 +165,12 @@
 }
 
 .mbti-opt.sel {
-  border-color: var(--toss-blue, #3182f6);
+  border-color: var(--toss-blue);
   background: #f5f9ff;
 }
 
 .mbti-opt.sel .n {
-  background: var(--toss-blue, #3182f6);
+  background: var(--toss-blue);
   color: #fff;
 }
 
@@ -193,8 +198,8 @@
   display: inline-block;
   padding: 5px 12px;
   border-radius: 20px;
-  background: #e8f3ff;
-  color: var(--toss-blue, #3182f6);
+  background: var(--color-primary-soft);
+  color: var(--toss-blue);
   font-size: 13px;
   font-weight: 700;
 }
@@ -281,7 +286,7 @@
 }
 
 .mbti-meter-labels .on {
-  color: var(--toss-blue, #3182f6);
+  color: var(--toss-blue);
   font-weight: 700;
 }
 
@@ -298,7 +303,7 @@
   top: 0;
   bottom: 0;
   border-radius: 10px;
-  background: var(--toss-blue, #3182f6);
+  background: var(--toss-blue);
 }
 
 .mbti-save {
@@ -320,7 +325,7 @@
   padding: 0;
   border: none;
   background: none;
-  color: var(--toss-blue, #3182f6);
+  color: var(--toss-blue);
   font-size: inherit;
   font-weight: 700;
   text-decoration: underline;
@@ -350,7 +355,7 @@
   padding: 16px;
   border: none;
   border-radius: 14px;
-  background: var(--toss-blue, #3182f6);
+  background: var(--toss-blue);
   color: #fff;
   font-size: 16px;
   font-weight: 700;

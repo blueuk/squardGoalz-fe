@@ -1,13 +1,9 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import api from './api';
-import teamLogo from './img/teamlogo.png';
+import teamLogo from './img/teamlogo.webp';
 import letterLogo from './img/letterLogo.png';
-import footerHome from './img/footerHome.png';
-import footerVideo from './img/footerVideo.png';
-import footerSchedule from './img/footerSchedule.png';
-import footerTeam from './img/footerTeam.png';
-import footerMy from './img/footerMy.png';
 import './App.css';
+import Icon, { type IconName } from './components/Icon';
 import CalendarTab from './components/CalendarTab';
 import TeamTab from './components/TeamTab';
 import SoccerBallLoader from './components/SoccerBallLoader';
@@ -57,8 +53,18 @@ const streakIcon = (rate: Rate) => {
 // 참석 현황에서 텍스트 대신 아이콘으로 보여줄 선수 상태 (없는 상태는 [상태명] 텍스트로 표시)
 const STATUS_ICONS: Record<string, ReactNode> = {
   '육아': '🍼',
-  '부상': <span style={{ color: '#e5323b', fontWeight: 900 }}>✚</span>,
+  '부상': '🩹',
 };
+
+// 하단 탭: 선택된 탭은 fill 아이콘
+type TabKey = 'HOME' | 'VIDEO' | 'SCHEDULE' | 'TEAM' | 'MY';
+const TABS: { key: TabKey; label: string; icon: IconName }[] = [
+  { key: 'HOME', label: '홈', icon: 'house' },
+  { key: 'VIDEO', label: '영상', icon: 'play-circle' },
+  { key: 'SCHEDULE', label: '일정', icon: 'calendar-blank' },
+  { key: 'TEAM', label: '팀', icon: 'users-three' },
+  { key: 'MY', label: 'MY', icon: 'user-circle' },
+];
 
 function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -294,28 +300,13 @@ function App() {
       ) : (
         <>
           {/* Top Bar */}
-          <header style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            width: '100%',
-            maxWidth: '1200px',
-            height: '50px', 
-            padding: '0 15px', 
-            borderBottom: '1px solid #ddd',
-            backgroundColor: '#fff',
-            gap: '8px',
-            position: 'fixed',
-            top: 0,
-            left: '50%',
-            transform: 'translateX(-50%)',
-            zIndex: 1000
-          }}>
-            <img src={letterLogo} alt="Team Logo" style={{ height: '24px', width: 'auto', objectFit: 'contain' }} />
-            <span style={{ fontWeight: 'bold', fontSize: 'calc(15px * var(--scale-factor, 1))' }}>풋고추FC</span>
+          <header className="app-header">
+            <img src={letterLogo} alt="" className="app-header-logo" />
+            <span className="app-header-title">풋고추FC</span>
           </header>
           
           {/* Main Content */}
-          <main style={{ paddingTop: '60px', paddingBottom: '70px', paddingLeft: '20px', paddingRight: '20px', backgroundColor: '#f9f9f9', minHeight: '100vh' }}>
+          <main className="app-main">
             {activeTab === 'HOME' && (
               <div id="home" className="section" style={{ display: 'block' }}>
                 <div id="rate-card" className="card" style={{ position: 'relative' }}>
@@ -343,12 +334,12 @@ function App() {
                         </section>
                       </HelpTip>
                     </div>
-                    <div style={{ display: 'flex', gap: '4px', alignItems: 'center', background: '#f2f4f6', padding: '2px 8px', borderRadius: '12px' }}>
-                      <button onClick={prevRollingPage} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 'calc(12px * var(--scale-factor, 1))', color: '#191f28', padding: '4px 6px', fontWeight: 'bold', outline: 'none' }}>&lt;</button>
-                      <button id="rolling-toggle-btn" onClick={toggleRolling} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 'calc(12px * var(--scale-factor, 1))', color: '#191f28', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px 4px', fontWeight: 'bold', outline: 'none' }}>
-                        {isRollingPlaying ? '⏸\uFE0E' : '▶\uFE0E'}
+                    <div className="pager">
+                      <button type="button" className="pager-btn" onClick={prevRollingPage} aria-label="이전 순위"><Icon name="caret-left" size={16} /></button>
+                      <button type="button" id="rolling-toggle-btn" className="pager-btn" onClick={toggleRolling} aria-label={isRollingPlaying ? '자동 넘김 멈추기' : '자동 넘김 시작'}>
+                        <Icon name={isRollingPlaying ? 'pause' : 'play'} weight="fill" size={16} />
                       </button>
-                      <button onClick={nextRollingPage} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 'calc(12px * var(--scale-factor, 1))', color: '#191f28', padding: '4px 6px', fontWeight: 'bold', outline: 'none' }}>&gt;</button>
+                      <button type="button" className="pager-btn" onClick={nextRollingPage} aria-label="다음 순위"><Icon name="caret-right" size={16} /></button>
                     </div>
                   </div>
                   <div id="rolling-content" className="card-value" style={{ transition: 'opacity 0.3s ease-in-out', opacity: isFading ? 0 : 1 }}>
@@ -412,8 +403,8 @@ function App() {
                     <span>최신 경기 영상</span>
                     <span style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <VideoShareButton videos={videos} />
-                    <a href={YOUTUBE_CHANNEL_URL} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', fontSize: 'calc(13px * var(--scale-factor, 1))', color: 'var(--toss-blue)', textDecoration: 'none', fontWeight: 500, lineHeight: 1, whiteSpace: 'nowrap' }}>
-                      채널 바로가기 &gt;
+                    <a href={YOUTUBE_CHANNEL_URL} target="_blank" rel="noopener noreferrer" className="text-link">
+                      채널 바로가기<Icon name="arrow-square-out" size={16} />
                     </a>
                     </span>
                   </div>
@@ -451,77 +442,24 @@ function App() {
             )}
           </main>
 
-          {/* Bottom Dock */}
-          <footer style={{ 
-            display: 'flex', 
-            justifyContent: 'space-around', 
-            alignItems: 'center', 
-            width: '100%',
-            maxWidth: '1200px',
-            height: '50px', 
-            borderTop: '1px solid #ddd',
-            backgroundColor: '#fff',
-            position: 'fixed',
-            bottom: 0,
-            left: '50%',
-            transform: 'translateX(-50%)',
-            zIndex: 1000
-          }}>
-            <button 
-              onClick={() => window.location.reload()}
-              style={{ 
-              flex: 1, height: '100%', border: 'none', backgroundColor: 'transparent', 
-              cursor: 'pointer', opacity: activeTab === 'HOME' ? 1 : 0.4,
-              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '2px'
-            }}>
-              <img src={footerHome} alt="Home" style={{ width: '20px', height: '20px', objectFit: 'contain' }} />
-              <span style={{ fontSize: 'calc(9px * var(--scale-factor, 1))', fontWeight: activeTab === 'HOME' ? 'bold' : 'normal', color: '#333' }}>홈</span>
-            </button>
-            
-            <button 
-              onClick={() => setActiveTab('VIDEO')}
-              style={{ 
-              flex: 1, height: '100%', border: 'none', backgroundColor: 'transparent', 
-              cursor: 'pointer', opacity: activeTab === 'VIDEO' ? 1 : 0.4,
-              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '2px'
-            }}>
-              <img src={footerVideo} alt="Video" style={{ width: '20px', height: '20px', objectFit: 'contain' }} />
-              <span style={{ fontSize: 'calc(9px * var(--scale-factor, 1))', fontWeight: activeTab === 'VIDEO' ? 'bold' : 'normal', color: '#333' }}>영상</span>
-            </button>
-
-            <button 
-              onClick={() => setActiveTab('SCHEDULE')}
-              style={{ 
-              flex: 1, height: '100%', border: 'none', backgroundColor: 'transparent', 
-              cursor: 'pointer', opacity: activeTab === 'SCHEDULE' ? 1 : 0.4,
-              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '2px'
-            }}>
-              <img src={footerSchedule} alt="Schedule" style={{ width: '20px', height: '20px', objectFit: 'contain' }} />
-              <span style={{ fontSize: 'calc(9px * var(--scale-factor, 1))', fontWeight: activeTab === 'SCHEDULE' ? 'bold' : 'normal', color: '#333' }}>일정</span>
-            </button>
-
-            <button 
-              onClick={() => setActiveTab('TEAM')}
-              style={{ 
-              flex: 1, height: '100%', border: 'none', backgroundColor: 'transparent', 
-              cursor: 'pointer', opacity: activeTab === 'TEAM' ? 1 : 0.4,
-              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '2px'
-            }}>
-              <img src={footerTeam} alt="Team" style={{ width: '20px', height: '20px', objectFit: 'contain' }} />
-              <span style={{ fontSize: 'calc(9px * var(--scale-factor, 1))', fontWeight: activeTab === 'TEAM' ? 'bold' : 'normal', color: '#333' }}>팀관리</span>
-            </button>
-
-            <button 
-              onClick={() => setActiveTab('MY')}
-              style={{ 
-              flex: 1, height: '100%', border: 'none', backgroundColor: 'transparent', 
-              cursor: 'pointer', opacity: activeTab === 'MY' ? 1 : 0.4,
-              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '2px'
-            }}>
-              <img src={footerMy} alt="MY" style={{ width: '20px', height: '20px', objectFit: 'contain' }} />
-              <span style={{ fontSize: 'calc(9px * var(--scale-factor, 1))', fontWeight: activeTab === 'MY' ? 'bold' : 'normal', color: '#333' }}>MY</span>
-            </button>
-          </footer>
+          {/* 하단 탭: 아래에 아이폰 홈 막대 높이만큼 독을 깔고 그 위에 탭을 올림 */}
+          <nav className="tabbar" aria-label="메뉴">
+            {TABS.map(tab => {
+              const on = activeTab === tab.key;
+              return (
+                <button
+                  key={tab.key}
+                  type="button"
+                  className={on ? 'tabbar-tab on' : 'tabbar-tab'}
+                  aria-current={on ? 'page' : undefined}
+                  onClick={() => (tab.key === 'HOME' ? window.location.reload() : setActiveTab(tab.key))}
+                >
+                  <Icon name={tab.icon} weight={on ? 'fill' : 'regular'} size={24} />
+                  <span>{tab.label}</span>
+                </button>
+              );
+            })}
+          </nav>
         </>
       )}
     </div>
