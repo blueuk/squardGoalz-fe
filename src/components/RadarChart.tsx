@@ -75,7 +75,7 @@ export default function RadarChart({ scores, size = 260, showValues = true }: Ra
         <polygon
           points={dataPolygonString}
           fill="rgba(49, 130, 246, 0.22)"
-          stroke="var(--toss-blue, #3182f6)"
+          stroke="var(--toss-blue)"
           strokeWidth="2"
           strokeLinejoin="round"
         />
@@ -88,7 +88,7 @@ export default function RadarChart({ scores, size = 260, showValues = true }: Ra
             cy={pt.y}
             r="3.5"
             fill="#fff"
-            stroke="var(--toss-blue, #3182f6)"
+            stroke="var(--toss-blue)"
             strokeWidth="2"
           />
         ))}
@@ -127,7 +127,7 @@ export default function RadarChart({ scores, size = 260, showValues = true }: Ra
             >
               {cat.label}
               {showValues && (
-                <tspan fill="var(--toss-blue, #3182f6)" fontWeight="bold" dx="3">
+                <tspan fill="var(--toss-blue)" fontWeight="bold" dx="3">
                   {val.toFixed(1)}
                 </tspan>
               )}

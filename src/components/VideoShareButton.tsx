@@ -2,6 +2,7 @@ import { copyText } from './clipboard';
 import { shareKakaoFeed } from './kakaoShare';
 import { useToast } from './Toast';
 import { deepLinkPath, YOUTUBE_CHANNEL_URL } from '../deepLink';
+import Icon from './Icon';
 
 interface Video {
   title: string;
@@ -42,15 +43,7 @@ export default function VideoShareButton({ videos }: { videos: Video[] }) {
         aria-label="카카오톡으로 영상 업로드 소식 공유"
         style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', margin: 0, padding: 0, border: 'none', background: 'none', color: 'var(--toss-blue)', fontFamily: 'inherit', fontSize: 'calc(13px * var(--scale-factor, 1))', fontWeight: 500, lineHeight: 1, cursor: 'pointer', whiteSpace: 'nowrap' }}
       >
-        {/* 공유 아이콘: 점 세 개가 이어진 < 모양 */}
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"
-          aria-hidden="true" style={{ flexShrink: 0 }}>
-          <circle cx="18" cy="5" r="3" />
-          <circle cx="6" cy="12" r="3" />
-          <circle cx="18" cy="19" r="3" />
-          <line x1="8.6" y1="10.5" x2="15.4" y2="6.5" />
-          <line x1="8.6" y1="13.5" x2="15.4" y2="17.5" />
-        </svg>
+        <Icon name="share-network" size={16} />
         공유
       </button>
     </>

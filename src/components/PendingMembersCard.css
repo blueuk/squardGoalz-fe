@@ -125,5 +125,5 @@
   cursor: not-allowed;
 }
 
-.pending-btn.approve { background: #e8f3ff; color: #3182f6; }
+.pending-btn.approve { background: var(--color-primary-soft); color: var(--color-primary); }
 .pending-btn.reject { background: #fce8e6; color: #f04452; }

@@ -16,6 +16,7 @@ import { KAKAO_TEXT_LIMIT, shareKakaoText } from './kakaoShare';
 import { useToast } from './Toast';
 import { usePermission } from '../permissions';
 import './HomeMatchCard.css';
+import Icon from './Icon';
 
 const TEAM_UID = 'df743e05-9440-4c1e-bfdb-fa07159ef0c9';
 
@@ -382,7 +383,7 @@ export default function HomeMatchCard({ onGoSchedule }: { onGoSchedule: () => vo
                       <span className="arrange-jersey-no">{m.keeper_order}</span>
                     </span>
                     <span className="arrange-name" style={{ backgroundColor: style.color }}>
-                      {showStats && m.fixed && <span title="미리 지정한 선수">📌 </span>}{m.member_name}
+                      {showStats && m.fixed && <span title="미리 지정한 선수" className="fixed-pin"><Icon name="push-pin" weight="fill" size={16} /></span>}{m.member_name}
                     </span>
                   </li>
                 ))}
@@ -502,12 +503,12 @@ export default function HomeMatchCard({ onGoSchedule }: { onGoSchedule: () => vo
 
       {preview ? (
         <button className="match-corner-btn reroll" onClick={rerollArrange} title="같은 설정으로 다시 섞기" aria-label="같은 설정으로 다시 섞기">
-          ↻
+          <Icon name="arrows-clockwise" size={20} />
         </button>
       ) : arrangement.length > 0 && (
         <>
           <button className="match-corner-btn" onClick={handleCopyShareText} title="카톡 공유용 텍스트 복사" aria-label="카톡 공유용 텍스트 복사">
-            📋
+            <Icon name="copy" size={20} />
           </button>
           <div className="match-help" ref={helpRef}>
             <button
@@ -517,7 +518,7 @@ export default function HomeMatchCard({ onGoSchedule }: { onGoSchedule: () => vo
               aria-label="팀 배정 방식 보기"
               aria-expanded={showHelp}
             >
-              ?
+              <Icon name="question" size={20} />
             </button>
             {showHelp && (
               <div className="match-help-pop" role="tooltip">
@@ -531,8 +532,8 @@ export default function HomeMatchCard({ onGoSchedule }: { onGoSchedule: () => vo
 
       {/* 구장명 / 날짜 요일 라벨 */}
       <div className={`match-label${preview ? ' with-corner-btn' : arrangement.length > 0 ? ' with-corner-btns' : ''}`}>
-        <span className="match-chip">📍 {schedule.play_location || DEFAULT_LOCATION.name}</span>
-        <span className="match-chip">📅 {formatPlayDate(schedule.play_date)}</span>
+        <span className="match-chip"><Icon name="map-pin" weight="fill" size={16} />{schedule.play_location || DEFAULT_LOCATION.name}</span>
+        <span className="match-chip"><Icon name="calendar-blank" size={16} />{formatPlayDate(schedule.play_date)}</span>
       </div>
 
       <div className="match-weather" ref={weatherRef}>
@@ -568,7 +569,7 @@ export default function HomeMatchCard({ onGoSchedule }: { onGoSchedule: () => vo
         <>
           {renderTeams(arrangement)}
           <button className="arrange-btn kakao" onClick={handleKakaoShare}>
-            <span aria-hidden="true">💬</span> 카카오톡으로 공유
+            <Icon name="chat-circle-dots" weight="fill" size={20} /> 카카오톡으로 공유
           </button>
           {canArrange && (
             <div className="arrange-actions">

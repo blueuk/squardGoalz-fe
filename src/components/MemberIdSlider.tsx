@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import './MemberIdSlider.css';
+import Icon from './Icon';
 
 interface Props<T extends { member_uid: string }> {
   members: T[];
@@ -50,9 +51,9 @@ export default function MemberIdSlider<T extends { member_uid: string }>({ membe
         ))}
       </div>
       <div className="id-slider-nav">
-        <button onClick={() => go(index - 1)} disabled={index === 0} aria-label="이전 선수">‹</button>
+        <button onClick={() => go(index - 1)} disabled={index === 0} aria-label="이전 선수"><Icon name="caret-left" size={20} /></button>
         <span>{index + 1} / {members.length}</span>
-        <button onClick={() => go(index + 1)} disabled={index >= members.length - 1} aria-label="다음 선수">›</button>
+        <button onClick={() => go(index + 1)} disabled={index >= members.length - 1} aria-label="다음 선수"><Icon name="caret-right" size={20} /></button>
       </div>
     </div>
   );
