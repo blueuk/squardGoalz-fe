@@ -425,29 +425,6 @@ main {
 .pos-badge.미지정 {
     background:var(--toss-gray);
 }
-.copy-btn {
-
-    background:var(--toss-blue);
-    color:#fff;
-    border:none;
-    padding:12px;
-    border-radius:12px;
-    font-weight:600;
-    width:100%;
-    cursor:pointer;
-    margin-top:10px;
-}
-.re-assign-btn {
-    background:#fff;
-    color:var(--toss-blue);
-    border:1px solid var(--toss-blue);
-    padding:12px;
-    border-radius:12px;
-    font-weight:600;
-    width:100%;
-    cursor:pointer;
-    margin-top:8px;
-}
 
 footer {
     position:fixed;
@@ -492,21 +469,7 @@ input,select {
     font-size: calc(16px * var(--scale-factor, 1));
     margin-bottom:10px;
 }
-.btn {
-    background:var(--toss-blue);
-    color:#fff;
-    border:none;
-    padding:15px;
-    border-radius:12px;
-    font-weight:600;
-    width:100%;
-    cursor:pointer;
-}
-.btn-outline {
-    background:var(--color-primary-soft);
-    color:var(--toss-blue);
-    margin-top:10px;
-}
+
 .info-grid {
     display:grid;
     grid-template-columns:1fr 1fr;
@@ -737,25 +700,7 @@ h2 {
     font-weight: 500;
 }
 /* 蹂듭궗 踰꾪듉 */
-.account-copy-btn {
-    width:100%;
-    margin-top:12px;
-    padding:10px;
-    border:none;
-    border-radius:8px;
-    background-color:var(--primary-color);
-    color:white;
-    font-weight:bold;
-    cursor:pointer;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    gap:5px;
-}
-.account-copy-btn:active {
-    opacity:0.8;
-    transform: scale(0.98);
-}
+
 /* ?뚮┝ 硫붿떆吏 */
 .toast {
     position:fixed;
@@ -853,46 +798,8 @@ h2 {
     display: flex; 
     gap: 10px; 
 }
-.btn {
-    flex: 1; 
-    text-decoration: none; 
-    padding: 12px;
-    border-radius: 8px; 
-    text-align: center; 
-    font-size: 0.9rem; 
-    font-weight: 600;
-}
-.btn-naver { 
-    background: #03c75a; 
-    color: #fff; 
-}
-
 
         /* 湲곗〈 ?ㅽ????좎? */
-        .notice-container { font-family: inherit; max-width: 800px; margin: 0 auto; color: #333d4b; line-height: 1.5; padding: 20px; }
-        .notice-card { background: white; padding: 30px; border-radius: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); min-height: 200px; position: relative; }
-        .notice-header-area { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .notice-header-area h2 { font-size: calc(22px * var(--scale-factor, 1)); margin: 0; }
-        .notice-btn-group { display: flex; gap: 8px; }
-        .notice-btn { padding: 10px 18px; border-radius: 12px; font-weight: 600; cursor: pointer; border: none; font-size: calc(14px * var(--scale-factor, 1)); transition: 0.2s; }
-        .notice-btn-primary { background-color: var(--color-primary); color: white; }
-        .notice-btn-secondary { background-color: #f2f4f6; color: #4e5968; }
-        .notice-btn-edit { background-color: var(--color-primary-soft); color: var(--color-primary-press); }
-        .notice-btn-delete { background-color: #feeef0; color: #f04452; }
-        .notice-item { border-bottom: 1px solid #f2f4f6; padding: 18px 10px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; border-radius: 12px; }
-        .notice-item:hover { background-color: #f9fafb; }
-        .notice-info .title { font-weight: bold; font-size: calc(16px * var(--scale-factor, 1)); color: #191f28; display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
-        .notice-info .meta { font-size: calc(13px * var(--scale-factor, 1)); color: #8b95a1; margin-top: 4px; }
-        .notice-badge { display: inline-block; font-size: calc(10px * var(--scale-factor, 1)); font-weight: bold; padding: 2px 6px; border-radius: 4px; line-height: 1.2; }
-        .notice-new-badge { background-color: #f04452; color: white; }
-        .notice-fixed-badge { background-color: var(--color-primary); color: white; margin-right: 4px; }
-        .notice-item.is-fixed { background-color: var(--color-primary-tint); }
-        .notice-modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); align-items: center; justify-content: center; }
-        .notice-modal-content { background: white; width: 95%; max-width: 650px; border-radius: 24px; padding: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); max-height: 90vh; overflow-y: auto; }
-        .notice-field { margin-bottom: 16px; }
-        .notice-field label { display: block; font-size: calc(13px * var(--scale-factor, 1)); font-weight: 600; margin-bottom: 6px; color: #4e5968; }
-        .notice-field input, .notice-field select { width: 100%; padding: 12px; border: 1px solid #e5e8eb; border-radius: 10px; box-sizing: border-box; font-size: calc(15px * var(--scale-factor, 1)); }
-        .notice-editor-container { height: 250px; margin-bottom: 10px; }
 
         /* --- 濡쒕뵫 ?몃뵒耳?댄꽣 ?ㅽ???--- */
         #noticeloadingOverlay {
@@ -900,13 +807,8 @@ h2 {
             background: rgba(255, 255, 255, 0.7); z-index: 2000;
             flex-direction: column; align-items: center; justify-content: center;
         }
-        .notice-spinner {
-            width: 40px; height: 40px; border: 4px solid #f3f3f3;
-            border-top: 4px solid var(--color-primary); border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
+
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .notice-loading-text { margin-top: 15px; font-weight: 600; color: var(--color-primary); font-size: calc(14px * var(--scale-factor, 1)); }
 
 /* ?좏뒠釉??щ씪?대뜑 ?ㅽ???*/
 .youtube-slider {
@@ -958,7 +860,6 @@ h2 {
     white-space: normal;
 }
 
-
 .app-container { 
   width: 100%; 
   max-width: 1200px; 
@@ -999,74 +900,8 @@ h2 {
 }
 
 /* Vote Edit Action Buttons */
-.vote-action-btn {
-  border: none;
-  border-radius: 8px;
-  font-size: calc(13px * var(--scale-factor, 1));
-  font-weight: bold;
-  cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-}
-.vote-action-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-.vote-action-btn:active {
-  transform: translateY(0) scale(0.97);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-}
-.vote-action-btn.attend {
-  background-color: var(--toss-blue);
-  color: #fff;
-}
-.vote-action-btn.attend:hover {
-  background-color: var(--color-primary-press);
-  filter: brightness(1.05);
-}
-.vote-action-btn.absent {
-  background-color: var(--toss-red);
-  color: #fff;
-}
-.vote-action-btn.absent:hover {
-  background-color: #d92d3b;
-  filter: brightness(1.05);
-}
-.vote-action-btn.no-vote {
-  background-color: var(--toss-gray);
-  color: #fff;
-}
-.vote-action-btn.no-vote:hover {
-  background-color: #6b7684;
-  filter: brightness(1.05);
-}
-.vote-action-btn.cancel-match {
-  background-color: #191f28;
-  color: #fff;
-}
-.vote-action-btn.cancel-match:hover {
-  background-color: #333d4b;
-  filter: brightness(1.1);
-}
 
 /* Modal confirm button hover */
-.vote-confirm-btn {
-  border: none;
-  border-radius: 12px;
-  font-size: calc(14px * var(--scale-factor, 1));
-  font-weight: bold;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-.vote-confirm-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  filter: brightness(1.05);
-}
-.vote-confirm-btn:active {
-  transform: scale(0.98);
-}
-
 
 /* Soccer Ball Loader Animation */
 @keyframes soccerRoll {
@@ -1181,16 +1016,7 @@ h2 {
 }
 
 .register-submit {
-  width: 100%;
   margin-top: 8px;
-  padding: 14px;
-  border: none;
-  border-radius: 12px;
-  background: #fee500;
-  color: #000;
-  font-size: 16px;
-  font-weight: 700;
-  cursor: pointer;
 }
 
 /* ── 디자인 시스템 1단계: 아이콘 · 머리줄 · 하단 탭 + 독 ─────────────── */

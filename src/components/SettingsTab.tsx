@@ -183,8 +183,8 @@ export default function SettingsTab() {
         ))}
 
         <div className="settings-actions">
-          <button className="settings-btn ghost" disabled={changedRoles.length === 0} onClick={() => setGrants(savedGrants)}>되돌리기</button>
-          <button className="settings-btn primary" disabled={changedRoles.length === 0} onClick={saveGrants}>
+          <button className="ui-btn ui-btn-md ui-btn-neutral" disabled={changedRoles.length === 0} onClick={() => setGrants(savedGrants)}>되돌리기</button>
+          <button className="ui-btn ui-btn-md is-main ui-btn-primary" disabled={changedRoles.length === 0} onClick={saveGrants}>
             저장{changedRoles.length > 0 ? ` (${changedRoles.map(r => r.name).join(', ')})` : ''}
           </button>
         </div>
@@ -206,12 +206,11 @@ export default function SettingsTab() {
                 </span>
                 <div className="member-role-chips" role="radiogroup" aria-label={`${m.member_name} 역할`}>
                   {roles.map(r => (
-                    <button
+                    <button className={`ui-chip${r.locked ? ' is-admin' : ''}`}
                       key={r.auth_cd}
                       type="button"
                       role="radio"
                       aria-checked={m.auth_cd === r.auth_cd}
-                      className={`member-role-chip${m.auth_cd === r.auth_cd ? ' active' : ''}${r.locked ? ' admin' : ''}`}
                       disabled={busy}
                       onClick={() => changeMemberRole(m, r.auth_cd)}
                     >

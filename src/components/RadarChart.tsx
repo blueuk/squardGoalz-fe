@@ -74,7 +74,7 @@ export default function RadarChart({ scores, size = 260, showValues = true }: Ra
         {/* 채워진 데이터 다각형 */}
         <polygon
           points={dataPolygonString}
-          fill="rgba(49, 130, 246, 0.22)"
+          fill="rgba(21, 144, 74, 0.2)"
           stroke="var(--toss-blue)"
           strokeWidth="2"
           strokeLinejoin="round"

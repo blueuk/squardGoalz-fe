@@ -134,8 +134,8 @@ export default function PendingMembersCard({ teamUid, members, onApproved, showT
                   <option value={NEW_MEMBER}>신규 선수로 등록</option>
                   {linkable.map(m => <option key={m.member_uid} value={m.member_uid}>{m.member_name} 에 연결</option>)}
                 </select>
-                <button className="pending-btn approve" disabled={busy} onClick={() => approve(u)}>승인</button>
-                <button className="pending-btn reject" disabled={busy} onClick={() => reject(u)}>거절</button>
+                <button className="ui-btn ui-btn-sm ui-btn-primary" disabled={busy} onClick={() => approve(u)}>승인</button>
+                <button className="ui-btn ui-btn-sm ui-btn-neutral" disabled={busy} onClick={() => reject(u)}>거절</button>
               </div>
             </li>
           );

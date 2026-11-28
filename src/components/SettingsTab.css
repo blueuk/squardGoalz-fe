@@ -119,28 +119,6 @@
   margin-top: 1rem;
 }
 
-.settings-btn {
-  flex: 1 1 5rem;
-  min-width: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  padding: 0.7rem;
-  border: none;
-  border-radius: 10px;
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.settings-btn:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-.settings-btn.ghost { background: #f2f4f6; color: #4e5968; }
-.settings-btn.primary { flex-grow: 2; background: var(--toss-blue); color: #fff; }
-
 /* 회원 역할 */
 .member-role-list {
   list-style: none;
@@ -188,39 +166,15 @@
   flex-shrink: 0;
 }
 
-.member-role-chip {
-  padding: 0.35rem 0.7rem;
-  border: 1px solid #e5e8eb;
-  border-radius: 999px;
-  background: #f9fafb;
-  color: #8b95a1;
-  font-size: 12px;
-  font-weight: 600;
-  white-space: nowrap;
-  cursor: pointer;
-  margin: 0;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
+.settings-actions > .ui-btn {
+  flex: 1 1 5rem;
 }
 
-.member-role-chip:not(.active):hover {
-  border-color: #b0b8c1;
-  color: #4e5968;
+.settings-actions > .ui-btn.is-main {
+  flex-grow: 2;
 }
 
-.member-role-chip.active {
-  border-color: var(--toss-blue);
-  background: var(--toss-blue);
-  color: #fff;
-  font-weight: 700;
-  cursor: default;
-}
-
-.member-role-chip.active.admin {
-  border-color: #f04452;
-  background: #f04452;
-}
-
-.member-role-chip:disabled:not(.active) {
-  cursor: not-allowed;
-  opacity: 0.6;
+/* 관리자 역할 칩은 바꿀 수 없음 */
+.ui-chip.is-admin:not([aria-checked='true']) {
+  opacity: 0.5;
 }
