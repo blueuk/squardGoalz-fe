@@ -15,7 +15,7 @@ export default function PendingGate({ onLogout, children }: { onLogout: () => vo
         <p className="register-desc" style={{ marginBottom: '20px' }}>
           관리자가 선수 명단에 등록하면 이용할 수 있습니다.<br />승인 후 다시 접속해주세요.
         </p>
-        <button className="register-submit" style={{ background: '#f2f4f6', color: '#4e5968' }} onClick={onLogout}>
+        <button className="ui-btn ui-btn-md ui-btn-block register-submit ui-btn-neutral" onClick={onLogout}>
           로그아웃
         </button>
       </div>

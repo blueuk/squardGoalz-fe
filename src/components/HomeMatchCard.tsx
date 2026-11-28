@@ -421,7 +421,7 @@ export default function HomeMatchCard({ onGoSchedule }: { onGoSchedule: () => vo
         )}
         {fixedGap && <p>미리 지정한 선수 때문에 팀 인원이 {sizeGap}명까지 차이 납니다.</p>}
         {overflow?.suggestedTeamCount && (
-          <button className="arrange-btn ghost" onClick={() => applySuggestedTeamCount(overflow.suggestedTeamCount!)}>
+          <button className="ui-btn ui-btn-md ui-btn-neutral" onClick={() => applySuggestedTeamCount(overflow.suggestedTeamCount!)}>
             {overflow.suggestedTeamCount}팀으로 다시 배정
           </button>
         )}
@@ -470,8 +470,8 @@ export default function HomeMatchCard({ onGoSchedule }: { onGoSchedule: () => vo
           />
         )}
         <div className="arrange-actions">
-          <button className="arrange-btn ghost" onClick={() => setShowModal(false)}>취소</button>
-          <button className="arrange-btn green" onClick={runArrange}>배정하기</button>
+          <button className="ui-btn ui-btn-md ui-btn-neutral" onClick={() => setShowModal(false)}>취소</button>
+          <button className="ui-btn ui-btn-md ui-btn-primary" onClick={runArrange}>배정하기</button>
         </div>
       </div>
     </div>
@@ -490,7 +490,7 @@ export default function HomeMatchCard({ onGoSchedule }: { onGoSchedule: () => vo
       <div className="card match-card">
         <p className="match-empty">예정된 일정이 없습니다.</p>
         {/* 일정 등록 권한이 있을 때만: 일정 탭으로 이동 */}
-        {canSchedule && <button className="arrange-btn big" onClick={onGoSchedule}>일정 등록하기</button>}
+        {canSchedule && <button className="ui-btn ui-btn-lg ui-btn-block ui-btn-primary" onClick={onGoSchedule}>일정 등록하기</button>}
       </div>
     );
   }
@@ -561,24 +561,24 @@ export default function HomeMatchCard({ onGoSchedule }: { onGoSchedule: () => vo
           {renderPreviewNotice(preview)}
           {renderTeams(preview, true)}
           <div className="arrange-actions">
-            <button className="arrange-btn ghost" onClick={() => setPreview(null)}>취소</button>
-            <button className="arrange-btn green" onClick={saveArrange}>저장</button>
+            <button className="ui-btn ui-btn-md ui-btn-neutral" onClick={() => setPreview(null)}>취소</button>
+            <button className="ui-btn ui-btn-md ui-btn-primary" onClick={saveArrange}>저장</button>
           </div>
         </>
       ) : arrangement.length > 0 ? (
         <>
           {renderTeams(arrangement)}
-          <button className="arrange-btn kakao" onClick={handleKakaoShare}>
+          <button className="ui-btn ui-btn-md ui-btn-block arrange-kakao ui-btn-kakao" onClick={handleKakaoShare}>
             <Icon name="chat-circle-dots" weight="fill" size={20} /> 카카오톡으로 공유
           </button>
           {canArrange && (
             <div className="arrange-actions">
-              <button className="arrange-btn ghost" onClick={openForm} title={MANUAL_HINT}>다시 배정</button>
+              <button className="ui-btn ui-btn-md ui-btn-neutral" onClick={openForm} title={MANUAL_HINT}>다시 배정</button>
             </div>
           )}
         </>
       ) : canArrange ? (
-        <button className="arrange-btn big" onClick={openForm} title={MANUAL_HINT}>배정하기</button>
+        <button className="ui-btn ui-btn-lg ui-btn-block ui-btn-primary" onClick={openForm} title={MANUAL_HINT}>배정하기</button>
       ) : (
         <p className="match-empty">아직 팀 배정 전입니다.</p>
       )}

@@ -140,31 +140,6 @@
   gap: 6px;
 }
 
-.my-badge {
-  padding: 5px 10px;
-  border-radius: 999px;
-  background: #e6f4ea;
-  color: #137333;
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.my-badge.status-02 {
-  background: #fce8e6;
-  color: #c5221f;
-}
-
-.my-badge.status-03 {
-  background: #fff4e5;
-  color: #b25e00;
-}
-
-.my-badge.mbti {
-  background: var(--color-primary-soft);
-  color: var(--toss-blue);
-  letter-spacing: 1px;
-}
-
 /* 능력치 */
 .my-radar {
   text-align: center;
@@ -284,72 +259,22 @@
 }
 
 /* 상태 토글 (세그먼트) */
-.my-segment {
-  display: flex;
-  gap: 2px;
-  padding: 3px;
-  border-radius: 12px;
-  background: #f2f4f6;
-}
-
-.my-segment button {
-  min-width: 52px;
-  margin: 0;
-  padding: 7px 12px;
-  border: none;
-  border-radius: 9px;
-  background: transparent;
-  color: #8b95a1;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s;
-}
-
-.my-segment button.active {
-  background: #fff;
-  color: #191f28;
-  font-weight: 700;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.my-segment button:disabled {
-  cursor: wait;
-}
 
 /* 버튼 */
-.my-btn {
-  width: 100%;
-  margin: 16px 0 0;
-  padding: 14px;
-  border: none;
-  border-radius: 14px;
-  background: #f2f4f6;
-  color: #333d4b;
-  font-size: 15px;
-  font-weight: 700;
-  cursor: pointer;
+
+/* 상태 · MBTI 라벨 줄 */
+.my-badges .ui-label {
+  font-size: 12px;
 }
 
-.my-btn.primary {
-  margin-top: 0;
-  background: var(--toss-blue);
-  color: #fff;
+.ui-btn.my-btn-gap {
+  margin-top: 12px;
 }
 
-.my-btn.logout {
+.ui-btn.my-logout {
+  color: var(--red-500);
+}
+
+.my-photo-delete {
   margin-top: 4px;
-  background: #fff;
-  color: #f04452;
-}
-
-.my-text-btn {
-  margin: 0 0 14px;
-  padding: 0;
-  border: none;
-  background: none;
-  color: var(--toss-blue);
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
 }

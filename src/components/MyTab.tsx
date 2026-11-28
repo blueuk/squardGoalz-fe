@@ -9,6 +9,7 @@ import {
   getCachedPositionWeights, setCachedPositionWeights,
 } from './positionUtils';
 import { useToast } from './Toast';
+import { statusLabelClass } from './ui';
 import { profileImageUrl, resizeProfileImage } from './profileImage';
 import './MyTab.css';
 import Icon from './Icon';
@@ -247,12 +248,12 @@ export default function MyTab({ user, myInfo, onStatusChanged, onLogout }: Props
           <div className="my-name">{user.username || '이름 없음'}</div>
           <div className="my-nick">{user.nickname}</div>
           {photoVersion && memberUid && (
-            <button className="my-photo-delete" onClick={deletePhoto} disabled={photoBusy}>사진 삭제</button>
+            <button className="ui-btn ui-btn-text is-muted my-photo-delete" onClick={deletePhoto} disabled={photoBusy}>사진 삭제</button>
           )}
         </div>
         <div className="my-badges">
-          {statusName && <span className={`my-badge status-${statusCd}`}>{statusName}</span>}
-          {myMain && <span className="my-badge mbti">{myMain.mbti_cd}</span>}
+          {statusName && <span className={statusLabelClass(statusCd)}>{statusName}</span>}
+          {myMain && <span className="ui-label is-info">{myMain.mbti_cd}</span>}
         </div>
       </section>
 
@@ -278,14 +279,14 @@ export default function MyTab({ user, myInfo, onStatusChanged, onLogout }: Props
       <section className="my-card">
         <div className="my-title-row">
           <h3 className="my-title">풋살 MBTI</h3>
-          {myMain && memberUid && <button className="my-text-btn" onClick={() => setShowTest(true)}>다시 하기</button>}
+          {myMain && memberUid && <button className="ui-btn ui-btn-text" onClick={() => setShowTest(true)}>다시 하기</button>}
         </div>
         {!memberUid ? (
           <p className="my-empty">선수 명단에 연결된 계정만 테스트할 수 있어요.</p>
         ) : !myMain ? (
           <div className="my-mbti-empty">
             <p>나는 피보일까, 픽소일까?<br />4가지 축으로 나의 풋살 유형을 알아보세요.</p>
-            <button className="my-btn primary" onClick={() => setShowTest(true)}>풋살 MBTI 테스트 하기</button>
+            <button className="ui-btn ui-btn-lg ui-btn-block ui-btn-primary" onClick={() => setShowTest(true)}>풋살 MBTI 테스트 하기</button>
           </div>
         ) : (
           <>
@@ -298,7 +299,7 @@ export default function MyTab({ user, myInfo, onStatusChanged, onLogout }: Props
                 골레이 유형 <b>{myGk.mbti_cd}</b> · {TYPES[myGk.mbti_cd]?.name}
               </div>
             )}
-            <button className="my-btn" onClick={() => setShowMatches(v => !v)} aria-expanded={showMatches}>
+            <button className="ui-btn ui-btn-md ui-btn-block my-btn-gap ui-btn-neutral" onClick={() => setShowMatches(v => !v)} aria-expanded={showMatches}>
               {showMatches ? '접기' : '나와 잘 맞는 팀원 보기'}
             </button>
             {showMatches && (
@@ -325,13 +326,13 @@ export default function MyTab({ user, myInfo, onStatusChanged, onLogout }: Props
         <div className="my-row status">
           <span className="my-label">내 상태</span>
           {statusOptions.length > 0 && myInfo?.member_uid ? (
-            <div className="my-segment" role="radiogroup" aria-label="내 상태">
+            <div className="ui-seg ui-seg-sm" role="radiogroup" aria-label="내 상태">
               {statusOptions.map(o => (
                 <button
                   key={o.code}
                   role="radio"
                   aria-checked={statusCd === o.code}
-                  className={statusCd === o.code ? 'active' : ''}
+                  className={statusCd === o.code ? 'on' : ''}
                   disabled={statusSaving}
                   onClick={() => changeStatus(o.code)}
                 >
@@ -354,7 +355,7 @@ export default function MyTab({ user, myInfo, onStatusChanged, onLogout }: Props
         </div>
       </section>
 
-      <button className="my-btn logout" onClick={onLogout}>로그아웃</button>
+      <button className="ui-btn ui-btn-md ui-btn-block my-btn-gap ui-btn-neutral my-logout" onClick={onLogout}>로그아웃</button>
     </div>
   );
 }

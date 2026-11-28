@@ -173,7 +173,7 @@ export default function FutsalMbtiTest({ teamUid, memberUid, onClose, onSaved }:
         {step === 'quiz' && current && (
           <>
             <div className="mbti-top">
-              <button className="mbti-back" onClick={back} aria-label="이전 문항">←</button>
+              <button className="mbti-back" onClick={back} aria-label="이전 문항"><Icon name="caret-left" size={20} /></button>
               <div className="mbti-bar"><i style={{ width: `${(idx / order.length) * 100}%` }} /></div>
               <span className="mbti-count">{idx + 1} / {order.length}</span>
             </div>
@@ -203,15 +203,15 @@ export default function FutsalMbtiTest({ teamUid, memberUid, onClose, onSaved }:
               {saveState === 'saving' && '결과를 저장하는 중...'}
               {saveState === 'saved' && '✅ MY 화면에 저장되었어요'}
               {saveState === 'error' && (
-                <>저장하지 못했어요. <button className="mbti-link" onClick={() => save(result)}>다시 저장</button></>
+                <>저장하지 못했어요. <button className="ui-btn ui-btn-text" onClick={() => save(result)}>다시 저장</button></>
               )}
             </p>
             {result.testType === 'gk' && (
               <p className="mbti-note">🧤 골레이도 필드에서 뛸 때가 있죠? 필드 테스트도 하면 필드 유형까지 알 수 있어요.</p>
             )}
             <div className="mbti-actions">
-              {result.testType === 'gk' && <button className="mbti-btn gk" onClick={() => start('field')}>필드 테스트도 해보기</button>}
-              <button className={`mbti-btn${result.testType === 'gk' ? ' ghost' : ''}`} onClick={onClose}>MY로 돌아가기</button>
+              {result.testType === 'gk' && <button className="ui-btn ui-btn-lg ui-btn-block ui-btn-primary" onClick={() => start('field')}>필드 테스트도 해보기</button>}
+              <button className={`ui-btn ui-btn-lg ui-btn-block ${result.testType === 'gk' ? 'ui-btn-neutral' : 'ui-btn-primary'}`} onClick={onClose}>MY로 돌아가기</button>
             </div>
           </>
         )}

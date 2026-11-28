@@ -261,7 +261,7 @@ function App() {
                 onInput={e => { e.currentTarget.value = e.currentTarget.value.replace(/\D/g, '').slice(0, 11); }}
               />
             </label>
-            <button type="submit" className="register-submit">가입 완료하기</button>
+            <button className="ui-btn ui-btn-lg ui-btn-block register-submit ui-btn-primary" type="submit">가입 완료하기</button>
           </form>
         </div>
       </div>
@@ -281,19 +281,8 @@ function App() {
             style={{ width: '250px', height: 'auto', marginBottom: '10px' }} 
           />
           <p>서비스를 이용하시려면 카카오 로그인이 필요합니다.</p>
-          <button 
-            onClick={handleKakaoLogin}
-            style={{
-              backgroundColor: '#FEE500', 
-              color: '#000000', 
-              border: 'none', 
-              padding: '15px 30px', 
-              fontSize: 'calc(18px * var(--scale-factor, 1))', 
-              fontWeight: 'bold', 
-              borderRadius: '8px', 
-              cursor: 'pointer',
-              marginTop: '20px'
-            }}>
+          <button className="ui-btn ui-btn-lg ui-btn-kakao" style={{ marginTop: '20px' }} 
+            onClick={handleKakaoLogin}>
             카카오로 시작하기
           </button>
         </div>

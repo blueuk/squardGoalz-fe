@@ -1,0 +1,244 @@
+/* ── 디자인 시스템 2단계: 공통 부품 (원자) ─────────────────────────────
+   버튼 · 라벨 · 칩 · 세그먼트. 화면마다 따로 만들던 버튼 스타일을 이것으로 통일.
+   토큰(색·크기)은 App.css :root 에 있음.
+
+   버튼  <button class="ui-btn ui-btn-md ui-btn-primary">
+         종류: primary · secondary · neutral · danger · danger-soft · kakao · text · icon
+         크기: lg(52) · md(44) · sm(32, 누르는 칸은 44)   + ui-btn-block (가로 꽉)
+   라벨  <span class="ui-label is-active">   읽기 전용. 상태 01 활동 · 02 부상 · 03 육아
+   칩    <button class="ui-chip on">          눌러서 고르는 것 (aria-pressed/aria-checked 도 인식)
+   세그먼트 <div class="ui-seg"><button class="on"> */
+
+/* 버튼 ------------------------------------------------------------------ */
+button.ui-btn,
+a.ui-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 0;
+  height: 44px;
+  padding: 0 16px;
+  border: none;
+  border-radius: var(--r-12);
+  background: var(--gray-100);
+  color: var(--gray-700);
+  font-family: inherit;
+  font-size: calc(var(--fs-15) * var(--scale-factor, 1));
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: none;
+  transition: background-color 0.15s ease, transform 0.1s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ui-btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.ui-btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.ui-btn.ui-btn:disabled {
+  background: var(--gray-100);
+  color: var(--gray-400);
+  cursor: default;
+}
+
+/* 크기 */
+.ui-btn.ui-btn-lg {
+  height: 52px;
+  padding: 0 20px;
+  font-size: calc(var(--fs-17) * var(--scale-factor, 1));
+}
+
+.ui-btn.ui-btn-md {
+  height: 44px;
+}
+
+.ui-btn.ui-btn-sm {
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 8px;
+  font-size: calc(var(--fs-13) * var(--scale-factor, 1));
+}
+
+/* 작은 버튼도 누르는 칸은 44px */
+.ui-btn.ui-btn-sm::after,
+.ui-btn.ui-btn-icon::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+}
+
+.ui-btn.ui-btn-block {
+  width: 100%;
+}
+
+/* 종류 */
+.ui-btn.ui-btn-primary { background: var(--color-primary); color: #fff; }
+.ui-btn.ui-btn-secondary { background: var(--color-primary-soft); color: var(--color-primary); }
+.ui-btn.ui-btn-neutral { background: var(--gray-100); color: var(--gray-700); }
+.ui-btn.ui-btn-danger { background: var(--red-500); color: #fff; }
+.ui-btn.ui-btn-danger-soft { background: var(--red-50); color: var(--red-500); }
+.ui-btn.ui-btn-kakao { background: var(--kakao); color: #191919; }
+
+@media (hover: hover) {
+  .ui-btn.ui-btn-primary:hover:not(:disabled) { background: var(--color-primary-press); }
+  .ui-btn.ui-btn-secondary:hover:not(:disabled) { background: var(--green-100); }
+  .ui-btn.ui-btn-neutral:hover:not(:disabled) { background: var(--gray-200); }
+  .ui-btn.ui-btn-danger:hover:not(:disabled) { background: #d92d3b; }
+}
+
+/* 글자 버튼: 배경 없이 초록 글자 */
+.ui-btn.ui-btn-text {
+  height: auto;
+  min-height: 32px;
+  padding: 0 4px;
+  background: none;
+  color: var(--color-primary);
+  font-size: calc(var(--fs-13) * var(--scale-factor, 1));
+  font-weight: 600;
+}
+
+.ui-btn.ui-btn-text.is-danger { color: var(--red-500); }
+.ui-btn.ui-btn-text.is-muted { color: var(--gray-500); }
+.ui-btn.ui-btn-text:disabled { background: none; }
+
+/* 동그란 아이콘 버튼 (36, 누르는 칸 48) */
+.ui-btn.ui-btn-icon {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 50%;
+}
+
+/* 라벨 (읽기 전용) ---------------------------------------------------------- */
+.ui-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px 8px;
+  border-radius: var(--r-6);
+  background: var(--gray-100);
+  color: var(--gray-600);
+  font-size: calc(var(--fs-12) * var(--scale-factor, 1));
+  font-weight: 700;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.ui-label.is-active { background: #e6f4ea; color: #137333; }
+.ui-label.is-injury { background: var(--red-50); color: #c5221f; }
+.ui-label.is-parent { background: var(--orange-50); color: #b25e00; }
+.ui-label.is-info { background: var(--color-primary-soft); color: var(--color-primary); }
+.ui-label.is-solid { color: #fff; } /* 바탕색은 style 로 (포지션 색) */
+
+/* 칩 (눌러서 고르기) --------------------------------------------------------- */
+button.ui-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 32px;
+  margin: 0;
+  padding: 0 12px;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--r-full);
+  background: #fff;
+  color: var(--gray-700);
+  font-family: inherit;
+  font-size: calc(var(--fs-13) * var(--scale-factor, 1));
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.ui-chip.on,
+.ui-chip[aria-pressed='true'],
+.ui-chip[aria-checked='true'] {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.ui-chip:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.ui-chip:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* 세그먼트 (팀 탭 · 내 상태) ------------------------------------------------- */
+.ui-seg {
+  display: flex;
+  gap: 2px;
+  padding: 4px;
+  border-radius: var(--r-12);
+  background: var(--gray-100);
+}
+
+.ui-seg > button {
+  flex: 1;
+  min-height: 40px;
+  margin: 0;
+  padding: 0 12px;
+  border: none;
+  border-radius: 9px;
+  background: none;
+  color: var(--gray-500);
+  font-family: inherit;
+  font-size: calc(var(--fs-14) * var(--scale-factor, 1));
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.ui-seg > button.on,
+.ui-seg > button[aria-checked='true'] {
+  background: #fff;
+  color: var(--gray-900);
+  font-weight: 700;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.ui-seg > button:disabled {
+  cursor: default;
+}
+
+.ui-seg > button:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+.ui-seg.ui-seg-sm {
+  display: inline-flex;
+  padding: 3px;
+}
+
+.ui-seg.ui-seg-sm > button {
+  min-height: 32px;
+  padding: 0 10px;
+  border-radius: 7px;
+  font-size: calc(var(--fs-13) * var(--scale-factor, 1));
+}
+
+/* 버튼 줄 (취소 · 저장) */
+.ui-btn-row {
+  display: flex;
+  gap: 8px;
+}
+
+.ui-btn-row > .ui-btn { flex: 1; }
+.ui-btn-row > .ui-btn.is-main { flex: 2; }

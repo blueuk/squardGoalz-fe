@@ -109,21 +109,3 @@
   font-size: 13px;
 }
 
-.pending-btn {
-  flex-shrink: 0;
-  padding: 0.45rem 0.7rem;
-  border: none;
-  border-radius: 8px;
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-.pending-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.pending-btn.approve { background: var(--color-primary-soft); color: var(--color-primary); }
-.pending-btn.reject { background: #fce8e6; color: #f04452; }

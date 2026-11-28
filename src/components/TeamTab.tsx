@@ -144,23 +144,11 @@ export function PositionLabels({
       {results.map(pos => (
         <span
           key={pos.code}
-          className="position-label"
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '2px',
-            backgroundColor: pos.bgColor,
-            color: '#ffffff',
-            padding: '2px 6px',
-            borderRadius: '6px',
-            fontSize: '10px',
-            fontWeight: 'bold',
-            boxShadow: pos.isHighest ? '0 1px 4px rgba(0,0,0,0.25)' : 'none',
-            border: pos.isHighest ? '1px solid #fff' : 'none',
-            letterSpacing: '-0.3px',
-          }}
+          className={`ui-label is-solid position-label${pos.isHighest ? ' is-top' : ''}`}
+          style={{ backgroundColor: pos.bgColor }}
+          title={`${pos.name} (${pos.abbr})`}
         >
-          {pos.isHighest ? '★' : ''}[{pos.abbr} {pos.scoreStr}]
+          {pos.isHighest ? '★ ' : ''}{pos.name} {pos.score.toFixed(1)}
         </span>
       ))}
     </div>
@@ -287,23 +275,9 @@ function WeightEditor({
           const tot = getTotal(pos.code);
           const valid = Math.abs(tot - 1) < 0.005;
           return (
-            <button
+            <button className={`ui-chip${activePos === pos.code ? ' on' : ''}`}
               key={pos.code}
               onClick={() => setActivePos(pos.code)}
-              style={{
-                padding: '6px 12px',
-                borderRadius: '8px',
-                fontSize: '12px',
-                fontWeight: 'bold',
-                border: 'none',
-                cursor: 'pointer',
-                backgroundColor: activePos === pos.code ? pos.color : '#fff',
-                color: activePos === pos.code ? '#fff' : '#4e5968',
-                boxShadow: activePos === pos.code ? '0 2px 6px rgba(0,0,0,0.1)' : 'none',
-                borderWidth: '1px',
-                borderStyle: 'solid',
-                borderColor: activePos === pos.code ? pos.color : (valid ? '#e5e8eb' : '#f04452')
-              }}
             >
               {pos.name} ({pos.abbr}) {!valid && '⚠️'}
             </button>
@@ -363,11 +337,10 @@ function WeightEditor({
                   color: '#191f28'
                 }}
               />
-              <button
+              <button className="ui-btn ui-btn-icon ui-btn-danger-soft" style={{ flexShrink: 0 }}
                 onClick={() => handleDeleteItemClick(item)}
                 disabled={isItemBusy}
                 title="항목 삭제"
-                style={{ flexShrink: 0, fontSize: '12px', padding: '4px 7px', borderRadius: '6px', border: 'none', backgroundColor: '#fce8e6', color: '#f04452', cursor: 'pointer', fontWeight: 'bold' }}
               >
                 <Icon name="x" size={16} />
               </button>
@@ -400,10 +373,9 @@ function WeightEditor({
           >
             {CATEGORY_OPTIONS.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
           </select>
-          <button
+          <button className="ui-btn ui-btn-sm ui-btn-primary" style={{ flex: '0 0 auto' }}
             onClick={handleAddItemClick}
             disabled={isItemBusy || !newItemName.trim()}
-            style={{ flex: '0 0 auto', whiteSpace: 'nowrap', padding: '8px 14px', borderRadius: '8px', border: 'none', backgroundColor: 'var(--toss-blue)', color: '#fff', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}
           >
             {isItemBusy ? '처리 중...' : '추가'}
           </button>
@@ -411,16 +383,14 @@ function WeightEditor({
       </div>
 
       <div style={{ display: 'flex', gap: '8px', marginTop: '14px' }}>
-        <button
+        <button className="ui-btn ui-btn-md ui-btn-neutral" style={{ flex: 1 }}
           onClick={onClose}
-          style={{ flex: 1, padding: '11px', borderRadius: '10px', border: '1px solid #ddd', backgroundColor: '#f4f4f4', color: '#4e5968', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}
         >
           취소
         </button>
-        <button
+        <button className="ui-btn ui-btn-md ui-btn-primary" style={{ flex: 2 }}
           onClick={handleSaveClick}
           disabled={isSaving}
-          style={{ flex: 2, padding: '11px', borderRadius: '10px', border: 'none', backgroundColor: 'var(--toss-blue)', color: '#fff', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}
         >
           {isSaving ? '저장 중...' : `가중치 저장하기${changes.length > 0 ? ` (${changes.length}개 변경)` : ''}`}
         </button>
@@ -1007,17 +977,9 @@ export default function TeamTab({ focusPayment = false, onFocused }: { focusPaym
         padding: '12px 20px', borderBottom: '1px solid #f2f4f6',
         boxShadow: '0 2px 8px rgba(0,0,0,0.02)'
       }}>
-        <div style={{ display: 'flex', backgroundColor: '#f2f4f6', borderRadius: '24px', padding: '4px', gap: '4px' }}>
+        <div className="ui-seg" role="tablist">
           {(canAuth ? ['INFO', 'SQUAD', 'SETTINGS'] as const : ['INFO', 'SQUAD'] as const).map(tab => (
-            <button key={tab} onClick={() => setSubTab(tab)} style={{
-              flex: 1, padding: '10px 0', borderRadius: '20px', border: 'none',
-              backgroundColor: subTab === tab ? '#fff' : 'transparent',
-              color: subTab === tab ? '#191f28' : '#8b95a1',
-              fontWeight: subTab === tab ? '700' : '500',
-              fontSize: 'calc(14px * var(--scale-factor, 1))',
-              boxShadow: subTab === tab ? '0 2px 8px rgba(0,0,0,0.08)' : 'none',
-              cursor: 'pointer', transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
-            }}>
+            <button className={subTab === tab ? 'on' : ''} key={tab} role="tab" aria-selected={subTab === tab} onClick={() => setSubTab(tab)}>
               {SUB_TAB_LABELS[tab]}
             </button>
           ))}
@@ -1033,12 +995,12 @@ export default function TeamTab({ focusPayment = false, onFocused }: { focusPaym
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
                 <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#333', margin: 0 }}>⚽ 팀 정보</h3>
                 {canTeamEdit && !isEditing && (
-                  <button onClick={handleEditClick} style={{ padding: '6px 12px', fontSize: '13px', backgroundColor: '#f0f0f0', color: '#333', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>수정</button>
+                  <button className="ui-btn ui-btn-sm ui-btn-neutral" onClick={handleEditClick}>수정</button>
                 )}
                 {canTeamEdit && isEditing && (
                   <div>
-                    <button onClick={handleCancelClick} style={{ padding: '6px 12px', fontSize: '13px', backgroundColor: '#fff', color: '#888', border: '1px solid #ddd', borderRadius: '6px', cursor: 'pointer', marginRight: '5px' }}>취소</button>
-                    <button onClick={handleSaveClick} style={{ padding: '6px 12px', fontSize: '13px', backgroundColor: 'var(--color-primary)', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>저장</button>
+                    <button className="ui-btn ui-btn-sm ui-btn-neutral" onClick={handleCancelClick}>취소</button>
+                    <button className="ui-btn ui-btn-sm ui-btn-primary" onClick={handleSaveClick}>저장</button>
                   </div>
                 )}
               </div>
@@ -1112,26 +1074,24 @@ export default function TeamTab({ focusPayment = false, onFocused }: { focusPaym
                 {!isPaymentEditing && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     {payments.length > 0 && (
-                      <button onClick={handleKakaoSharePayment} title="카카오톡으로 입금 안내 공유" aria-label="카카오톡으로 입금 안내 공유"
-                        style={{ width: '32px', height: '32px', padding: 0, backgroundColor: 'var(--kakao)', color: '#191919', border: 'none', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <button className="ui-btn ui-btn-icon ui-btn-kakao" onClick={handleKakaoSharePayment} title="카카오톡으로 입금 안내 공유" aria-label="카카오톡으로 입금 안내 공유">
                         <Icon name="chat-circle-dots" weight="fill" size={18} />
                       </button>
                     )}
                     {payments.length > 0 && (
-                      <button onClick={handleCopyPaymentText} title="카톡 공유용 입금 안내 복사" aria-label="카톡 공유용 입금 안내 복사"
-                        style={{ width: '32px', height: '32px', padding: 0, backgroundColor: 'var(--gray-100)', color: 'var(--gray-800)', border: 'none', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <button className="ui-btn ui-btn-icon ui-btn-neutral" onClick={handleCopyPaymentText} title="카톡 공유용 입금 안내 복사" aria-label="카톡 공유용 입금 안내 복사">
                         <Icon name="copy" size={18} />
                       </button>
                     )}
                     {canPaymentEdit && (
-                      <button onClick={handlePaymentEditClick} style={{ padding: '6px 12px', fontSize: '13px', backgroundColor: '#f0f0f0', color: '#333', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>수정</button>
+                      <button className="ui-btn ui-btn-sm ui-btn-neutral" onClick={handlePaymentEditClick}>수정</button>
                     )}
                   </div>
                 )}
                 {canPaymentEdit && isPaymentEditing && (
                   <div>
-                    <button onClick={handlePaymentCancelClick} style={{ padding: '6px 12px', fontSize: '13px', backgroundColor: '#fff', color: '#888', border: '1px solid #ddd', borderRadius: '6px', cursor: 'pointer', marginRight: '5px' }}>취소</button>
-                    <button onClick={handlePaymentSaveClick} style={{ padding: '6px 12px', fontSize: '13px', backgroundColor: 'var(--color-primary)', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>저장</button>
+                    <button className="ui-btn ui-btn-sm ui-btn-neutral" onClick={handlePaymentCancelClick}>취소</button>
+                    <button className="ui-btn ui-btn-sm ui-btn-primary" onClick={handlePaymentSaveClick}>저장</button>
                   </div>
                 )}
               </div>
@@ -1157,8 +1117,7 @@ export default function TeamTab({ focusPayment = false, onFocused }: { focusPaym
                               <strong>{bankName}</strong> {account.account_enc}<br />
                               <span style={{ fontSize: '12px', color: '#888' }}>예금주: {getAccountHolder(payment.payment_cd)}</span>
                             </div>
-                            <button onClick={() => copyToClipboard(account.account_enc)}
-                              style={{ padding: '6px 12px', fontSize: '12px', backgroundColor: primaryColor, color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
+                            <button className="ui-btn ui-btn-sm ui-btn-secondary" style={{ flexShrink: 0 }} onClick={() => copyToClipboard(account.account_enc)}>
                               복사
                             </button>
                           </div>
@@ -1220,18 +1179,7 @@ export default function TeamTab({ focusPayment = false, onFocused }: { focusPaym
                       포지션별 스탯 가중치를 설정합니다. (각 포지션별 총합: 1.0)
                     </p>
                   </div>
-                  <button onClick={() => setShowWeightEditor(!showWeightEditor)}
-                    style={{
-                      padding: '8px 14px',
-                      fontSize: '13px',
-                      backgroundColor: showWeightEditor ? 'var(--color-primary-soft)' : '#f2f4f6',
-                      color: showWeightEditor ? 'var(--toss-blue)' : '#4e5968',
-                      border: 'none',
-                      borderRadius: '8px',
-                      cursor: 'pointer',
-                      fontWeight: 'bold',
-                      transition: 'all 0.2s'
-                    }}>
+                  <button className={`ui-btn ui-btn-sm ${showWeightEditor ? 'ui-btn-secondary' : 'ui-btn-neutral'}`} onClick={() => setShowWeightEditor(!showWeightEditor)}>
                     {showWeightEditor ? '가중치 닫기 ▴' : '가중치 수정 ▾'}
                   </button>
                 </div>
@@ -1274,8 +1222,7 @@ export default function TeamTab({ focusPayment = false, onFocused }: { focusPaym
                     총 {teamMembers.length}명
                   </span>
                   {canMember && (
-                    <button onClick={() => setShowAddMember(true)}
-                      style={{ padding: '6px 14px', fontSize: '13px', backgroundColor: 'var(--color-primary-soft)', color: 'var(--toss-blue)', border: '1px solid var(--toss-blue)', borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold' }}>
+                    <button className="ui-btn ui-btn-sm ui-btn-secondary" onClick={() => setShowAddMember(true)}>
                       + 선수 추가
                     </button>
                   )}
@@ -1295,12 +1242,10 @@ export default function TeamTab({ focusPayment = false, onFocused }: { focusPaym
                     style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ccd3dc', fontSize: '14px', marginBottom: '10px', boxSizing: 'border-box' }}
                   />
                   <div style={{ display: 'flex', gap: '8px' }}>
-                    <button onClick={() => { setShowAddMember(false); setNewMemberName(''); }}
-                      style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid #ddd', backgroundColor: '#f4f4f4', color: '#4e5968', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}>
+                    <button className="ui-btn ui-btn-md ui-btn-neutral" style={{ flex: 1 }} onClick={() => { setShowAddMember(false); setNewMemberName(''); }}>
                       취소
                     </button>
-                    <button onClick={handleAddMember} disabled={isAddingMember || !newMemberName.trim()}
-                      style={{ flex: 2, padding: '10px', borderRadius: '8px', border: 'none', backgroundColor: 'var(--toss-blue)', color: '#fff', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}>
+                    <button className="ui-btn ui-btn-md ui-btn-primary" style={{ flex: 2 }} onClick={handleAddMember} disabled={isAddingMember || !newMemberName.trim()}>
                       {isAddingMember ? '추가 중...' : '등록하기 (기본 13점)'}
                     </button>
                   </div>
@@ -1457,9 +1402,7 @@ export default function TeamTab({ focusPayment = false, onFocused }: { focusPaym
                             {canScoreEdit && (
                               <div className="report-header-action">
                                 {!isEditingThisMember ? (
-                                  <button onClick={e => { e.stopPropagation(); handleStartEditScores(member.member_uid); }}
-                                    className="vote-action-btn"
-                                    style={{ padding: '6px 14px', backgroundColor: 'var(--toss-light-blue)', color: 'var(--toss-blue)', borderRadius: '8px', fontSize: '12px' }}>
+                                  <button className="ui-btn ui-btn-sm ui-btn-secondary" onClick={e => { e.stopPropagation(); handleStartEditScores(member.member_uid); }}>
                                     <Icon name="pencil-simple" size={16} /> 수정하기
                                   </button>
                                 ) : (
@@ -1589,12 +1532,10 @@ export default function TeamTab({ focusPayment = false, onFocused }: { focusPaym
                           </div>
                         </div>
                         <div className="member-card-actions">
-                          <button onClick={() => handleRestoreMember(member)}
-                            style={{ fontSize: '12px', padding: '6px 10px', borderRadius: '8px', border: 'none', backgroundColor: 'var(--color-primary-soft)', color: 'var(--color-primary)', cursor: 'pointer', fontWeight: 'bold' }}>
+                          <button className="ui-btn ui-btn-sm ui-btn-secondary" onClick={() => handleRestoreMember(member)}>
                             복구
                           </button>
-                          <button onClick={() => handlePurgeMember(member)}
-                            style={{ fontSize: '12px', padding: '6px 10px', borderRadius: '8px', border: 'none', backgroundColor: '#fce8e6', color: '#f04452', cursor: 'pointer', fontWeight: 'bold' }}>
+                          <button className="ui-btn ui-btn-sm ui-btn-danger-soft" onClick={() => handlePurgeMember(member)}>
                             완전 삭제
                           </button>
                         </div>
@@ -1623,14 +1564,10 @@ export default function TeamTab({ focusPayment = false, onFocused }: { focusPaym
           borderTop: '1px solid #f2f4f6', padding: '12px 20px',
           display: 'flex', gap: '12px', zIndex: 1050, boxSizing: 'border-box'
         }}>
-          <button onClick={handleCancelEditScores} disabled={isSavingScores}
-            className="vote-action-btn"
-            style={{ flex: 1, padding: '14px', borderRadius: '14px', backgroundColor: '#f2f4f6', color: '#4e5968', fontSize: '15px' }}>
+          <button className="ui-btn ui-btn-md ui-btn-neutral" style={{ flex: 1 }} onClick={handleCancelEditScores} disabled={isSavingScores}>
             취소
           </button>
-          <button onClick={handleSaveScores} disabled={isSavingScores}
-            className="vote-action-btn"
-            style={{ flex: 2, padding: '14px', borderRadius: '14px', backgroundColor: 'var(--toss-blue)', color: '#fff', fontSize: '15px' }}>
+          <button className="ui-btn ui-btn-md ui-btn-primary" style={{ flex: 2 }} onClick={handleSaveScores} disabled={isSavingScores}>
             {isSavingScores ? '저장 중...' : '저장하기'}
           </button>
         </div>

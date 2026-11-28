@@ -279,12 +279,6 @@
   word-break: keep-all;
 }
 
-.arrange-overflow .arrange-btn {
-  width: 100%;
-  margin-top: 0.45rem;
-  background: #fff;
-}
-
 /* 배정 모달 */
 .arrange-modal-overlay {
   position: fixed;
@@ -456,38 +450,7 @@
   margin-top: 0.625rem;
 }
 
-.arrange-btn {
-  flex: 1 1 5rem;
-  min-width: 0;
-  white-space: nowrap;
-  padding: 0.65rem;
-  border: none;
-  border-radius: 10px;
-  font-weight: 700;
-  font-size: calc(13px * var(--scale-factor, 1));
-  cursor: pointer;
-}
-
-.arrange-btn.ghost { background: #f2f4f6; color: #4e5968; }
-.arrange-btn.green { background: #22b35e; color: #fff; }
-
 /* 저장된 배정 아래 카카오톡 공유 (카카오 노란색) */
-.arrange-btn.kakao {
-  width: 100%;
-  margin-top: 0.75rem;
-  background: #fee500;
-  color: #191919;
-}
-
-.arrange-btn.big {
-  width: 100%;
-  padding: 1.1rem;
-  font-size: calc(17px * var(--scale-factor, 1));
-  background: #22b35e;
-  color: #fff;
-  border-radius: 14px;
-  box-shadow: 0 4px 12px rgba(34, 179, 94, 0.3);
-}
 
 /* 미리 지정한 선수 핀 아이콘 */
 .fixed-pin {
@@ -495,4 +458,13 @@
   vertical-align: -3px;
   margin-right: 2px;
   color: var(--color-primary);
+}
+
+/* 버튼 줄: 공통 버튼(ui-btn)을 같은 폭으로 */
+.arrange-actions > .ui-btn {
+  flex: 1 1 5rem;
+}
+
+.arrange-kakao {
+  margin-top: 0.75rem;
 }
