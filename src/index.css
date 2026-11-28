@@ -11,8 +11,8 @@
   --shadow:
     rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --sans: 'Noto Sans KR', system-ui, 'Segoe UI', Roboto, sans-serif;
+  --heading: 'Noto Sans KR', system-ui, 'Segoe UI', Roboto, sans-serif;
   --mono: ui-monospace, Consolas, monospace;
 
   font: 18px/145% var(--sans);
@@ -47,6 +47,14 @@
 
 body {
   margin: 0;
+}
+
+/* 버튼·입력창은 기본으로 글꼴을 물려받지 않으므로 앱 글꼴을 따르게 함 */
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
 }
 
 h1,
