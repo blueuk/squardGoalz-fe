@@ -4,6 +4,7 @@ import SoccerBallLoader from './SoccerBallLoader';
 import { useToast } from './Toast';
 import { usePermission } from '../permissions';
 import './SettingsTab.css';
+import { showConfirm } from './Dialog';
 
 const TEAM_UID = 'df743e05-9440-4c1e-bfdb-fa07159ef0c9';
 
@@ -119,7 +120,7 @@ export default function SettingsTab() {
     const roleName = roles.find(r => r.auth_cd === authCd)?.name ?? authCd;
     const isMe = member.user_id === myUserid;
     const warning = isMe ? '\n본인의 역할을 변경하면 이 설정 화면에 다시 들어오지 못할 수 있습니다.' : '';
-    if (!window.confirm(`[${member.member_name}] 님의 역할을 '${roleName}'(으)로 변경하시겠습니까?${warning}`)) return;
+    if (!(await showConfirm(`[${member.member_name}] 님의 역할을 '${roleName}'(으)로 변경하시겠습니까?${warning}`, { confirmText: '변경' }))) return;
     setBusy(true);
     try {
       await api.post('/user/update', { userid: member.user_id, auth_cd: authCd });

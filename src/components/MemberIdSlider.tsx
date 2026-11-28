@@ -5,10 +5,11 @@ import Icon from './Icon';
 interface Props<T extends { member_uid: string }> {
   members: T[];
   renderCard: (member: T) => ReactNode;
+  onCurrentChange?: (memberUid: string) => void; // 넘겨서 가운데 카드가 바뀌면 알림
 }
 
 // 선수 신분증 카드 가로 슬라이더: 손가락으로 넘기거나 PC에서는 화살표로 이동 (한 장씩 맞춰 멈춤)
-export default function MemberIdSlider<T extends { member_uid: string }>({ members, renderCard }: Props<T>) {
+export default function MemberIdSlider<T extends { member_uid: string }>({ members, renderCard, onCurrentChange }: Props<T>) {
   const trackRef = useRef<HTMLDivElement>(null);
   const [index, setIndex] = useState(0);
 
@@ -31,6 +32,13 @@ export default function MemberIdSlider<T extends { member_uid: string }>({ membe
     track.addEventListener('scroll', update, { passive: true });
     return () => track.removeEventListener('scroll', update);
   }, [members.length]);
+
+  // 가운데 카드가 바뀌면 부모에 알림 (펼친 능력치가 따라오도록)
+  const currentUid = members[index]?.member_uid;
+  useEffect(() => {
+    if (currentUid) onCurrentChange?.(currentUid);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUid]);
 
   const go = (next: number) => {
     const track = trackRef.current;

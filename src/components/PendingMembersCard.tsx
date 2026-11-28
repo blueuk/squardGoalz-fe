@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import api from '../api';
 import './PendingMembersCard.css';
+import { showConfirm } from './Dialog';
+import Select from './Select';
 
 const NEW_MEMBER = '__new__';
 
@@ -63,7 +65,7 @@ export default function PendingMembersCard({ teamUid, members, onApproved, showT
       ? `[${u.username}] 님의 계정을 기존 선수 [${linkedName}] 에 연결하시겠습니까?`
         + (linkedName !== u.username ? `\n계정 이름도 '${linkedName}'(으)로 변경됩니다.` : '')
       : `[${u.username}] 님을 신규 선수로 선수 명단에 등록하시겠습니까?\n(기본 능력치 13점 부여)`;
-    if (!window.confirm(message)) return;
+    if (!(await showConfirm(message, { confirmText: '승인' }))) return;
 
     setBusyUserid(u.userid);
     try {
@@ -84,7 +86,7 @@ export default function PendingMembersCard({ teamUid, members, onApproved, showT
   };
 
   const reject = async (u: PendingUser) => {
-    if (!window.confirm(`[${u.username}] 님의 가입을 거절하시겠습니까?\n계정 정보가 삭제되며, 다시 카카오 로그인하면 가입부터 다시 진행합니다.`)) return;
+    if (!(await showConfirm(`[${u.username}] 님의 가입을 거절하시겠습니까?\n계정 정보가 삭제되며, 다시 카카오 로그인하면 가입부터 다시 진행합니다.`, { tone: 'danger', confirmText: '거절' }))) return;
     setBusyUserid(u.userid);
     try {
       await api.post('/team_member/reject', { team_uid: teamUid, userid: u.userid });
@@ -125,7 +127,7 @@ export default function PendingMembersCard({ teamUid, members, onApproved, showT
                 </span>
               </div>
               <div className="pending-actions">
-                <select
+                <Select className="ui-select ui-select-sm"
                   value={targetOf(u)}
                   disabled={busy}
                   onChange={e => setTargets(prev => ({ ...prev, [u.userid]: e.target.value }))}
@@ -133,7 +135,7 @@ export default function PendingMembersCard({ teamUid, members, onApproved, showT
                 >
                   <option value={NEW_MEMBER}>신규 선수로 등록</option>
                   {linkable.map(m => <option key={m.member_uid} value={m.member_uid}>{m.member_name} 에 연결</option>)}
-                </select>
+                </Select>
                 <button className="ui-btn ui-btn-sm ui-btn-primary" disabled={busy} onClick={() => approve(u)}>승인</button>
                 <button className="ui-btn ui-btn-sm ui-btn-neutral" disabled={busy} onClick={() => reject(u)}>거절</button>
               </div>

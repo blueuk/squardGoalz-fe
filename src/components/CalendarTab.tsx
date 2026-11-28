@@ -5,6 +5,8 @@ import './CalendarTab.css';
 import { usePermission } from '../permissions';
 import { statusLabelClass } from './ui';
 import Icon from './Icon';
+import { showAlert } from './Dialog';
+import Select from './Select';
 
 // Module-level cache for common options
 let cachedLocationOptions: any[] | null = null;
@@ -265,7 +267,7 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members }) => {
           );
         } catch (e) {
           console.error(e);
-          alert('일정 정보(시간/장소) 수정에 실패했습니다.');
+          showAlert('일정 정보(시간/장소) 수정에 실패했습니다.');
         }
       }
 
@@ -336,7 +338,7 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members }) => {
         vote_period_to: '',
         vote_end_yn: 'N'
       });
-      alert('일정이 등록되었습니다. (팀원 모두 미투표 상태로 등록됨)');
+      showAlert('일정이 등록되었습니다. (팀원 모두 미투표 상태로 등록됨)');
       setCreateTime('07:00');
       setCreateLocationCd('01');
       setCreateLocationCustom('');
@@ -352,7 +354,7 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members }) => {
         }
       }
     } catch (e) {
-      alert('일정 등록에 실패했습니다.');
+      showAlert('일정 등록에 실패했습니다.');
     } finally {
       setIsSubmitting(false);
       setIsLoading(false);
@@ -380,9 +382,9 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members }) => {
       setSelectedMembers([]);
       fetchVotesLocal(selectedSchedule.vote_seq);
       setShowCancelModal(false);
-      alert('경기가 취소 처리되었습니다.');
+      showAlert('경기가 취소 처리되었습니다.');
     } catch (e) {
-      alert('상태 변경에 실패했습니다.');
+      showAlert('상태 변경에 실패했습니다.');
     } finally {
       setIsCanceling(false);
       setIsLoading(false);
@@ -406,10 +408,10 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members }) => {
       setSelectedMembers([]);
       fetchVotesLocal(selectedSchedule.vote_seq);
       setShowResetVoteModal(false);
-      alert('모든 팀원의 투표 상태가 미투표로 일괄 초기화되었습니다.');
+      showAlert('모든 팀원의 투표 상태가 미투표로 일괄 초기화되었습니다.');
     } catch (e) {
       console.error(e);
-      alert('투표 초기화에 실패했습니다.');
+      showAlert('투표 초기화에 실패했습니다.');
     } finally {
       setIsResettingVotes(false);
       setIsLoading(false);
@@ -431,10 +433,10 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members }) => {
       setVotes([]);
       setIsEditMode(false);
       await fetchSchedules();
-      alert('일정이 삭제되었습니다.');
+      showAlert('일정이 삭제되었습니다.');
     } catch (e) {
       console.error(e);
-      alert('일정 삭제에 실패했습니다.');
+      showAlert('일정 삭제에 실패했습니다.');
     } finally {
       setIsDeletingSchedule(false);
       setIsLoading(false);
@@ -457,7 +459,7 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members }) => {
       setSelectedMembers([]);
       await fetchVotesLocal(selectedSchedule.vote_seq);
     } catch (e) {
-      alert('투표 상태 변경에 실패했습니다.');
+      showAlert('투표 상태 변경에 실패했습니다.');
     } finally {
       setIsLoading(false);
     }
@@ -560,39 +562,35 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members }) => {
               <div className="vote-edit-fields">
                 <div>
                   <label style={{ display: 'block', fontSize: 'calc(11px * var(--scale-factor, 1))', color: '#666', marginBottom: '4px' }}>시간</label>
-                  <select 
+                  <Select className="ui-select ui-select-sm" 
                     value={editTime} 
-                    onChange={(e) => setEditTime(e.target.value)} 
-                    style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #ddd', backgroundColor: '#fff', fontSize: 'calc(13px * var(--scale-factor, 1))' }}
+                    onChange={(e) => setEditTime(e.target.value)}
                   >
                     {Array.from({ length: 24 }).map((_, i) => {
                       const t = `${String(i).padStart(2, '0')}:00`;
                       return <option key={t} value={t}>{t}</option>;
                     })}
-                  </select>
+                  </Select>
                 </div>
                 <div>
                   <label style={{ display: 'block', fontSize: 'calc(11px * var(--scale-factor, 1))', color: '#666', marginBottom: '4px' }}>장소</label>
-                  <select 
+                  <Select className="ui-select ui-select-sm" 
                     value={editLocationCd} 
-                    onChange={(e) => setEditLocationCd(e.target.value)} 
-                    style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #ddd', backgroundColor: '#fff', fontSize: 'calc(13px * var(--scale-factor, 1))' }}
+                    onChange={(e) => setEditLocationCd(e.target.value)}
                   >
                     {locationOptions.map(opt => (
                       <option key={opt.code} value={opt.code}>{opt.code_name}</option>
                     ))}
                     <option value="custom">기타 (직접 입력)</option>
-                  </select>
+                  </Select>
                 </div>
               </div>
               {editLocationCd === 'custom' && (
-                <input 
+                <input className="ui-input ui-input-sm" 
                   type="text" 
                   value={editLocationCustom} 
                   onChange={(e) => setEditLocationCustom(e.target.value)} 
-                  placeholder="장소를 입력해주세요"
-                  style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #ddd', marginTop: '8px', fontSize: 'calc(13px * var(--scale-factor, 1))', boxSizing: 'border-box' }}
-                />
+                  placeholder="장소를 입력해주세요" style={{ width: '100%', marginTop: '8px' }} />
               )}
             </div>
           )}
@@ -701,37 +699,32 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members }) => {
               <p style={{ color: '#888', fontSize: 'calc(13px * var(--scale-factor, 1))', marginBottom: '15px' }}>이 날짜에는 아직 일정이 없습니다.</p>
               <div style={{ marginBottom: '15px' }}>
                 <label style={{ display: 'block', fontSize: 'calc(12px * var(--scale-factor, 1))', color: '#666', marginBottom: '5px' }}>시간</label>
-                <select 
+                <Select className="ui-select ui-select-sm" 
                   value={createTime} 
-                  onChange={(e) => setCreateTime(e.target.value)} 
-                  style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ddd', boxSizing: 'border-box', backgroundColor: '#fff' }}
+                  onChange={(e) => setCreateTime(e.target.value)}
                 >
                   {Array.from({ length: 24 }).map((_, i) => {
                     const t = `${String(i).padStart(2, '0')}:00`;
                     return <option key={t} value={t}>{t}</option>;
                   })}
-                </select>
+                </Select>
               </div>
               <div style={{ marginBottom: '20px' }}>
                 <label style={{ display: 'block', fontSize: 'calc(12px * var(--scale-factor, 1))', color: '#666', marginBottom: '5px' }}>장소</label>
-                <select 
+                <Select className="ui-select ui-select-sm" 
                   value={createLocationCd} 
-                  onChange={(e) => setCreateLocationCd(e.target.value)} 
-                  style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ddd', boxSizing: 'border-box', backgroundColor: '#fff', marginBottom: createLocationCd === 'custom' ? '10px' : '0' }}
-                >
+                  onChange={(e) => setCreateLocationCd(e.target.value)} style={{ marginBottom: createLocationCd === 'custom' ? '10px' : '0' }}>
                   {locationOptions.map(opt => (
                     <option key={opt.code} value={opt.code}>{opt.code_name}</option>
                   ))}
                   <option value="custom">기타 (직접 입력)</option>
-                </select>
+                </Select>
                 {createLocationCd === 'custom' && (
-                  <input 
+                  <input className="ui-input ui-input-sm" 
                     type="text" 
                     value={createLocationCustom} 
                     onChange={(e) => setCreateLocationCustom(e.target.value)} 
-                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ddd', boxSizing: 'border-box' }} 
-                    placeholder="장소를 입력해주세요"
-                  />
+                    placeholder="장소를 입력해주세요" style={{ width: '100%' }} />
                 )}
               </div>
               <button className="ui-btn ui-btn-lg ui-btn-block ui-btn-primary" 
@@ -793,41 +786,17 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members }) => {
       {renderBottomPanel()}
 
       {showCancelModal && (
-        <div 
-          style={{
-            position: 'fixed',
-            top: 0, left: 0, right: 0, bottom: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 10000,
-            padding: '20px'
-          }}
-          onClick={() => !isCanceling && setShowCancelModal(false)}
-        >
-          <div 
-            style={{
-              backgroundColor: '#fff',
-              borderRadius: '20px',
-              padding: '24px',
-              maxWidth: '360px',
-              width: '100%',
-              boxShadow: '0 10px 30px rgba(0,0,0,0.2)',
-              textAlign: 'center',
-              animation: 'fadeIn 0.2s ease'
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div style={{ fontSize: '36px', marginBottom: '12px' }}>⚠️</div>
-            <h3 style={{ margin: '0 0 10px 0', fontSize: 'calc(17px * var(--scale-factor, 1))', fontWeight: 'bold', color: '#191f28' }}>
+        <div className="ui-modal-overlay" onClick={() => !isCanceling && setShowCancelModal(false)}>
+          <div className="ui-modal is-center" role="alertdialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+            <div className="ui-modal-icon" aria-hidden="true">⚠️</div>
+            <h3 className="ui-modal-title">
               경기를 취소하시겠습니까?
             </h3>
-            <p style={{ margin: '0 0 20px 0', fontSize: 'calc(13px * var(--scale-factor, 1))', color: '#666', lineHeight: '1.5' }}>
+            <p className="ui-modal-body">
               취소 시 모든 참여자의 투표 상태가<br />
               <strong style={{ color: 'var(--toss-red)' }}>'경기취소(미진행)'</strong>으로 변경됩니다.
             </p>
-            <div className="vote-btn-row">
+            <div className="ui-modal-actions">
               <button className="ui-btn ui-btn-md ui-btn-neutral" 
                 onClick={() => setShowCancelModal(false)}
                 disabled={isCanceling}
@@ -846,41 +815,17 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members }) => {
       )}
 
       {showResetVoteModal && (
-        <div 
-          style={{
-            position: 'fixed',
-            top: 0, left: 0, right: 0, bottom: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 10000,
-            padding: '20px'
-          }}
-          onClick={() => !isResettingVotes && setShowResetVoteModal(false)}
-        >
-          <div 
-            style={{
-              backgroundColor: '#fff',
-              borderRadius: '20px',
-              padding: '24px',
-              maxWidth: '360px',
-              width: '100%',
-              boxShadow: '0 10px 30px rgba(0,0,0,0.2)',
-              textAlign: 'center',
-              animation: 'fadeIn 0.2s ease'
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div style={{ fontSize: '36px', marginBottom: '12px' }}>🔄</div>
-            <h3 style={{ margin: '0 0 10px 0', fontSize: 'calc(17px * var(--scale-factor, 1))', fontWeight: 'bold', color: '#191f28' }}>
+        <div className="ui-modal-overlay" onClick={() => !isResettingVotes && setShowResetVoteModal(false)}>
+          <div className="ui-modal is-center" role="alertdialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+            <div className="ui-modal-icon" aria-hidden="true">🔄</div>
+            <h3 className="ui-modal-title">
               투표를 일괄 초기화하시겠습니까?
             </h3>
-            <p style={{ margin: '0 0 20px 0', fontSize: 'calc(13px * var(--scale-factor, 1))', color: '#666', lineHeight: '1.5' }}>
+            <p className="ui-modal-body">
               해당 일자의 모든 팀원 투표 상태가<br />
               <strong style={{ color: 'var(--toss-blue)' }}>'미투표'</strong> 상태로 변경됩니다.
             </p>
-            <div className="vote-btn-row">
+            <div className="ui-modal-actions">
               <button className="ui-btn ui-btn-md ui-btn-neutral" 
                 onClick={() => setShowResetVoteModal(false)}
                 disabled={isResettingVotes}
@@ -899,41 +844,17 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ teamUid, members }) => {
       )}
 
       {showDeleteScheduleModal && (
-        <div 
-          style={{
-            position: 'fixed',
-            top: 0, left: 0, right: 0, bottom: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 10000,
-            padding: '20px'
-          }}
-          onClick={() => !isDeletingSchedule && setShowDeleteScheduleModal(false)}
-        >
-          <div 
-            style={{
-              backgroundColor: '#fff',
-              borderRadius: '20px',
-              padding: '24px',
-              maxWidth: '360px',
-              width: '100%',
-              boxShadow: '0 10px 30px rgba(0,0,0,0.2)',
-              textAlign: 'center',
-              animation: 'fadeIn 0.2s ease'
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div style={{ fontSize: '36px', marginBottom: '12px' }}>🗑️</div>
-            <h3 style={{ margin: '0 0 10px 0', fontSize: 'calc(17px * var(--scale-factor, 1))', fontWeight: 'bold', color: 'var(--toss-red)' }}>
+        <div className="ui-modal-overlay" onClick={() => !isDeletingSchedule && setShowDeleteScheduleModal(false)}>
+          <div className="ui-modal is-center" role="alertdialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+            <div className="ui-modal-icon" aria-hidden="true">🗑️</div>
+            <h3 className="ui-modal-title is-danger">
               일정을 삭제하시겠습니까?
             </h3>
-            <p style={{ margin: '0 0 20px 0', fontSize: 'calc(13px * var(--scale-factor, 1))', color: '#666', lineHeight: '1.5' }}>
+            <p className="ui-modal-body">
               해당 일자의 경기 일정 및 모든 참여자의 투표가<br />
               <strong style={{ color: 'var(--toss-red)' }}>영구히 삭제</strong>됩니다.
             </p>
-            <div className="vote-btn-row">
+            <div className="ui-modal-actions">
               <button className="ui-btn ui-btn-md ui-btn-neutral" 
                 onClick={() => setShowDeleteScheduleModal(false)}
                 disabled={isDeletingSchedule}

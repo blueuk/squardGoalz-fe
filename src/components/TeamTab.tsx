@@ -24,6 +24,8 @@ import {
   setCachedPositionWeights,
 } from './positionUtils';
 import Icon from './Icon';
+import { showAlert, showConfirm } from './Dialog';
+import Select from './Select';
 
 // ─── Interfaces ───────────────────────────────────────────────────────────────
 interface TeamInfo {
@@ -217,14 +219,14 @@ function WeightEditor({
 
   const handleSaveClick = () => {
     if (changes.length === 0) {
-      alert('변경된 가중치가 없습니다.');
+      showAlert('변경된 가중치가 없습니다.');
       return;
     }
     // 모든 포지션의 가중치 합계가 1인지 검증
     for (const pos of POSITIONS) {
       const tot = getTotal(pos.code);
       if (Math.abs(tot - 1) >= 0.005) {
-        alert(`[${pos.name} (${pos.code})] 포지션의 가중치 총합이 1.0이어야 합니다. (현재: ${tot.toFixed(4)})\n가중치를 조정한 후 다시 저장해주세요.`);
+        showAlert(`[${pos.name} (${pos.code})] 포지션의 가중치 총합이 1.0이어야 합니다. (현재: ${tot.toFixed(4)})\n가중치를 조정한 후 다시 저장해주세요.`);
         setActivePos(pos.code);
         return;
       }
@@ -236,7 +238,7 @@ function WeightEditor({
     const name = newItemName.trim();
     if (!name || isItemBusy) return;
     if (scoreItems.some(item => item.name === name)) {
-      alert(`이미 존재하는 항목입니다: ${name}`);
+      showAlert(`이미 존재하는 항목입니다: ${name}`);
       return;
     }
     setIsItemBusy(true);
@@ -315,28 +317,14 @@ function WeightEditor({
             }}>
               <span style={{ fontSize: '12px', color: '#8b95a1', width: '28px', flexShrink: 0 }}>{item.code}</span>
               <span style={{ fontSize: '13px', color: '#191f28', fontWeight: 500, flex: 1, minWidth: 0, overflowWrap: 'anywhere' }}>{item.name}</span>
-              <input
+              <input className="ui-input ui-input-sm is-number is-compact" inputMode="decimal"
                 type="number"
                 step="0.001"
                 min="0"
                 max="1"
                 value={drafts[draftKey] ?? String(localWeights[activePos]?.[item.code] ?? 0)}
                 onChange={e => updateWeight(activePos, item.code, e.target.value)}
-                onBlur={() => setDrafts(prev => { const { [draftKey]: _done, ...rest } = prev; return rest; })}
-                style={{
-                  width: '76px',
-                  flexShrink: 0,
-                  padding: '4px 6px',
-                  borderRadius: '6px',
-                  border: '1px solid #ccd3dc',
-                  fontSize: '13px',
-                  textAlign: 'right',
-                  margin: 0,
-                  outline: 'none',
-                  fontWeight: 'bold',
-                  color: '#191f28'
-                }}
-              />
+                onBlur={() => setDrafts(prev => { const { [draftKey]: _done, ...rest } = prev; return rest; })} style={{ width: '84px', flexShrink: 0 }} />
               <button className="ui-btn ui-btn-icon ui-btn-danger-soft" style={{ flexShrink: 0 }}
                 onClick={() => handleDeleteItemClick(item)}
                 disabled={isItemBusy}
@@ -358,21 +346,17 @@ function WeightEditor({
           </span>
         </div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-          <input
+          <input className="ui-input ui-input-sm"
             type="text"
             placeholder="항목 이름 (예: 킥력)"
             value={newItemName}
             onChange={e => setNewItemName(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter') handleAddItemClick(); }}
-            style={{ flex: '1 1 8rem', minWidth: 0, padding: '8px 10px', borderRadius: '8px', border: '1px solid #ccd3dc', fontSize: '13px', margin: 0, boxSizing: 'border-box' }}
-          />
-          <select
+            onKeyDown={e => { if (e.key === 'Enter') handleAddItemClick(); }} style={{ flex: '1 1 8rem', minWidth: 0 }} />
+          <Select className="ui-select ui-select-sm"
             value={newItemCategory}
-            onChange={e => setNewItemCategory(e.target.value)}
-            style={{ flex: '0 1 auto', padding: '8px', borderRadius: '8px', border: '1px solid #ccd3dc', fontSize: '13px', margin: 0, backgroundColor: '#fff' }}
-          >
+            onChange={e => setNewItemCategory(e.target.value)} style={{ flex: '0 1 auto' }}>
             {CATEGORY_OPTIONS.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
-          </select>
+          </Select>
           <button className="ui-btn ui-btn-sm ui-btn-primary" style={{ flex: '0 0 auto' }}
             onClick={handleAddItemClick}
             disabled={isItemBusy || !newItemName.trim()}
@@ -495,9 +479,9 @@ export default function TeamTab({ focusPayment = false, onFocused }: { focusPaym
   const [statusPickerUid, setStatusPickerUid] = useState<string | null>(null);
 
   // 선수 카드 펼치기 (능력치 수정 중이면 확인)
-  const toggleExpanded = (memberUid: string) => {
+  const toggleExpanded = async (memberUid: string) => {
     if (editingMemberUid && editingMemberUid !== memberUid) {
-      if (!window.confirm('편집 중인 내용이 저장되지 않았습니다. 다른 선수로 이동하시겠습니까?')) return;
+      if (!(await showConfirm('편집 중인 내용이 저장되지 않았습니다. 다른 선수로 이동하시겠습니까?', { confirmText: '이동' }))) return;
       handleCancelEditScores();
     }
     setExpandedMemberUid(prev => (prev === memberUid ? null : memberUid));
@@ -705,8 +689,8 @@ export default function TeamTab({ focusPayment = false, onFocused }: { focusPaym
       await api.post('/team_info/update', editForm);
       setTeamInfo({ ...teamInfo, ...editForm });
       setIsEditing(false);
-      alert('수정되었습니다.');
-    } catch (err) { console.error(err); alert('수정에 실패했습니다.'); }
+      showAlert('수정되었습니다.');
+    } catch (err) { console.error(err); showAlert('수정에 실패했습니다.'); }
     finally { setIsGlobalLoading(false); }
   };
 
@@ -726,8 +710,8 @@ export default function TeamTab({ focusPayment = false, onFocused }: { focusPaym
       setPayments(editPayments);
       setTeamAccounts(editAccounts);
       setIsPaymentEditing(false);
-      alert('입금 안내가 수정되었습니다.');
-    } catch (err) { console.error(err); alert('수정에 실패했습니다.'); }
+      showAlert('입금 안내가 수정되었습니다.');
+    } catch (err) { console.error(err); showAlert('수정에 실패했습니다.'); }
     finally { setIsGlobalLoading(false); }
   };
   const updateEditPayment = (idx: number, field: string, value: any) => {
@@ -748,7 +732,7 @@ export default function TeamTab({ focusPayment = false, onFocused }: { focusPaym
     try {
       await api.post('/team_member/update', { team_uid: TEAM_UID, member_uid: memberUid, status_cd: newStatusCd });
       setTeamMembers(prev => prev.map(m => m.member_uid === memberUid ? { ...m, status_cd: newStatusCd } : m));
-    } catch (err) { console.error(err); alert('상태 변경에 실패했습니다.'); }
+    } catch (err) { console.error(err); showAlert('상태 변경에 실패했습니다.'); }
     finally { setIsGlobalLoading(false); }
   };
 
@@ -794,11 +778,11 @@ export default function TeamTab({ focusPayment = false, onFocused }: { focusPaym
         }));
         return [...without, ...updated];
       });
-      alert('선수 능력치가 성공적으로 저장되었습니다.');
+      showAlert('선수 능력치가 성공적으로 저장되었습니다.');
       setEditingMemberUid(null);
       setEditingScores({});
     } catch (e) {
-      console.error(e); alert('능력치 저장에 실패했습니다.');
+      console.error(e); showAlert('능력치 저장에 실패했습니다.');
     } finally {
       setIsSavingScores(false);
       setIsGlobalLoading(false);
@@ -833,14 +817,14 @@ export default function TeamTab({ focusPayment = false, onFocused }: { focusPaym
 
       setNewMemberName('');
       setShowAddMember(false);
-      alert(`[${newMemberName.trim()}] 선수가 추가되었습니다. (기본 능력치 13점 부여)`);
-    } catch (err) { console.error(err); alert('선수 추가에 실패했습니다.'); }
+      showAlert(`[${newMemberName.trim()}] 선수가 추가되었습니다. (기본 능력치 13점 부여)`);
+    } catch (err) { console.error(err); showAlert('선수 추가에 실패했습니다.'); }
     finally { setIsAddingMember(false); setIsGlobalLoading(false); }
   };
 
   // ── Terminate member (탈퇴자 목록으로 이동) ─────────────────────────────────
   const handleDeleteMember = async (member: TeamMember) => {
-    if (!window.confirm(`[${member.member_name}] 선수를 탈퇴 처리하시겠습니까?\n탈퇴자 목록으로 이동되며, 이후 복구할 수 있습니다.`)) return;
+    if (!(await showConfirm(`[${member.member_name}] 선수를 탈퇴 처리하시겠습니까?\n탈퇴자 목록으로 이동되며, 이후 복구할 수 있습니다.`, { tone: 'danger', confirmText: '탈퇴' }))) return;
     setIsGlobalLoading(true);
     setLoadingMessage('선수를 탈퇴 처리하는 중...');
     try {
@@ -849,14 +833,14 @@ export default function TeamTab({ focusPayment = false, onFocused }: { focusPaym
       setTerminatedMembers(prev => sortTerminated([...prev, { ...member, terminate_dt: nowDtString() }]));
       if (teamInfo) setTeamInfo({ ...teamInfo, member_count: Math.max(0, (teamInfo.member_count || 1) - 1) });
       if (expandedMemberUid === member.member_uid) setExpandedMemberUid(null);
-      alert(`[${member.member_name}] 선수가 탈퇴자 목록으로 이동되었습니다.`);
-    } catch (err) { console.error(err); alert('선수 탈퇴 처리에 실패했습니다.'); }
+      showAlert(`[${member.member_name}] 선수가 탈퇴자 목록으로 이동되었습니다.`);
+    } catch (err) { console.error(err); showAlert('선수 탈퇴 처리에 실패했습니다.'); }
     finally { setIsGlobalLoading(false); }
   };
 
   // ── Restore member (선수단 목록으로 복구) ──────────────────────────────────
   const handleRestoreMember = async (member: TeamMember) => {
-    if (!window.confirm(`[${member.member_name}] 선수를 선수단으로 복구하시겠습니까?`)) return;
+    if (!(await showConfirm(`[${member.member_name}] 선수를 선수단으로 복구하시겠습니까?`, { confirmText: '복구' }))) return;
     setIsGlobalLoading(true);
     setLoadingMessage('선수를 복구하는 중...');
     try {
@@ -866,22 +850,22 @@ export default function TeamTab({ focusPayment = false, onFocused }: { focusPaym
         (a.member_name || '').localeCompare(b.member_name || '')
       ));
       if (teamInfo) setTeamInfo({ ...teamInfo, member_count: (teamInfo.member_count || 0) + 1 });
-      alert(`[${member.member_name}] 선수가 복구되었습니다.`);
-    } catch (err) { console.error(err); alert('선수 복구에 실패했습니다.'); }
+      showAlert(`[${member.member_name}] 선수가 복구되었습니다.`);
+    } catch (err) { console.error(err); showAlert('선수 복구에 실패했습니다.'); }
     finally { setIsGlobalLoading(false); }
   };
 
   // ── Purge member (완전 삭제) ───────────────────────────────────────────────
   const handlePurgeMember = async (member: TeamMember) => {
-    if (!window.confirm(`[${member.member_name}] 선수를 완전 삭제하시겠습니까?\n능력치, 투표, 기록 데이터가 모두 삭제되며 되돌릴 수 없습니다.`)) return;
+    if (!(await showConfirm(`[${member.member_name}] 선수를 완전 삭제하시겠습니까?\n능력치, 투표, 기록 데이터가 모두 삭제되며 되돌릴 수 없습니다.`, { tone: 'danger', confirmText: '완전 삭제' }))) return;
     setIsGlobalLoading(true);
     setLoadingMessage('선수를 완전 삭제하는 중...');
     try {
       await api.post('/team_member/delete', { team_uid: TEAM_UID, member_uid: member.member_uid });
       setTerminatedMembers(prev => prev.filter(m => m.member_uid !== member.member_uid));
       setMemberScores(prev => prev.filter(s => s.member_uid !== member.member_uid));
-      alert(`[${member.member_name}] 선수가 완전 삭제되었습니다.`);
-    } catch (err) { console.error(err); alert('선수 완전 삭제에 실패했습니다.'); }
+      showAlert(`[${member.member_name}] 선수가 완전 삭제되었습니다.`);
+    } catch (err) { console.error(err); showAlert('선수 완전 삭제에 실패했습니다.'); }
     finally { setIsGlobalLoading(false); }
   };
 
@@ -896,8 +880,8 @@ export default function TeamTab({ focusPayment = false, onFocused }: { focusPaym
       setCachedPositionWeights(weights);
       setPositionWeights(weights);
       setShowWeightEditor(false);
-      alert(`포지션 가중치 ${changes.length}개가 저장되었습니다.`);
-    } catch (err) { console.error(err); alert('가중치 저장에 실패했습니다.'); }
+      showAlert(`포지션 가중치 ${changes.length}개가 저장되었습니다.`);
+    } catch (err) { console.error(err); showAlert('가중치 저장에 실패했습니다.'); }
     finally {
       setIsSavingWeights(false);
       setIsGlobalLoading(false);
@@ -906,7 +890,7 @@ export default function TeamTab({ focusPayment = false, onFocused }: { focusPaym
 
   // ── Score item add / delete ───────────────────────────────────────────────
   const handleAddScoreItem = async (name: string, category: string): Promise<string | null> => {
-    if (!window.confirm(`[${name}] 가중치 항목을 추가하시겠습니까?\n모든 포지션 가중치는 0으로 시작하고, 선수단 전원에게 기본 ${NEW_SCORE_ITEM_DEFAULT}점이 부여됩니다.`)) return null;
+    if (!(await showConfirm(`[${name}] 가중치 항목을 추가하시겠습니까?\n모든 포지션 가중치는 0으로 시작하고, 선수단 전원에게 기본 ${NEW_SCORE_ITEM_DEFAULT}점이 부여됩니다.`, { confirmText: '추가' }))) return null;
     setIsGlobalLoading(true);
     setLoadingMessage('가중치 항목을 추가하는 중...');
     try {
@@ -922,11 +906,11 @@ export default function TeamTab({ focusPayment = false, onFocused }: { focusPaym
       const sRes = await api.get(`/memberScore/search?team_uid=${TEAM_UID}`);
       setMemberScores(sRes.data || []);
 
-      alert(`[${name}] 항목이 추가되었습니다. (${member_count}명에게 기본 ${NEW_SCORE_ITEM_DEFAULT}점 부여)\n포지션별 가중치를 입력한 뒤 저장해주세요.`);
+      showAlert(`[${name}] 항목이 추가되었습니다. (${member_count}명에게 기본 ${NEW_SCORE_ITEM_DEFAULT}점 부여)\n포지션별 가중치를 입력한 뒤 저장해주세요.`);
       return score_cd;
     } catch (err: any) {
       console.error(err);
-      alert(err.response?.data?.detail || '가중치 항목 추가에 실패했습니다.');
+      showAlert(err.response?.data?.detail || '가중치 항목 추가에 실패했습니다.');
       return null;
     } finally {
       setIsGlobalLoading(false);
@@ -938,7 +922,7 @@ export default function TeamTab({ focusPayment = false, onFocused }: { focusPaym
     const weightWarning = weighted.length > 0
       ? `\n가중치가 있는 포지션(${weighted.map(p => p.abbr).join(', ')})은 총합이 1.0보다 작아지므로 다시 맞춰 저장해야 합니다.`
       : '';
-    if (!window.confirm(`[${item.name}] 항목을 삭제하시겠습니까?\n모든 포지션 가중치와 선수들의 해당 능력치 점수가 삭제되며 되돌릴 수 없습니다.${weightWarning}`)) return false;
+    if (!(await showConfirm(`[${item.name}] 항목을 삭제하시겠습니까?\n모든 포지션 가중치와 선수들의 해당 능력치 점수가 삭제되며 되돌릴 수 없습니다.${weightWarning}`, { tone: 'danger', confirmText: '삭제' }))) return false;
     setIsGlobalLoading(true);
     setLoadingMessage('가중치 항목을 삭제하는 중...');
     try {
@@ -954,11 +938,11 @@ export default function TeamTab({ focusPayment = false, onFocused }: { focusPaym
       setPositionWeights(nextWeights);
       setMemberScores(prev => prev.filter(s => s.score_cd !== item.code));
 
-      alert(`[${item.name}] 항목이 삭제되었습니다.`);
+      showAlert(`[${item.name}] 항목이 삭제되었습니다.`);
       return true;
     } catch (err: any) {
       console.error(err);
-      alert(err.response?.data?.detail || '가중치 항목 삭제에 실패했습니다.');
+      showAlert(err.response?.data?.detail || '가중치 항목 삭제에 실패했습니다.');
       return false;
     } finally {
       setIsGlobalLoading(false);
@@ -998,7 +982,7 @@ export default function TeamTab({ focusPayment = false, onFocused }: { focusPaym
                   <button className="ui-btn ui-btn-sm ui-btn-neutral" onClick={handleEditClick}>수정</button>
                 )}
                 {canTeamEdit && isEditing && (
-                  <div>
+                  <div className="ui-btn-group">
                     <button className="ui-btn ui-btn-sm ui-btn-neutral" onClick={handleCancelClick}>취소</button>
                     <button className="ui-btn ui-btn-sm ui-btn-primary" onClick={handleSaveClick}>저장</button>
                   </div>
@@ -1007,18 +991,17 @@ export default function TeamTab({ focusPayment = false, onFocused }: { focusPaym
 
               {teamInfo ? (
                 isEditing ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '14px' }}>
+                  <div className="ui-field-stack">
                     {[
                       { label: '팀명', key: 'teamname', type: 'text' },
                       { label: '주구장', key: 'location', type: 'text' },
                       { label: '시작시간', key: 'start_time', type: 'text', placeholder: 'HHMM' },
                       { label: '종료시간', key: 'end_time', type: 'text', placeholder: 'HHMM' },
                     ].map(({ label, key, placeholder }) => (
-                      <div key={key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ color: '#888', width: '70px' }}>{label}</span>
-                        <input type="text" value={(editForm as any)[key] || ''} placeholder={placeholder}
-                          onChange={e => setEditForm({ ...editForm, [key]: e.target.value })}
-                          style={{ flex: 1, padding: '5px', borderRadius: '4px', border: '1px solid #ccc', margin: 0, marginBottom: 0 }} />
+                      <div key={key} className="ui-field-row">
+                        <span className="ui-field-label">{label}</span>
+                        <input className="ui-input ui-input-sm" type="text" value={(editForm as any)[key] || ''} placeholder={placeholder}
+                          onChange={e => setEditForm({ ...editForm, [key]: e.target.value })} style={{ flex: 1 }} />
                       </div>
                     ))}
                     {[
@@ -1026,19 +1009,17 @@ export default function TeamTab({ focusPayment = false, onFocused }: { focusPaym
                       { label: '활동요일', key: 'day_cd', list: 'day_cd' },
                       { label: '실력', key: 'level_cd', list: 'level_cd' },
                     ].map(({ label, key, list }) => (
-                      <div key={key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ color: '#888', width: '70px' }}>{label}</span>
-                        <select value={(editForm as any)[key] || ''} onChange={e => setEditForm({ ...editForm, [key]: e.target.value })}
-                          style={{ flex: 1, padding: '5px', borderRadius: '4px', border: '1px solid #ccc', backgroundColor: '#fff', margin: 0, marginBottom: 0 }}>
+                      <div key={key} className="ui-field-row">
+                        <span className="ui-field-label">{label}</span>
+                        <Select className="ui-select ui-select-sm" value={(editForm as any)[key] || ''} onChange={e => setEditForm({ ...editForm, [key]: e.target.value })} style={{ flex: 1, marginBottom: 0 }}>
                           <option value="">선택</option>
                           {codeLists[list]?.map(c => <option key={c.code} value={c.code}>{c.code_name}{c.reference_1 ? ` (${c.reference_1})` : ''}</option>)}
-                        </select>
+                        </Select>
                       </div>
                     ))}
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                      <span style={{ color: '#888', marginBottom: '5px' }}>코멘트</span>
-                      <textarea value={editForm.comment || ''} onChange={e => setEditForm({ ...editForm, comment: e.target.value })}
-                        style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ccc', minHeight: '60px' }} />
+                    <div className="ui-field-col">
+                      <span className="ui-field-label">코멘트</span>
+                      <textarea className="ui-input" rows={3} placeholder="팀 소개 한마디" value={editForm.comment || ''} onChange={e => setEditForm({ ...editForm, comment: e.target.value })} style={{ width: '100%' }} />
                     </div>
                   </div>
                 ) : (
@@ -1089,7 +1070,7 @@ export default function TeamTab({ focusPayment = false, onFocused }: { focusPaym
                   </div>
                 )}
                 {canPaymentEdit && isPaymentEditing && (
-                  <div>
+                  <div className="ui-btn-group">
                     <button className="ui-btn ui-btn-sm ui-btn-neutral" onClick={handlePaymentCancelClick}>취소</button>
                     <button className="ui-btn ui-btn-sm ui-btn-primary" onClick={handlePaymentSaveClick}>저장</button>
                   </div>
@@ -1133,32 +1114,28 @@ export default function TeamTab({ focusPayment = false, onFocused }: { focusPaym
                   {editPayments.map((payment, idx) => {
                     const account = editAccounts.find(a => a.team_account_seq === payment.team_account_seq);
                     return (
-                      <div key={idx} style={{ padding: '15px', border: '1px solid #ddd', borderRadius: '8px', backgroundColor: '#fafafa' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-                          <span style={{ fontWeight: 'bold', fontSize: '14px' }}>종류</span>
-                          <select value={payment.payment_cd} onChange={e => updateEditPayment(idx, 'payment_cd', e.target.value)}
-                            style={{ flex: 1, marginLeft: '10px', padding: '5px', borderRadius: '4px', border: '1px solid #ccc', margin: 0 }}>
+                      <div key={idx} className="ui-field-group">
+                        <div className="ui-field-row">
+                          <span className="ui-field-label">종류</span>
+                          <Select className="ui-select ui-select-sm" value={payment.payment_cd} onChange={e => updateEditPayment(idx, 'payment_cd', e.target.value)} style={{ flex: 1 }}>
                             {codeLists.payment_cd?.map(c => <option key={c.code} value={c.code}>{c.code_name}</option>)}
-                          </select>
+                          </Select>
                         </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-                          <span style={{ fontWeight: 'bold', fontSize: '14px' }}>금액</span>
-                          <input type="number" value={Number(payment.amount).toString()} onChange={e => updateEditPayment(idx, 'amount', Number(e.target.value))}
-                            style={{ flex: 1, marginLeft: '10px', padding: '5px', borderRadius: '4px', border: '1px solid #ccc', margin: 0 }} />
+                        <div className="ui-field-row">
+                          <span className="ui-field-label">금액</span>
+                          <input className="ui-input ui-input-sm is-number" inputMode="numeric" placeholder="0" type="number" value={Number(payment.amount).toString()} onChange={e => updateEditPayment(idx, 'amount', Number(e.target.value))} style={{ flex: 1 }} />
                         </div>
                         {account && (
                           <>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-                              <span style={{ fontWeight: 'bold', fontSize: '14px' }}>은행</span>
-                              <select value={account.bank_cd} onChange={e => updateEditAccount(account.team_account_seq, 'bank_cd', e.target.value)}
-                                style={{ flex: 1, marginLeft: '10px', padding: '5px', borderRadius: '4px', border: '1px solid #ccc', margin: 0 }}>
+                            <div className="ui-field-row">
+                          <span className="ui-field-label">은행</span>
+                              <Select className="ui-select ui-select-sm" value={account.bank_cd} onChange={e => updateEditAccount(account.team_account_seq, 'bank_cd', e.target.value)} style={{ flex: 1 }}>
                                 {codeLists.bank_cd?.map(c => <option key={c.code} value={c.code}>{c.code_name}</option>)}
-                              </select>
+                              </Select>
                             </div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                              <span style={{ fontWeight: 'bold', fontSize: '14px' }}>계좌</span>
-                              <input type="text" value={account.account_enc} onChange={e => updateEditAccount(account.team_account_seq, 'account_enc', e.target.value)}
-                                style={{ flex: 1, marginLeft: '10px', padding: '5px', borderRadius: '4px', border: '1px solid #ccc', margin: 0 }} />
+                            <div className="ui-field-row">
+                          <span className="ui-field-label">계좌</span>
+                              <input className="ui-input ui-input-sm is-number" inputMode="numeric" placeholder="계좌번호" type="text" value={account.account_enc} onChange={e => updateEditAccount(account.team_account_seq, 'account_enc', e.target.value)} style={{ flex: 1 }} />
                             </div>
                           </>
                         )}
@@ -1233,14 +1210,12 @@ export default function TeamTab({ focusPayment = false, onFocused }: { focusPaym
               {showAddMember && (
                 <div style={{ marginBottom: '16px', padding: '16px', backgroundColor: 'var(--color-primary-tint)', borderRadius: '12px', border: '1px solid var(--color-primary-border)' }}>
                   <div style={{ fontSize: 'calc(var(--fs-14) * var(--scale-factor, 1))', fontWeight: 700, color: 'var(--gray-900)', marginBottom: '10px' }}>신규 선수 등록</div>
-                  <input
+                  <input className="ui-input"
                     type="text"
                     placeholder="선수 이름을 입력하세요"
                     value={newMemberName}
                     onChange={e => setNewMemberName(e.target.value)}
-                    onKeyDown={e => { if (e.key === 'Enter') handleAddMember(); }}
-                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ccd3dc', fontSize: '14px', marginBottom: '10px', boxSizing: 'border-box' }}
-                  />
+                    onKeyDown={e => { if (e.key === 'Enter') handleAddMember(); }} style={{ width: '100%' }} />
                   <div style={{ display: 'flex', gap: '8px' }}>
                     <button className="ui-btn ui-btn-md ui-btn-neutral" style={{ flex: 1 }} onClick={() => { setShowAddMember(false); setNewMemberName(''); }}>
                       취소
@@ -1255,6 +1230,10 @@ export default function TeamTab({ focusPayment = false, onFocused }: { focusPaym
               {/* Member List: 신분증 모양 카드 슬라이더 */}
               <MemberIdSlider
                 members={teamMembers}
+                onCurrentChange={uid => {
+                  // 펼친 채로 넘기면 펼친 능력치도 지금 카드 선수로 (점수 수정 중이면 그대로 둠)
+                  if (!editingMemberUid) setExpandedMemberUid(prev => (prev && prev !== uid ? uid : prev));
+                }}
                 renderCard={member => {
                   const memberScoreList = memberScores.filter(s => s.member_uid === member.member_uid);
                   // 점수가 가장 높은 포지션 2개
@@ -1453,14 +1432,9 @@ export default function TeamTab({ focusPayment = false, onFocused }: { focusPaym
                                           {/* 권한이 관리자인 경우만 수치 노출, 일반 사용자는 잠금 표시 */}
                                           {canScoreView ? (
                                             isEditingThisMember ? (
-                                              <input type="number" min="0" max="20"
+                                              <input className="ui-input ui-input-sm is-number is-compact" inputMode="numeric" type="number" min="0" max="20"
                                                 value={editingScores[code] ?? 13}
-                                                onChange={e => handleScoreFieldChange(code, e.target.value)}
-                                                style={{
-                                                  width: '46px', textAlign: 'center', padding: '4px', borderRadius: '6px',
-                                                  border: '1px solid var(--toss-blue)', fontSize: '13px', fontWeight: 'bold',
-                                                  color: '#191f28', backgroundColor: 'var(--color-primary-tint)', outline: 'none', margin: 0
-                                                }} />
+                                                onChange={e => handleScoreFieldChange(code, e.target.value)} style={{ width: '56px' }} />
                                             ) : (
                                               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                                                 <div style={{ width: '32px', height: '4px', backgroundColor: '#eef0f2', borderRadius: '2px', overflow: 'hidden' }}>
@@ -1558,7 +1532,7 @@ export default function TeamTab({ focusPayment = false, onFocused }: { focusPaym
       {/* Sticky Save Bar */}
       {editingMemberUid && (
         <div style={{
-          position: 'fixed', bottom: '50px', left: '50%', transform: 'translateX(-50%)',
+          position: 'fixed', bottom: 'calc(var(--tabbar-h) + var(--dock-h))', left: '50%', transform: 'translateX(-50%)',
           width: '100%', maxWidth: '1200px', backgroundColor: 'rgba(255,255,255,0.96)',
           backdropFilter: 'blur(10px)', boxShadow: '0 -4px 20px rgba(0,0,0,0.08)',
           borderTop: '1px solid #f2f4f6', padding: '12px 20px',
